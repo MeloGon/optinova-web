@@ -11,10 +11,10 @@ El corte final (Fase 5) reimporta PROD completo y aplica los transforms **en est
 
 | Fecha | Qué se copió | Verificado (conteos) |
 |---|---|---|
-| — | pendiente (E1.2) | — |
+| 2026-10-13 | Solo esquema `public` + trigger `on_auth_user_created` (`clone-prod-to-dev.ps1`). Datos: `supabase/seed.sql` (falsos) | 13 tablas, 20 políticas, 6 funciones, 4 triggers, 21 índices = PROD |
 
 ## Cambios de esquema
 
 | # | Fecha | Migración | Transform | Motivo |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 0 | 2026-10-13 | `20261013174053_baseline.sql` | — (mismo esquema que PROD) | Punto de partida |

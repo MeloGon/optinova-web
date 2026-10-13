@@ -79,14 +79,14 @@
 - [ ] L03: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
 
 ### Fase 1: Infraestructura
-- [ ] **E1.1 Herramientas**: Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
-- [ ] **E1.2 Clonar PROD → `optinova-db`**
+- [x] **E1.1 Herramientas** (2026-10-13: Angular CLI 22.2.2, Node 24.18, PostgreSQL client 17.11): Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
+- [x] **E1.2 Clonar la ESTRUCTURA de PROD → `optinova-db`** (sin datos reales)
   - Script `scripts/db/clone-prod-to-dev.ps1`: lee `PROD_DB_URL` y `DEV_DB_URL` del entorno; no guarda contraseñas
-  - Orden: esquema `public` (tablas, RLS, funciones, grants), luego `auth.users` + `auth.identities`, luego datos `public`, luego trigger `on_auth_user_created`
-  - Copiar la Edge Function `megadmin-users` a dev
-  - Verificar que el conteo de filas por tabla sea igual en PROD y DEV
-  - Registrar la fecha del snapshot en `docs/db-changes.md`
-  - Guardar el esquema base como `supabase/migrations/<fecha>_baseline.sql`
+  - Por defecto copia solo el esquema `public` (tablas, RLS, funciones, grants) y el trigger `on_auth_user_created`
+  - `-WithData` copia además usuarios y datos reales; se reserva para el corte final (Fase 5)
+  - [x] Edge Function `megadmin-users` copiada a dev (2026-10-13)
+  - [x] Esquema base guardado en `supabase/migrations/20261013174053_baseline.sql`
+- [x] **E1.2b Datos de prueba**: `supabase/seed.sql` (re-ejecutable) con ~50 registros falsos por tabla y 4 usuarios de prueba (`megadmin`, `admin`, `supervisor`, `vendedor`); credenciales en el encabezado del archivo
 - [ ] **E1.3 Scaffold Angular**: `ng new`, Tailwind, PrimeNG + tema, ESLint/Prettier, environments, `.gitignore` de secretos
 - [ ] **E1.4 Arquitectura base**: `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
 
@@ -134,7 +134,8 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 | Riesgo | Mitigación |
 |---|---|
 | Escribir por error en PROD | Regla 1; scripts reciben URLs explícitas; MCP: usar siempre el ref de DEV para escribir |
-| Fuga de datos de pacientes desde DEV | Secretos fuera de git; RLS activas en DEV igual que en PROD |
+| Fuga de datos de pacientes desde DEV | DEV solo tiene datos falsos; secretos fuera de git |
+| RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | Pendiente: decidir si se corrige en PROD; en DEV se corrige en la Fase 1/2 con migración |
 | Corte final no reproducible | Migraciones + transforms obligatorios; ensayo de corte antes |
 | Proyecto DEV pausado por inactividad | Reactivar desde el dashboard |
 | Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, primeng.org) |
@@ -144,3 +145,4 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 | Fecha | Entregable | Lección | Commit |
 |---|---|---|---|
 | 2026-10-13 | Proyecto `optinova-db` creado; plan inicial | — | — |
+| 2026-10-13 | E1.1 herramientas, E1.2 estructura clonada, E1.2b seed | — | — |

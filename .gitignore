@@ -1,0 +1,7 @@
+# Volcados de base de datos (contienen datos reales de pacientes)
+.db-dump/
+*.dump
+
+# Secretos
+.env
+.env.*

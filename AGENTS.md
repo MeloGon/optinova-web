@@ -57,6 +57,8 @@ Las vistas nunca llaman a Supabase directamente. Así, cuando llegue NestJS, sol
 
 ## Convenciones
 
+- Ramas: se trabaja en `development`; `main` solo recibe lo estable.
+- Datos de DEV: `supabase/seed.sql` (falsos, re-ejecutable). Nunca cargar datos reales salvo el corte final.
 - Código (identificadores, archivos) en inglés. Docs, lecciones y commits en español.
 - Archivos en kebab-case: `search-patient.page.ts`, `patient.repository.ts`.
 - Commits cortos, en español, con prefijo convencional, **sin** `Co-Authored-By` ni trailers de IA:
