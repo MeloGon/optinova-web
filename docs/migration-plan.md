@@ -135,7 +135,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 |---|---|
 | Escribir por error en PROD | Regla 1; scripts reciben URLs explícitas; MCP: usar siempre el ref de DEV para escribir |
 | Fuga de datos de pacientes desde DEV | DEV solo tiene datos falsos; secretos fuera de git |
-| RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | Pendiente: decidir si se corrige en PROD; en DEV se corrige en la Fase 1/2 con migración |
+| RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | **Corregido** 2026-10-13 en DEV y PROD (cambio #1 en `db-changes.md`). Pendiente a futuro: restringir por rol (hoy cualquier usuario con sesión puede borrar) |
 | Corte final no reproducible | Migraciones + transforms obligatorios; ensayo de corte antes |
 | Proyecto DEV pausado por inactividad | Reactivar desde el dashboard |
 | Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, primeng.org) |

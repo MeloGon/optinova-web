@@ -18,3 +18,4 @@ El corte final (Fase 5) reimporta PROD completo y aplica los transforms **en est
 | # | Fecha | Migración | Transform | Motivo |
 |---|---|---|---|---|
 | 0 | 2026-10-13 | `20261013174053_baseline.sql` | — (mismo esquema que PROD) | Punto de partida |
+| 1 | 2026-10-13 | `20261013190000_rls_solo_autenticados.sql` | — (no cambia datos) | 9 políticas abiertas a `public` pasan a `authenticated`: sin login ya no se lee ni escribe. Aplicado en DEV y en PROD (autorizado por el dueño) |
