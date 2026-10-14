@@ -1,10 +1,10 @@
-<!-- Pantalla temporal para probar los tokens de D-001 (T-01..T-07).
-     Se reemplaza en E1.4 por el router con los layouts reales. -->
-<main class="min-h-screen bg-background p-6 text-foreground">
+<!-- Provisional: vista previa del sistema de diseño (D-001).
+     El dashboard real (S-02: KPIs, gráficas, ventas recientes) se construye en E2.7. -->
+<div class="p-6">
   <div class="mx-auto flex max-w-3xl flex-col gap-6">
     <header>
-      <h1 class="text-title">Optinova Web</h1>
-      <p class="text-body-sm text-muted-foreground">Prueba de tokens: primario, modo oscuro y densidad.</p>
+      <h2 class="text-heading">Vista previa del sistema de diseño</h2>
+      <p class="text-body-sm text-muted-foreground">El dashboard real llega en E2.7. Mientras tanto, prueba los tokens.</p>
       <p class="text-caption text-muted-foreground">
         Supabase: <span class="font-mono">{{ env.supabaseUrl || '(sin configurar)' }}</span>
         · {{ env.production ? 'producción' : 'desarrollo' }}
@@ -131,4 +131,4 @@
       </dl>
     </section>
   </div>
-</main>
+</div>

@@ -1,0 +1,64 @@
+<div class="flex flex-col gap-5">
+  <div>
+    <span
+      aria-hidden="true"
+      class="mb-5 grid size-12 place-items-center rounded-md border-[1.5px] border-dashed border-border-strong"
+    >
+      <span class="size-2.5 rounded-full border-2 border-primary ring-3 ring-primary-subtle"></span>
+    </span>
+    <h1 class="text-title">Inicia sesión</h1>
+    <p class="mt-1 text-body text-muted-foreground">Usa el correo que te dio tu administrador.</p>
+  </div>
+
+  <div class="flex flex-col gap-1.5">
+    <label for="email" class="text-label">Correo electrónico</label>
+    <div
+      class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+    >
+      <svg [lucideIcon]="icons.mail" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+      <input
+        id="email"
+        type="email"
+        autocomplete="username"
+        placeholder="nombre@optinova.pe"
+        class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground"
+      />
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-1.5">
+    <label for="password" class="text-label">Contraseña</label>
+    <div
+      class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background pr-1 pl-3 focus-within:outline-2 focus-within:outline-ring"
+    >
+      <svg [lucideIcon]="icons.lock" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+      <input
+        id="password"
+        [type]="showPassword() ? 'text' : 'password'"
+        autocomplete="current-password"
+        class="min-w-0 flex-1 bg-transparent text-body outline-none"
+      />
+      <button
+        type="button"
+        (click)="showPassword.update((v) => !v)"
+        [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        class="grid size-[26px] place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+      >
+        <svg [lucideIcon]="showPassword() ? icons.eyeOff : icons.eye" [size]="16"></svg>
+      </button>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    (click)="enter()"
+    class="inline-flex h-(--size-control-lg) w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+  >
+    Ingresar
+    <svg [lucideIcon]="icons.arrow" [size]="16"></svg>
+  </button>
+
+  <p class="text-center text-caption font-normal text-muted-foreground">
+    Vista previa: el botón entra sin validar. El inicio de sesión real llega en E2.1.
+  </p>
+</div>

@@ -1,24 +1,35 @@
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
+import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { routes } from './app.routes';
 
-describe('App', () => {
+describe('Rutas', () => {
+  let harness: RouterTestingHarness;
+
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    })
-      .compileComponents();
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routes, withComponentInputBinding())],
+    });
+    harness = await RouterTestingHarness.create();
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+  const text = () => (harness.routeNativeElement as HTMLElement).textContent ?? '';
+
+  it('la raíz manda al login', async () => {
+    await harness.navigateByUrl('/');
+    expect(TestBed.inject(Router).url).toBe('/auth/login');
+    expect(text()).toContain('Inicia sesión');
   });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Optinova Web');
+  it('una página pendiente muestra su título en el topbar y su entregable', async () => {
+    await harness.navigateByUrl('/dashboard/sell');
+    expect(text()).toContain('Nueva venta');
+    expect(text()).toContain('Sigue los pasos para registrar una venta.');
+    expect(text()).toContain('E2.6');
+  });
+
+  it('una ruta inexistente muestra la página 404', async () => {
+    await harness.navigateByUrl('/no-existe');
+    expect(text()).toContain('Página no encontrada');
   });
 });

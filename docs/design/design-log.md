@@ -43,8 +43,8 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-17 | Spinner / Skeleton | v1 | D-001 |
 | C-18 | Empty state | v1 | D-001 |
 | C-19 | Avatar | v1 | D-001 |
-| C-20 | Sidebar de navegación | v1 | D-001 |
-| C-21 | Navbar / Topbar | v1 | D-001 |
+| C-20 | Sidebar de navegación | implementado v1 | D-001 |
+| C-21 | Navbar / Topbar | implementado v1 | D-001 |
 | C-22 | Stepper | v1 | D-001 |
 | C-23 | Gráficas (barras, dona) | v1 | D-001 |
 | C-24 | Selector de color primario | v1 | D-001 |

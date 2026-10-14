@@ -1,0 +1,81 @@
+<aside
+  aria-label="Navegación principal"
+  class="flex h-full flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-(--duration-slow) ease-standard"
+  [class]="collapsed() ? 'w-(--size-sidebar-collapsed)' : 'w-(--size-sidebar)'"
+>
+  <!-- Marca: hueco de logo 28×28 (reemplazar por el SVG cuando exista) + wordmark -->
+  <div
+    class="flex h-(--onv-topbar-h) shrink-0 items-center gap-2.5 border-b border-sidebar-border"
+    [class]="collapsed() ? 'justify-center' : 'px-[18px]'"
+  >
+    <span
+      aria-hidden="true"
+      class="grid size-7 shrink-0 place-items-center rounded-md border-[1.5px] border-dashed border-border-strong"
+    >
+      <span class="size-2.5 rounded-full border-2 border-primary ring-3 ring-primary-subtle"></span>
+    </span>
+    @if (!collapsed()) {
+      <span class="text-[17px] font-[650] tracking-[-0.025em] whitespace-nowrap">Optinova</span>
+    }
+  </div>
+
+  <nav class="flex flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto px-2.5 py-3">
+    @for (section of sections(); track section.title; let first = $first) {
+      @if (collapsed()) {
+        @if (!first) {
+          <div role="separator" class="mx-2 my-2.5 h-px shrink-0 bg-sidebar-border"></div>
+        }
+      } @else {
+        <div
+          class="px-2.5 pb-1.5 text-overline whitespace-nowrap text-muted-foreground uppercase"
+          [class]="first ? 'pt-0.5' : 'pt-3.5'"
+        >
+          {{ section.title }}
+        </div>
+      }
+
+      @for (item of section.items; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          ariaCurrentWhenActive="page"
+          [attr.title]="collapsed() ? item.label : null"
+          [attr.aria-label]="collapsed() ? item.label : null"
+          (click)="navigate.emit()"
+          class="group relative flex h-[34px] shrink-0 items-center gap-2.5 rounded-md text-[14px] font-medium whitespace-nowrap text-sidebar-foreground transition-colors duration-(--duration-instant) hover:bg-subtle hover:text-foreground focus-visible:outline-offset-[-2px] aria-[current=page]:bg-primary-subtle aria-[current=page]:font-semibold aria-[current=page]:text-primary-subtle-foreground aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2 aria-[current=page]:before:-left-2.5 aria-[current=page]:before:w-[3px] aria-[current=page]:before:rounded-r-[3px] aria-[current=page]:before:bg-primary"
+          [class]="collapsed() ? 'mx-auto w-11 justify-center' : 'px-2.5'"
+        >
+          <svg
+            [lucideIcon]="item.icon"
+            [size]="18"
+            class="shrink-0 text-muted-foreground group-aria-[current=page]:text-primary-subtle-foreground"
+          ></svg>
+          @if (!collapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    }
+  </nav>
+
+  <div class="shrink-0 border-t border-sidebar-border p-2.5">
+    <button
+      type="button"
+      (click)="toggle.emit()"
+      [attr.aria-label]="collapsed() ? 'Expandir menú' : null"
+      [attr.aria-expanded]="!collapsed()"
+      class="flex h-[34px] w-full items-center gap-2.5 rounded-md text-[14px] font-medium whitespace-nowrap text-sidebar-foreground hover:bg-subtle hover:text-foreground focus-visible:outline-offset-[-2px]"
+      [class]="collapsed() ? 'justify-center' : 'px-2.5'"
+    >
+      <svg
+        [lucideIcon]="overlay() ? closeIcon : collapsed() ? expandIcon : collapseIcon"
+        [size]="18"
+        class="shrink-0 text-muted-foreground"
+      ></svg>
+      @if (!collapsed()) {
+        <span>{{ overlay() ? 'Cerrar menú' : 'Colapsar menú' }}</span>
+      }
+    </button>
+  </div>
+</aside>

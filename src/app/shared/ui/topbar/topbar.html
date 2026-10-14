@@ -1,0 +1,59 @@
+<header
+  class="flex h-(--onv-topbar-h) items-center gap-4 border-b border-sidebar-border bg-card px-4 text-card-foreground md:px-6"
+>
+  <button
+    type="button"
+    (click)="toggleMenu.emit()"
+    aria-label="Mostrar u ocultar el menú"
+    class="grid size-8 shrink-0 place-items-center rounded-sm hover:bg-muted active:bg-secondary-hover"
+  >
+    <svg [lucideIcon]="menuIcon" [size]="16"></svg>
+  </button>
+
+  <div class="min-w-0">
+    <h1 class="truncate text-[18px] leading-6 font-semibold tracking-[-0.015em]">{{ title() }}</h1>
+    @if (description(); as d) {
+      <p class="truncate text-body-sm text-muted-foreground in-data-[density=compact]:hidden max-md:hidden">
+        {{ d }}
+      </p>
+    }
+  </div>
+
+  <div class="ml-auto flex shrink-0 items-center gap-2">
+    @if (branch(); as b) {
+      <div class="hidden h-9 items-center gap-2 rounded-md border border-border pr-2.5 pl-2 text-label sm:inline-flex">
+        <span class="grid size-[22px] place-items-center rounded-sm bg-primary-subtle text-primary-subtle-foreground">
+          <svg [lucideIcon]="storeIcon" [size]="13"></svg>
+        </span>
+        {{ b }}
+      </div>
+      <span class="hidden h-6 w-px bg-border sm:block"></span>
+    }
+
+    <button
+      type="button"
+      (click)="toggleTheme()"
+      [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      class="grid size-(--onv-control-h) place-items-center rounded-md hover:bg-muted active:bg-secondary-hover"
+    >
+      <svg [lucideIcon]="theme.isDark() ? sunIcon : moonIcon" [size]="16"></svg>
+    </button>
+
+    @if (userName(); as name) {
+      <div class="flex items-center gap-2.5 rounded-md py-1 pr-2 pl-1">
+        <span
+          aria-hidden="true"
+          class="grid size-8 shrink-0 place-items-center rounded-full bg-primary-subtle text-[12px] font-semibold text-primary-subtle-foreground"
+        >
+          {{ initials() }}
+        </span>
+        <div class="hidden text-[13px] leading-4 font-semibold lg:block">
+          {{ name }}
+          @if (userRole(); as role) {
+            <span class="block text-[12px] font-normal text-muted-foreground">{{ role }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</header>

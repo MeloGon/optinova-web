@@ -1,3 +1,114 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
+import { PageData } from './core/models/page-data';
 
-export const routes: Routes = [];
+/** Página de una feature que todavía no existe: muestra "En construcción". */
+function pending(path: string, data: Required<PageData>): Route {
+  return {
+    path,
+    title: `${data.title} · Optinova`,
+    data,
+    loadComponent: () => import('./shared/pages/coming-soon.page').then((m) => m.ComingSoonPage),
+  };
+}
+
+// = el GoRouter de app_router.dart. Mismas rutas que RouterName de Flutter.
+export const routes: Routes = [
+  // Sin login todavía (E2.1): la raíz manda al login, como initialLocation en Flutter.
+  { path: '', pathMatch: 'full', redirectTo: 'auth/login' },
+
+  // = ShellRoute(builder: AuthLayout)
+  {
+    path: 'auth',
+    loadComponent: () => import('./layouts/auth-layout/auth-layout').then((m) => m.AuthLayout),
+    children: [
+      {
+        path: 'login',
+        title: 'Inicia sesión · Optinova',
+        loadComponent: () => import('./features/login/login.page').then((m) => m.LoginPage),
+      },
+    ],
+  },
+
+  // = StatefulShellRoute(builder: DashboardLayout)
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout').then((m) => m.DashboardLayout),
+    children: [
+      {
+        path: '',
+        title: 'Dashboard · Optinova',
+        data: { title: 'Dashboard', description: 'Resumen de tu sucursal.' } satisfies PageData,
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
+      },
+      pending('search-patient', {
+        title: 'Buscar paciente',
+        description: 'Busca y gestiona los registros de pacientes.',
+        delivery: 'E2.2',
+      }),
+      pending('add-patient', {
+        title: 'Agregar paciente',
+        description: 'Registra un paciente nuevo y su revisión.',
+        delivery: 'E2.3',
+      }),
+      pending('expenses', {
+        title: 'Egresos',
+        description: 'Registra y consulta los gastos de la sucursal.',
+        delivery: 'E2.4',
+      }),
+      pending('sales-history', {
+        title: 'Historial de ventas',
+        description: 'Consulta y filtra las ventas registradas.',
+        delivery: 'E2.5',
+      }),
+      pending('sell', {
+        title: 'Nueva venta',
+        description: 'Sigue los pasos para registrar una venta.',
+        delivery: 'E2.6',
+      }),
+      pending('settings/resins', {
+        title: 'Resinas',
+        description: 'Inventario de resinas y sus precios.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/mounts', {
+        title: 'Armazones',
+        description: 'Inventario de armazones.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/payments-report', {
+        title: 'Ingresos y egresos',
+        description: 'Reporte de pagos y gastos por periodo.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/sales-by-seller', {
+        title: 'Ventas por vendedor',
+        description: 'Ventas agrupadas por vendedor.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/features', {
+        title: 'Funcionalidades',
+        description: 'Activa o desactiva funciones de la app.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/users-management', {
+        title: 'Usuarios',
+        description: 'Crea y administra los usuarios del sistema.',
+        delivery: 'E2.8',
+      }),
+      pending('settings/audit-logs', {
+        title: 'Auditoría',
+        description: 'Historial de cambios en ventas y pagos.',
+        delivery: 'E2.8',
+      }),
+    ],
+  },
+
+  // = errorBuilder: NoPageFoundView
+  {
+    path: '**',
+    title: 'Página no encontrada · Optinova',
+    loadComponent: () => import('./shared/pages/not-found.page').then((m) => m.NotFoundPage),
+  },
+];

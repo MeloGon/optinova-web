@@ -91,9 +91,9 @@
 - [ ] **E1.5 Sistema de diseño**: pedido D-001 a Claude Design, tokens a `styles.css` (`@theme`), componentes base en `src/app/shared/ui/` construidos a medida que cada feature los necesite
   - [x] **E1.5a Tokens y tema** (2026-10-14): `optinova-theme.css` → `src/styles.css`, `primary-scale.ts` → `core/theme/`, `ThemeService` (modo claro/oscuro/sistema, densidad, primario; guardado en `localStorage`), fuentes Geist, script anti-destello en `index.html`. Lección L01
   - [ ] **E1.5b+ Componentes** `C-xx` en `src/app/shared/ui/`, a medida que cada feature los necesite
-- [ ] **E1.4 Arquitectura base**: `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
+- [x] **E1.4 Arquitectura base** (2026-10-14): `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
   - [x] **E1.4a Core** (2026-10-14): `@supabase/supabase-js`, token `SUPABASE`, `Result` + `ok/err`, `AppError` + `toAppError` (server, network, notFound, unauthorized, unknown), `ConfigService` (moneda, sucursales con `active`, métodos de pago; regla 4b; OFTALMIC CENTER = cerrada con historial), `MoneyPipe`. Tests. Lección L02
-  - [ ] **E1.4b Layouts y rutas**: auth-layout, dashboard-layout con C-20 Sidebar y C-21 Topbar reales (`lucide-angular`), rutas lazy
+  - [x] **E1.4b Layouts y rutas** (2026-10-14): auth-layout (S-01 panel de marca), dashboard-layout responsive con C-20 Sidebar y C-21 Topbar (`@lucide/angular`; `lucide-angular` no soporta Angular 22), todas las rutas de Flutter lazy con página "en construcción", 404, login visual. Menú con las secciones del diseño (decisión del dueño) en vez del hub "Configuración"; filtro por rol, sucursal y usuario reales en E2.1. Lección L03
 
 ### Fase 2: Features (en orden de dificultad)
 Cada feature es un entregable con modelo, repo, store, vistas y lección.
@@ -168,3 +168,4 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-10-14 | E1.5a tokens y tema | L01 | `feat(design): agrega tokens de D-001 y servicio de tema` |
 | 2026-10-14 | E1.3 scaffold + environments | L00 | `feat(app): agrega environments de dev y prod` |
 | 2026-10-14 | E1.4a core | L02 | `feat(core): agrega cliente Supabase, Result, errores y config` |
+| 2026-10-14 | E1.4b layouts y rutas | L03 | `feat(layouts): agrega layouts, sidebar, topbar y rutas` |

@@ -1,0 +1,31 @@
+<div class="flex h-dvh bg-background text-foreground">
+  @if (isTablet()) {
+    <onv-sidebar [sections]="nav" [collapsed]="collapsed()" (toggle)="toggleMenu()" />
+  }
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <!-- Sucursal y usuario de ejemplo: se conectan a la sesión en E2.1 -->
+    <onv-topbar
+      [title]="page().title"
+      [description]="page().description"
+      branch="OFTALVISION"
+      userName="Usuario de prueba"
+      userRole="Sin sesión"
+      (toggleMenu)="toggleMenu()"
+    />
+    <main class="flex-1 overflow-auto">
+      <router-outlet />
+    </main>
+  </div>
+
+  @if (overlayOpen()) {
+    <div class="fixed inset-0 z-(--z-sidebar) bg-overlay" (click)="overlayOpen.set(false)" aria-hidden="true"></div>
+    <onv-sidebar
+      class="fixed inset-y-0 left-0 z-(--z-sidebar) elev-lg"
+      [sections]="nav"
+      [overlay]="true"
+      (toggle)="overlayOpen.set(false)"
+      (navigate)="overlayOpen.set(false)"
+    />
+  }
+</div>

@@ -84,6 +84,15 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | repo abstracto + impl | `abstract class` + `@Injectable` impl, registrada con `{ provide, useClass }` |
 | `TextEditingController` + validators | Reactive Forms (`FormGroup`, `FormControl`, `Validators`) |
 | go_router `routes` | `app.routes.ts` |
+| `ShellRoute` + `child` | ruta con `children` + `<router-outlet />` en el layout |
+| `initialLocation` / `errorBuilder` | `redirectTo` / ruta `'**'` |
+| `state.extra` | `data` de la ruta → `input()` (`withComponentInputBinding`) |
+| `currentPage == RouterName.x` (ítem activo) | `routerLinkActive` + `ariaCurrentWhenActive="page"` |
+| `Stream` | `Observable` (RxJS); `toSignal()` lo convierte en signal |
+| cancelar `StreamSubscription` en `dispose()` | `takeUntilDestroyed()` |
+| `MediaQuery.of(context).size.width` | `BreakpointObserver` (CDK) + `toSignal` |
+| `Scaffold` + `Row` + `Expanded` | `flex h-dvh` + `flex-1` |
+| `Icons.search` | `LucideSearch` + `<svg [lucideIcon]>` (`@lucide/angular`) |
 | go_router `redirect` | guard `canActivate` |
 | `context.go('/x')` | `router.navigate(['/x'])` / `routerLink="/x"` |
 | supabase_flutter | `@supabase/supabase-js` (API casi idéntica) |

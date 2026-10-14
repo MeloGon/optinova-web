@@ -1,0 +1,39 @@
+<div class="grid min-h-dvh bg-background text-foreground lg:grid-cols-[1fr_560px]">
+  <!-- Panel de marca con el motivo de lente (cambia con el color primario) -->
+  <section class="relative hidden flex-col justify-between overflow-hidden bg-primary-subtle p-12 lg:flex">
+    <svg
+      viewBox="0 0 600 600"
+      aria-hidden="true"
+      class="absolute top-1/2 -right-40 size-[720px] -translate-y-1/2"
+    >
+      <circle cx="300" cy="300" r="290" fill="none" stroke-width="1" class="stroke-primary-200" />
+      <circle cx="300" cy="300" r="230" fill="none" stroke-width="1" class="stroke-primary-200" />
+      <circle cx="300" cy="300" r="170" class="fill-primary-100" />
+      <circle cx="300" cy="300" r="110" class="fill-primary" />
+      <circle cx="300" cy="300" r="50" class="fill-primary-active" />
+    </svg>
+
+    <div class="relative flex items-center gap-3">
+      <span
+        aria-hidden="true"
+        class="grid size-10 place-items-center rounded-md border-[1.5px] border-dashed border-border-strong bg-card"
+      >
+        <span class="size-2.5 rounded-full border-2 border-primary ring-3 ring-primary-subtle"></span>
+      </span>
+      <span class="text-[22px] font-[650] tracking-[-0.025em]">Optinova</span>
+    </div>
+
+    <div class="relative max-w-[440px] text-primary-subtle-foreground">
+      <p class="text-display">Pacientes, graduaciones y ventas de tus ópticas, en un solo lugar.</p>
+      <p class="mt-3">
+        @for (b of branches(); track b.value) {
+          {{ b.label }}{{ $last ? '' : ' · ' }}
+        }
+      </p>
+    </div>
+  </section>
+
+  <section class="grid place-items-center bg-card p-6 sm:p-12 lg:border-l lg:border-border">
+    <router-outlet />
+  </section>
+</div>
