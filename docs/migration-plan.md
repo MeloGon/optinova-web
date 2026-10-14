@@ -19,14 +19,14 @@
 |---|---|---|
 | Framework | Angular (última estable): standalone components, signals, control flow `@if/@for`, zoneless | Flutter |
 | Lenguaje | TypeScript estricto | Dart |
-| UI | PrimeNG (componentes) + Tailwind CSS (layout/espaciado), unidos con `tailwindcss-primeui` | shadcn_ui + Row/Column/Padding |
+| UI | **Sistema de diseño propio** (Claude Design, ver `docs/design/`) implementado con Tailwind CSS v4 + `@angular/cdk` + `@angular/aria` (headless oficiales, MIT). Primario personalizable en runtime y modo oscuro. Se descartó PrimeNG (desde 2026 exige licencia PrimeUI) y spartan-ng (comunidad pequeña) | shadcn_ui + Row/Column/Padding |
 | Estado | Services + `signal`/`computed`. Sin NgRx por ahora | Riverpod Notifier |
 | Formularios | Reactive Forms | TextEditingController + validators |
 | Router | Angular Router + guards | go_router + redirect |
 | Errores | Tipo `Result<T, E>` propio | fpdart `Either` |
 | Backend (ahora) | Supabase vía `@supabase/supabase-js` | supabase_flutter |
 | Backend (futuro) | NestJS, sobre la misma Postgres | — |
-| Gráficas | PrimeNG Chart (Chart.js) | fl_chart |
+| Gráficas | Por decidir en E2.7 (candidato: Chart.js, MIT) | fl_chart |
 | PDF | pdfmake | paquete `pdf` |
 | CSV | papaparse | paquete `csv` |
 | Fechas/números | `Intl` + pipes de Angular | intl |
@@ -87,13 +87,14 @@
   - [x] Edge Function `megadmin-users` copiada a dev (2026-10-13)
   - [x] Esquema base guardado en `supabase/migrations/20261013174053_baseline.sql`
 - [x] **E1.2b Datos de prueba**: `supabase/seed.sql` (re-ejecutable) con ~50 registros falsos por tabla y 4 usuarios de prueba (`megadmin`, `admin`, `supervisor`, `vendedor`); credenciales en el encabezado del archivo
-- [ ] **E1.3 Scaffold Angular**: `ng new`, Tailwind, PrimeNG + tema, ESLint/Prettier, environments, `.gitignore` de secretos
+- [ ] **E1.3 Scaffold Angular**: `ng new` (Angular 22.2, zoneless, Vitest), Tailwind v4, `@angular/cdk` + `@angular/aria`, pantalla de prueba con primario dinámico. Pendiente: lección L-E1.3, environments
+- [ ] **E1.5 Sistema de diseño**: pedido D-001 a Claude Design, tokens a `styles.css` (`@theme`), componentes base en `src/app/shared/ui/` construidos a medida que cada feature los necesite
 - [ ] **E1.4 Arquitectura base**: `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
 
 ### Fase 2: Features (en orden de dificultad)
 Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [ ] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`)
-- [ ] **E2.2 Buscar paciente** (`/dashboard/search-patient`): primera tabla PrimeNG, búsqueda, paginación
+- [ ] **E2.2 Buscar paciente** (`/dashboard/search-patient`): primera tabla (C-07), búsqueda, paginación
 - [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`): Reactive Forms, validación, máscaras
 - [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
 - [ ] **E2.5 Historial de ventas** (`/dashboard/sales-history`): filtros, pagos
@@ -118,6 +119,20 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [ ] Proponer mejoras: nombres, `created_at/updated_at`, renombrar `"ventas cortas"`, índices, RLS
 - [ ] Cada cambio = migración + transform + entrada en `db-changes.md` (regla 3)
 
+### Fase 4b: Multi-empresa / SaaS (mapeado, NO se implementa todavía)
+Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y configura su moneda.
+- [ ] Tabla `organizaciones` (empresa) y `sucursales` (hoy las sucursales son texto fijo: OFTALVISION, MEDILENT, OFTALMIC CENTER)
+- [ ] `organizacion_id` en todas las tablas + RLS por organización (cada empresa solo ve lo suyo)
+- [ ] Configuración por empresa: moneda (código ISO + símbolo + formato), métodos de pago, zona horaria, logo, color primario
+- [ ] Registro de empresas nuevas y primer usuario admin; invitación de usuarios
+- [ ] Al corte (Fase 5), los datos actuales se asignan a la organización "Optinova"
+- Momento recomendado: junto con el rediseño de DB (Fase 4), antes del corte, para migrar los datos una sola vez.
+
+**Reglas desde ya** (para no tener que rehacer después):
+1. Nada de sucursales, moneda ni métodos de pago escritos a mano en el código: siempre se leen de un servicio de configuración (`core/config`), aunque hoy devuelva valores fijos.
+2. Todo monto se muestra con un único pipe/servicio de moneda; nunca se escribe `S/.` en una plantilla.
+3. Todo texto de sucursal viene de datos, no de un `enum`.
+
 ### Fase 5: Corte a producción
 - [ ] Ensayo completo en `optinova-db`: vaciar, reimportar PROD fresco y aplicar los transforms en orden
 - [ ] Ventana de corte: congelar la app Flutter (modo solo lectura o aviso), reimportación final, verificación de conteos
@@ -138,7 +153,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 | RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | **Corregido** 2026-10-13 en DEV y PROD (cambio #1 en `db-changes.md`). Pendiente a futuro: restringir por rol (hoy cualquier usuario con sesión puede borrar) |
 | Corte final no reproducible | Migraciones + transforms obligatorios; ensayo de corte antes |
 | Proyecto DEV pausado por inactividad | Reactivar desde el dashboard |
-| Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, primeng.org) |
+| Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, tailwindcss.com) |
 
 ## 8. Registro
 

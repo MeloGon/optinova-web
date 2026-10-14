@@ -1,6 +1,6 @@
 # Optinova Web
 
-Reescritura en Angular + PrimeNG + Tailwind del sistema de óptica `oftal_web` (Flutter).
+Reescritura en Angular + Tailwind (sistema de diseño propio) del sistema de óptica `oftal_web` (Flutter).
 
 - Plan y estado: [docs/migration-plan.md](docs/migration-plan.md)
 - Guía para agentes/IA: [AGENTS.md](AGENTS.md)

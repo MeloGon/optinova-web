@@ -37,7 +37,9 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | `MediaQuery` / responsive | prefijos `sm:` `md:` `lg:` |
 | `if (x) Widget()` dentro de children | `@if (x) { ... }` |
 | `ListView.builder` / `.map()` | `@for (item of items; track item.id) { ... }` |
-| shadcn_ui | PrimeNG |
+| shadcn_ui | Componentes propios en `shared/ui/` (Tailwind + CDK/Aria) |
+| `GestureDetector` / `Overlay` / `Focus` (comportamiento sin estilo) | `@angular/cdk` y `@angular/aria` (headless) |
+| `ThemeData` / `ColorScheme` | tokens en `styles.css` (`@theme`) como variables CSS |
 
 ## Estado (Riverpod → signals)
 
@@ -70,6 +72,6 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | go_router `redirect` | guard `canActivate` |
 | `context.go('/x')` | `router.navigate(['/x'])` / `routerLink="/x"` |
 | supabase_flutter | `@supabase/supabase-js` (API casi idéntica) |
-| fl_chart | PrimeNG Chart (Chart.js) |
+| fl_chart | por decidir (Chart.js) |
 | paquete `pdf` | pdfmake |
 | `intl` `DateFormat` | `DatePipe` / `Intl.DateTimeFormat` |

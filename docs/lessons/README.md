@@ -4,4 +4,4 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 
 | # | Tema | Entregable |
 |---|---|---|
-| — | (vacío) | — |
+| 00 | [Anatomía de un proyecto Angular](00-proyecto-angular.md) | E1.3 |

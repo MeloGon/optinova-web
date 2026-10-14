@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Tokens provisionales. Se reemplazan con los de Claude Design (D-001, T-01..T-07).
+   El primario sale de UNA variable (--brand): cambiarla en runtime re-colorea toda la app. */
+:root {
+  --brand: oklch(0.62 0.17 165);
+}
+
+@theme inline {
+  --color-primary: var(--brand);
+  --color-primary-foreground: oklch(0.99 0 0);
+}
