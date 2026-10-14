@@ -99,7 +99,8 @@
       </div>
 
       <div class="flex items-baseline gap-6">
-        <span class="text-kpi tabular-nums">S/. 4,870.50</span>
+        <span class="text-kpi tabular-nums">{{ 4870.5 | money }}</span>
+        <span class="text-amount tabular-nums text-danger-subtle-foreground">{{ -124 | money }}</span>
         <span class="font-mono text-rx">−1.25 &nbsp;+0.50 &nbsp;180°</span>
       </div>
 
@@ -107,10 +108,27 @@
         @for (row of ['V-000851', 'V-000852', 'V-000853']; track row) {
           <div class="flex h-(--onv-row-h) items-center justify-between border-b border-border px-(--onv-cell-x) text-(length:--onv-cell-fs) last:border-b-0">
             <span class="font-mono text-code">{{ row }}</span>
-            <span class="tabular-nums">S/. 1,250.00</span>
+            <span class="tabular-nums">{{ 1250 | money }}</span>
           </div>
         }
       </div>
+
+      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-body-sm">
+        <dt class="text-muted-foreground">Sucursales</dt>
+        <dd>
+          @for (b of config().branches; track b.value) {
+            <span [class.text-muted-foreground]="!b.active">
+              {{ b.label }}{{ b.active ? '' : ' (cerrada)' }}{{ $last ? '' : ' · ' }}
+            </span>
+          }
+        </dd>
+        <dt class="text-muted-foreground">Métodos de pago</dt>
+        <dd>
+          @for (p of config().paymentMethods; track p.value) {
+            <span>{{ p.label }}{{ $last ? '' : ' · ' }}</span>
+          }
+        </dd>
+      </dl>
     </section>
   </div>
 </main>

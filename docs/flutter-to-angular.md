@@ -73,7 +73,14 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 |---|---|
 | clase freezed | `interface` / `type` + spread `{...}` |
 | `fromJson`/`toJson` (json_serializable) | el JSON ya es un objeto JS; se tipa con la interfaz |
-| fpdart `Either<L, R>` | `Result<T, E>` propio |
+| fpdart `Either<L, R>` | `Result<T, E>` propio (`core/result.ts`) |
+| `Right(x)` / `Left(f)` / `fold` | `ok(x)` / `err(f)` / `if (r.ok) … else …` |
+| `sealed class Failure` (freezed) | `AppError` con `kind: 'server' \| 'network' \| …` |
+| `Supabase.instance.client` | `inject(SUPABASE)` (`InjectionToken`) |
+| `Provider<T>((ref) => ...)` para algo que no es clase propia | `new InjectionToken<T>(..., { factory })` |
+| `NumberFormat.currency(...)` | `{{ monto \| money }}` (`MoneyPipe`) |
+| `enum` con valores | tipo unión de strings `'a' \| 'b'` o lista de `{ value, label }` |
+| `group` / `test` / `expect(x, equals(y))` | `describe` / `it` / `expect(x).toBe(y)` |
 | repo abstracto + impl | `abstract class` + `@Injectable` impl, registrada con `{ provide, useClass }` |
 | `TextEditingController` + validators | Reactive Forms (`FormGroup`, `FormControl`, `Validators`) |
 | go_router `routes` | `app.routes.ts` |
