@@ -73,11 +73,7 @@ protected addClick() {
 
 ## Primario personalizable (adelanto de E1.5)
 
-En `styles.css`, el color primario sale de una variable CSS `--brand`. Cambiarla en tiempo de ejecución re-colorea todo:
-```ts
-document.documentElement.style.setProperty('--brand', 'oklch(0.55 0.22 300)');
-```
-Es como cambiar el `colorScheme` del `ThemeData` y que toda la app se repinte.
+La idea: el color primario sale de una variable CSS y cambiarla en tiempo de ejecución re-colorea todo, como cambiar el `colorScheme` del `ThemeData`. La versión definitiva (escala completa, modo oscuro, densidad) está en [L01](01-tokens-y-tema.md).
 
 ## Por qué no PrimeNG
 

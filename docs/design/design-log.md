@@ -4,7 +4,7 @@
 
 | Pedido | Fecha | Resultado (enlace Claude Design) | Resumen de decisiones |
 |---|---|---|---|
-| D-001 Sistema base | 2026-10-14 | [Optinova Design System](https://claude.ai/artifact/RLUAPCuqwY8nM42UqBQnD4) | v1 entregado: tokens T-01..T-07 (tipografía Geist), C-01..C-24, P-01..P-06, S-01..S-06. Incluye `export/optinova-theme.css` (Tailwind v4 `@theme`, oscuro con `data-theme`, densidad con `data-density`) y `export/primary-scale.ts` (escala 50–950 en OKLCH desde un color). Pendiente: traerlos al repo (E1.5) |
+| D-001 Sistema base | 2026-10-14 | [Optinova Design System](https://claude.ai/artifact/RLUAPCuqwY8nM42UqBQnD4) | v1 entregado: tokens T-01..T-07 (tipografía Geist), C-01..C-24, P-01..P-06, S-01..S-06. Incluye `export/optinova-theme.css` (Tailwind v4 `@theme`, oscuro con `data-theme`, densidad con `data-density`) y `export/primary-scale.ts` (escala 50–950 en OKLCH desde un color). Traídos al repo en E1.5a (2026-10-14) |
 
 ## Inventario de IDs
 
@@ -13,13 +13,13 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 ### Tokens
 | ID | Nombre | Estado | Pedido |
 |---|---|---|---|
-| T-01 | Color (primario personalizable, neutros, semánticos) | v1 | D-001 |
-| T-02 | Tipografía | v1 | D-001 |
-| T-03 | Espaciado y layout | v1 | D-001 |
-| T-04 | Radios y bordes | v1 | D-001 |
-| T-05 | Sombras y elevación | v1 | D-001 |
-| T-06 | Movimiento (duraciones, easing) | v1 | D-001 |
-| T-07 | Modo oscuro | v1 | D-001 |
+| T-01 | Color (primario personalizable, neutros, semánticos) | implementado v1 | D-001 |
+| T-02 | Tipografía | implementado v1 | D-001 |
+| T-03 | Espaciado y layout | implementado v1 | D-001 |
+| T-04 | Radios y bordes | implementado v1 | D-001 |
+| T-05 | Sombras y elevación | implementado v1 | D-001 |
+| T-06 | Movimiento (duraciones, easing) | implementado v1 | D-001 |
+| T-07 | Modo oscuro | implementado v1 | D-001 |
 
 ### Componentes
 | ID | Nombre | Estado | Pedido |

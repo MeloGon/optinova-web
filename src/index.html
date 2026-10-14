@@ -1,11 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>OptinovaWeb</title>
+  <title>Optinova</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- T-02 Tipografía: Geist y Geist Mono (Google Fonts, OFL) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+
+  <!-- T-07: pone data-theme y data-density antes de pintar para evitar el destello claro.
+       Lee la misma clave que ThemeService (core/theme/theme.service.ts). -->
+  <script>
+    (function () {
+      var p = {};
+      try { p = JSON.parse(localStorage.getItem('optinova.theme') || '{}') || {}; } catch (e) {}
+      var mode = p.mode || 'system';
+      var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      var html = document.documentElement;
+      html.setAttribute('data-theme', dark ? 'dark' : 'light');
+      html.setAttribute('data-density', p.density === 'compact' ? 'compact' : 'comfortable');
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -1,26 +1,112 @@
-<!-- Pantalla temporal para comprobar que Tailwind funciona.
+<!-- Pantalla temporal para probar los tokens de D-001 (T-01..T-07).
      Se reemplaza en E1.4 por el router con los layouts reales. -->
-<main class="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-  <section class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div class="flex flex-col gap-4 text-center">
-      <h1 class="text-2xl font-bold text-primary">{{ title() }}</h1>
-      <p class="text-slate-600">Angular + Tailwind funcionando</p>
-      <p class="text-slate-500">Clics: {{ clicks() }}</p>
+<main class="min-h-screen bg-background p-6 text-foreground">
+  <div class="mx-auto flex max-w-3xl flex-col gap-6">
+    <header>
+      <h1 class="text-title">Optinova Web</h1>
+      <p class="text-body-sm text-muted-foreground">Prueba de tokens: primario, modo oscuro y densidad.</p>
+    </header>
 
-      <button
-        type="button"
-        class="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        (click)="addClick()"
-      >
-        Púlsame
-      </button>
+    <section class="flex flex-col gap-4 rounded-lg border border-border bg-card p-(--onv-card-p) text-card-foreground elev-sm">
+      <h2 class="text-heading">Apariencia</h2>
 
-      <div class="flex justify-center gap-2" aria-label="Probar color primario">
-        <button type="button" class="size-6 rounded-full bg-[oklch(0.62_0.17_165)]" (click)="setBrand('oklch(0.62 0.17 165)')" aria-label="Verde"></button>
-        <button type="button" class="size-6 rounded-full bg-[oklch(0.55_0.2_260)]" (click)="setBrand('oklch(0.55 0.2 260)')" aria-label="Azul"></button>
-        <button type="button" class="size-6 rounded-full bg-[oklch(0.55_0.22_300)]" (click)="setBrand('oklch(0.55 0.22 300)')" aria-label="Violeta"></button>
-        <button type="button" class="size-6 rounded-full bg-[oklch(0.65_0.19_35)]" (click)="setBrand('oklch(0.65 0.19 35)')" aria-label="Coral"></button>
+      <div class="flex flex-col gap-2">
+        <span class="text-label">Color primario</span>
+        <div class="flex flex-wrap gap-2">
+          @for (p of presets; track p.id) {
+            <button
+              type="button"
+              class="size-8 rounded-full border-2 transition-transform duration-(--duration-fast) ease-standard hover:scale-110"
+              [class.border-foreground]="theme.primary() === p.hex"
+              [class.border-transparent]="theme.primary() !== p.hex"
+              [style.background-color]="p.hex"
+              [attr.aria-label]="p.name"
+              [attr.aria-pressed]="theme.primary() === p.hex"
+              (click)="theme.setPrimary(p.hex)"
+            ></button>
+          }
+        </div>
       </div>
-    </div>
-  </section>
+
+      <div class="flex flex-wrap gap-6">
+        <div class="flex flex-col gap-2">
+          <span class="text-label">Tema</span>
+          <div class="flex gap-1 rounded-md bg-muted p-1">
+            @for (m of modes; track m.value) {
+              <button
+                type="button"
+                class="rounded-sm px-3 py-1 text-label"
+                [class.bg-card]="theme.mode() === m.value"
+                [class.elev-xs]="theme.mode() === m.value"
+                [class.text-muted-foreground]="theme.mode() !== m.value"
+                [attr.aria-pressed]="theme.mode() === m.value"
+                (click)="theme.setMode(m.value)"
+              >
+                {{ m.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="text-label">Densidad</span>
+          <div class="flex gap-1 rounded-md bg-muted p-1">
+            @for (d of densities; track d.value) {
+              <button
+                type="button"
+                class="rounded-sm px-3 py-1 text-label"
+                [class.bg-card]="theme.density() === d.value"
+                [class.elev-xs]="theme.density() === d.value"
+                [class.text-muted-foreground]="theme.density() !== d.value"
+                [attr.aria-pressed]="theme.density() === d.value"
+                (click)="theme.setDensity(d.value)"
+              >
+                {{ d.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-4 rounded-lg border border-border bg-card p-(--onv-card-p) text-card-foreground elev-sm">
+      <h2 class="text-heading">Muestras</h2>
+
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="h-(--onv-control-h) rounded-md bg-primary px-4 text-label text-primary-foreground hover:bg-primary-hover active:bg-primary-active">
+          Registrar venta
+        </button>
+        <button type="button" class="h-(--onv-control-h) rounded-md bg-secondary px-4 text-label text-secondary-foreground hover:bg-secondary-hover">
+          Cancelar
+        </button>
+        <input
+          type="text"
+          placeholder="Busca por nombre o DNI"
+          class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body placeholder:text-muted-foreground"
+        />
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <span class="rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-subtle-foreground">Pagado</span>
+        <span class="rounded-full bg-warning-subtle px-2 py-0.5 text-caption text-warning-subtle-foreground">Con saldo</span>
+        <span class="rounded-full bg-info-subtle px-2 py-0.5 text-caption text-info-subtle-foreground">Pendiente</span>
+        <span class="rounded-full bg-danger-subtle px-2 py-0.5 text-caption text-danger-subtle-foreground">Anulado</span>
+        <span class="rounded-full bg-primary-subtle px-2 py-0.5 text-caption text-primary-subtle-foreground">Seleccionado</span>
+      </div>
+
+      <div class="flex items-baseline gap-6">
+        <span class="text-kpi tabular-nums">S/. 4,870.50</span>
+        <span class="font-mono text-rx">−1.25 &nbsp;+0.50 &nbsp;180°</span>
+      </div>
+
+      <div class="overflow-hidden rounded-md border border-border">
+        @for (row of ['V-000851', 'V-000852', 'V-000853']; track row) {
+          <div class="flex h-(--onv-row-h) items-center justify-between border-b border-border px-(--onv-cell-x) text-(length:--onv-cell-fs) last:border-b-0">
+            <span class="font-mono text-code">{{ row }}</span>
+            <span class="tabular-nums">S/. 1,250.00</span>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
 </main>

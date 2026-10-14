@@ -40,6 +40,13 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | shadcn_ui | Componentes propios en `shared/ui/` (Tailwind + CDK/Aria) |
 | `GestureDetector` / `Overlay` / `Focus` (comportamiento sin estilo) | `@angular/cdk` y `@angular/aria` (headless) |
 | `ThemeData` / `ColorScheme` | tokens en `styles.css` (`@theme`) como variables CSS |
+| `colorScheme.primary` / `onPrimary` | `bg-primary` / `text-primary-foreground` |
+| `darkTheme` + `ThemeMode` | `data-theme="dark"` en `<html>` redefine los tokens; `ThemeService.setMode()` |
+| `ColorScheme.fromSeed(seedColor:)` | `applyPrimary(hex)` (`core/theme/primary-scale.ts`) |
+| `VisualDensity` | `data-density="compact"` + variables `--onv-*` |
+| `MediaQuery.platformBrightnessOf` | `matchMedia('(prefers-color-scheme: dark)')` |
+| `SharedPreferences` | `localStorage` |
+| `textTheme.titleMedium` | `text-heading` (escala T-02) |
 
 ## Estado (Riverpod → signals)
 

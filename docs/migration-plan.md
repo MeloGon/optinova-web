@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-10-13
+> Última actualización: 2026-10-14
 
 ## 1. Contexto
 
@@ -89,6 +89,8 @@
 - [x] **E1.2b Datos de prueba**: `supabase/seed.sql` (re-ejecutable) con ~50 registros falsos por tabla y 4 usuarios de prueba (`megadmin`, `admin`, `supervisor`, `vendedor`); credenciales en el encabezado del archivo
 - [ ] **E1.3 Scaffold Angular**: `ng new` (Angular 22.2, zoneless, Vitest), Tailwind v4, `@angular/cdk` + `@angular/aria`, pantalla de prueba con primario dinámico. Pendiente: lección L-E1.3, environments
 - [ ] **E1.5 Sistema de diseño**: pedido D-001 a Claude Design, tokens a `styles.css` (`@theme`), componentes base en `src/app/shared/ui/` construidos a medida que cada feature los necesite
+  - [x] **E1.5a Tokens y tema** (2026-10-14): `optinova-theme.css` → `src/styles.css`, `primary-scale.ts` → `core/theme/`, `ThemeService` (modo claro/oscuro/sistema, densidad, primario; guardado en `localStorage`), fuentes Geist, script anti-destello en `index.html`. Lección L01
+  - [ ] **E1.5b+ Componentes** `C-xx` en `src/app/shared/ui/`, a medida que cada feature los necesite
 - [ ] **E1.4 Arquitectura base**: `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
 
 ### Fase 2: Features (en orden de dificultad)
@@ -161,3 +163,4 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 |---|---|---|---|
 | 2026-10-13 | Proyecto `optinova-db` creado; plan inicial | — | — |
 | 2026-10-13 | E1.1 herramientas, E1.2 estructura clonada, E1.2b seed | — | — |
+| 2026-10-14 | E1.5a tokens y tema | L01 | `feat(design): agrega tokens de D-001 y servicio de tema` |
