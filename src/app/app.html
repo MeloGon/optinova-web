@@ -5,6 +5,10 @@
     <header>
       <h1 class="text-title">Optinova Web</h1>
       <p class="text-body-sm text-muted-foreground">Prueba de tokens: primario, modo oscuro y densidad.</p>
+      <p class="text-caption text-muted-foreground">
+        Supabase: <span class="font-mono">{{ env.supabaseUrl || '(sin configurar)' }}</span>
+        · {{ env.production ? 'producción' : 'desarrollo' }}
+      </p>
     </header>
 
     <section class="flex flex-col gap-4 rounded-lg border border-border bg-card p-(--onv-card-p) text-card-foreground elev-sm">

@@ -74,10 +74,11 @@ Las vistas nunca llaman a Supabase directamente. Así, cuando llegue NestJS, sol
 
 1. Instalar Node 24 LTS, Git y Angular CLI (`npm install -g @angular/cli`).
 2. `git clone https://github.com/MeloGon/optinova-web` y luego `git checkout development`.
-3. `npm install` y luego `npm start` (abre en http://localhost:4200).
-4. Configurar la identidad de git del repo (`git config user.name` / `user.email`).
-5. Opcional, solo para `scripts/db/clone-prod-to-dev.ps1`: cliente PostgreSQL 17.
-6. Al abrir una sesión con una IA: que lea este archivo y `docs/migration-plan.md`. La memoria de la IA no viaja entre computadoras; el contexto vive en estos docs.
+3. Copiar `src/environments/environment.local.example.ts` como `environment.local.ts` y poner la publishable key de dev (Supabase → Project Settings → API Keys). Está ignorado por git.
+4. `npm install` y luego `npm start` (abre en http://localhost:4200).
+5. Configurar la identidad de git del repo (`git config user.name` / `user.email`).
+6. Opcional, solo para `scripts/db/clone-prod-to-dev.ps1`: cliente PostgreSQL 17.
+7. Al abrir una sesión con una IA: que lea este archivo y `docs/migration-plan.md`. La memoria de la IA no viaja entre computadoras; el contexto vive en estos docs.
 
 ## Comandos
 

@@ -87,3 +87,35 @@ Al instalarlo apareció el aviso "Invalid PrimeUI License": desde 2026 PrimeNG r
 | `npm start` / `ng serve` | `flutter run -d chrome` | Servidor con recarga en `localhost:4200` |
 | `ng build` | `flutter build web` | Compila a `dist/` |
 | `ng test --watch=false` | `flutter test` | Corre los tests |
+
+## Environments (configuración por ambiente)
+
+En Flutter sueles usar `--dart-define` o `flutter_dotenv` con un `.env` para pasar la URL y la key de Supabase según el ambiente. En Angular son archivos TypeScript en `src/environments/`:
+
+| Archivo | En git | Para qué |
+|---|---|---|
+| `environment.model.ts` | sí | La interfaz `Environment`: qué campos existen (como una clase de config en Dart) |
+| `environment.ts` | sí | Producción (`ng build`). Sin claves todavía |
+| `environment.local.example.ts` | sí | Plantilla para crear el local |
+| `environment.local.ts` | **no** | Dev (`ng serve`, `ng test`): URL y publishable key de optinova-db |
+
+El código siempre importa el mismo archivo:
+
+```ts
+import { environment } from '../environments/environment';
+environment.supabaseUrl;   // = const String.fromEnvironment('SUPABASE_URL')
+```
+
+¿Cómo recibe el local en desarrollo? En `angular.json`, la configuración `development` tiene:
+
+```json
+"fileReplacements": [
+  { "replace": "src/environments/environment.ts", "with": "src/environments/environment.local.ts" }
+]
+```
+
+Al compilar, Angular cambia un archivo por otro. Es como tener `main_dev.dart` y `main_prod.dart` con flavors, pero automático según el comando.
+
+**En otra computadora:** copia `environment.local.example.ts` como `environment.local.ts` y pon la publishable key de dev (Supabase → Project Settings → API Keys). Sin ese archivo, `ng serve` no compila.
+
+La publishable key (`sb_publishable_...`) es la que va en el navegador: igual se puede ver desde las herramientas del navegador, así que la seguridad real la ponen las políticas RLS, no el secreto de la key. La `service_role`/secret **nunca** va en el frontend.

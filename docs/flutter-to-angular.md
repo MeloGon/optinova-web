@@ -17,6 +17,7 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | `flutter run -d chrome` | `ng serve` (localhost:4200) |
 | `flutter build web` | `ng build` |
 | `build_runner` (codegen) | no hace falta: TS no necesita generar código para modelos |
+| `--dart-define` / `flutter_dotenv` / flavors | `src/environments/` + `fileReplacements` en `angular.json` |
 
 ## UI
 
