@@ -3,7 +3,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { SessionStore } from '../../core/auth/session.store';
 import { PageData } from '../../core/models/page-data';
+import { Role } from '../../core/models/role';
 import { Sidebar } from '../../shared/ui/sidebar/sidebar';
 import { Topbar } from '../../shared/ui/topbar/topbar';
 import { DASHBOARD_NAV } from './dashboard-nav';
@@ -29,8 +31,21 @@ export class DashboardLayout {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly breakpoints = inject(BreakpointObserver);
+  protected readonly session = inject(SessionStore);
 
-  protected readonly nav = DASHBOARD_NAV;
+  /** Menú filtrado por el rol del usuario; se quitan las secciones vacías. */
+  protected readonly nav = computed(() => {
+    this.session.profile(); // recalcular si cambia el usuario
+    return DASHBOARD_NAV.map((section) => ({
+      ...section,
+      items: section.items.filter((item) => this.session.can(item.minRole)),
+    })).filter((section) => section.items.length > 0);
+  });
+
+  protected readonly roleLabel = computed(() => {
+    const profile = this.session.profile();
+    return profile ? ROLE_LABELS[profile.role] : undefined;
+  });
 
   // = MediaQuery.of(context).size.width >= 1280
   protected readonly isWide = toSignal(
@@ -91,6 +106,13 @@ export class DashboardLayout {
     return s.data as PageData;
   }
 }
+
+const ROLE_LABELS: Record<Role, string> = {
+  vendedor: 'Vendedor',
+  supervisor: 'Supervisor',
+  admin: 'Admin',
+  megadmin: 'Megadmin',
+};
 
 function readCollapsed(): boolean {
   try {

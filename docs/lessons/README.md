@@ -8,3 +8,4 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 01 | [Tokens de diseño y tema](01-tokens-y-tema.md) | E1.5a |
 | 02 | [El núcleo (`core/`)](02-core.md) | E1.4a |
 | 03 | [Layouts y rutas](03-layouts-y-rutas.md) | E1.4b |
+| 04 | [Login, sesión, roles y guards](04-login-sesion-roles.md) | E2.1 |

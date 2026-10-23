@@ -27,6 +27,12 @@
   </script>
 </head>
 <body>
-  <app-root></app-root>
+  <!-- Splash: se ve mientras Angular arranca y restaura la sesión; Angular lo reemplaza
+       al pintar la primera pantalla. = SplashLayout de Flutter. -->
+  <app-root>
+    <div class="grid h-dvh place-items-center bg-background" role="status" aria-label="Cargando">
+      <span class="size-8 animate-spin rounded-full border-2 border-primary-subtle border-t-primary"></span>
+    </div>
+  </app-root>
 </body>
 </html>

@@ -93,7 +93,13 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | `MediaQuery.of(context).size.width` | `BreakpointObserver` (CDK) + `toSignal` |
 | `Scaffold` + `Row` + `Expanded` | `flex h-dvh` + `flex-1` |
 | `Icons.search` | `LucideSearch` + `<svg [lucideIcon]>` (`@lucide/angular`) |
-| go_router `redirect` | guard `canActivate` |
+| go_router `redirect` | guard `canActivate` (`CanActivateFn`: devuelve `true` o una URL) |
+| `AuthStatus.checking` + `SplashLayout` | `provideAppInitializer` + spinner dentro de `<app-root>` en `index.html` |
+| `authProvider` (keepAlive) | `SessionStore` (`providedIn: 'root'`) |
+| `GlobalKey<FormState>` / `validate()` | `FormGroup` / `form.invalid` |
+| `Form` + `onFieldSubmitted` | `<form [formGroup] (ngSubmit)>` |
+| mock de mocktail | clase falsa que extiende el repositorio abstracto (`FakeAuthRepository`) |
+| `PopupMenuButton` | CDK Menu (`cdkMenuTriggerFor`, `cdkMenu`, `cdkMenuItem`) |
 | `context.go('/x')` | `router.navigate(['/x'])` / `routerLink="/x"` |
 | supabase_flutter | `@supabase/supabase-js` (API casi idéntica) |
 | fl_chart | por decidir (Chart.js) |

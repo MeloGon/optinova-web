@@ -1,6 +1,7 @@
 import {
   LucideChartColumn,
   LucideGlasses,
+  LucideHandCoins,
   LucideLayoutDashboard,
   LucideReceipt,
   LucideScanEye,
@@ -11,60 +12,70 @@ import {
   LucideUserPlus,
   LucideUsers,
   LucideWallet,
-  LucideHandCoins,
 } from '@lucide/angular';
 import { Role } from '../../core/models/role';
-import { NavSection } from '../../shared/ui/sidebar/sidebar';
+import { NavItem, NavSection } from '../../shared/ui/sidebar/sidebar';
 
-export interface DashboardNavSection extends NavSection {
-  /**
-   * Rol mínimo para ver la sección (C-20). Todavía no se aplica: no hay sesión.
-   * En E2.1 se filtra y se revisa contra los permisos reales de Flutter.
-   */
+export interface DashboardNavItem extends NavItem {
+  /** Rol mínimo; debe coincidir con `data.minRole` de la ruta (lo revisa un test). */
   minRole: Role;
 }
 
-/** Menú lateral (C-20). Las rutas son las mismas de la app Flutter (RouterName). */
+export interface DashboardNavSection extends NavSection {
+  items: DashboardNavItem[];
+}
+
+/**
+ * Menú lateral (C-20). Rutas iguales a RouterName de Flutter; permisos iguales a los
+ * de su página "Configuración". Una sección sin ítems visibles no se muestra.
+ */
 export const DASHBOARD_NAV: DashboardNavSection[] = [
   {
     title: 'Menú',
-    minRole: 'vendedor',
     items: [
-      { label: 'Dashboard', icon: LucideLayoutDashboard, path: '/dashboard', exact: true },
-      { label: 'Buscar paciente', icon: LucideSearch, path: '/dashboard/search-patient' },
-      { label: 'Agregar paciente', icon: LucideUserPlus, path: '/dashboard/add-patient' },
-      { label: 'Nueva venta', icon: LucideShoppingCart, path: '/dashboard/sell' },
-      { label: 'Historial de ventas', icon: LucideReceipt, path: '/dashboard/sales-history' },
-      { label: 'Egresos', icon: LucideWallet, path: '/dashboard/expenses' },
+      { label: 'Dashboard', icon: LucideLayoutDashboard, path: '/dashboard', exact: true, minRole: 'vendedor' },
+      { label: 'Buscar paciente', icon: LucideSearch, path: '/dashboard/search-patient', minRole: 'vendedor' },
+      { label: 'Agregar paciente', icon: LucideUserPlus, path: '/dashboard/add-patient', minRole: 'vendedor' },
+      { label: 'Nueva venta', icon: LucideShoppingCart, path: '/dashboard/sell', minRole: 'vendedor' },
+      { label: 'Historial de ventas', icon: LucideReceipt, path: '/dashboard/sales-history', minRole: 'vendedor' },
+      { label: 'Egresos', icon: LucideWallet, path: '/dashboard/expenses', minRole: 'vendedor' },
     ],
   },
   {
     title: 'Inventario',
-    minRole: 'admin',
     items: [
-      { label: 'Resinas', icon: LucideGlasses, path: '/dashboard/settings/resins' },
-      { label: 'Armazones', icon: LucideScanEye, path: '/dashboard/settings/mounts' },
+      { label: 'Resinas', icon: LucideGlasses, path: '/dashboard/settings/resins', minRole: 'admin' },
+      { label: 'Armazones', icon: LucideScanEye, path: '/dashboard/settings/mounts', minRole: 'admin' },
     ],
   },
   {
     title: 'Reportes',
-    minRole: 'admin',
     items: [
-      { label: 'Ingresos y egresos', icon: LucideHandCoins, path: '/dashboard/settings/payments-report' },
-      { label: 'Ventas por vendedor', icon: LucideChartColumn, path: '/dashboard/settings/sales-by-seller' },
+      {
+        label: 'Ingresos y egresos',
+        icon: LucideHandCoins,
+        path: '/dashboard/settings/payments-report',
+        minRole: 'supervisor',
+      },
+      {
+        label: 'Ventas por vendedor',
+        icon: LucideChartColumn,
+        path: '/dashboard/settings/sales-by-seller',
+        minRole: 'admin',
+      },
     ],
   },
   {
     title: 'Administración',
-    minRole: 'admin',
     items: [
-      { label: 'Usuarios', icon: LucideUsers, path: '/dashboard/settings/users-management' },
-      { label: 'Funcionalidades', icon: LucideSlidersHorizontal, path: '/dashboard/settings/features' },
+      { label: 'Funcionalidades', icon: LucideSlidersHorizontal, path: '/dashboard/settings/features', minRole: 'admin' },
+      { label: 'Auditoría', icon: LucideShieldCheck, path: '/dashboard/settings/audit-logs', minRole: 'admin' },
     ],
   },
   {
     title: 'Súper administración',
-    minRole: 'megadmin',
-    items: [{ label: 'Auditoría', icon: LucideShieldCheck, path: '/dashboard/settings/audit-logs' }],
+    items: [
+      { label: 'Usuarios', icon: LucideUsers, path: '/dashboard/settings/users-management', minRole: 'megadmin' },
+    ],
   },
 ];
