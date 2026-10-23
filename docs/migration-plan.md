@@ -70,13 +70,23 @@
 5. Commit (y push cuando el dueño lo pida). Se marca el checkbox aquí.
 6. Opcional: un mini ejercicio si el dueño lo pide.
 
+**Cambio de método (2026-10-14, ajustado 2026-10-23).** Hasta E2.1 se avanzó rápido y el dueño no entendía el código (por ejemplo, `computed`). Se pausan las features y se hace la Fase 0 primero:
+- Lecciones cortas, un tema por vez, **solo teoría con ejemplos** comparados con Dart (sin ejercicios, a pedido del dueño). Fuente en `docs/lessons/fundamentos/FNN-tema.md`.
+- Cada lección se entrega también como **PDF imprimible** en `docs/informes/` (ignorado por git; el dueño los junta en su propia documentación).
+- Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca su checkbox.
+- Después, cada pieza nueva de una feature se explica antes de escribirla.
+
 ## 6. Fases y entregables
 
-### Fase 0: Fundamentos (lecciones, en paralelo a la Fase 1)
-- [ ] L00: Mapa del ecosistema web: Node, npm, Angular CLI, el navegador (vs Dart SDK, pub, flutter CLI)
-- [ ] L01: TypeScript visto desde Dart: tipos, clases, interfaces, null safety, async/await, genéricos, módulos `import/export`
-- [ ] L02: HTML básico: el árbol de etiquetas como árbol de widgets
-- [ ] L03: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
+### Fase 0: Fundamentos (prioridad actual; las features están en pausa)
+- [ ] F00: Mapa del ecosistema web: Node, npm, Angular CLI, el navegador (vs Dart SDK, pub, flutter CLI)
+- [ ] F01: TypeScript visto desde Dart (1): variables, tipos, null safety, funciones
+- [ ] F02: TypeScript visto desde Dart (2): objetos, interfaces, clases, uniones, genéricos, `import/export`, async/await
+- [ ] F03: HTML básico: el árbol de etiquetas como árbol de widgets
+- [ ] F04: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
+- [ ] F05: Componentes y signals: `signal`, `computed`, `input`, `output`, plantilla (`@if`, `@for`, `{{ }}`, `(click)`)
+- [ ] F06: Servicios e inyección: `inject`, `providedIn: 'root'` vs `providers: []`
+- [ ] F07: Recorrido guiado del código de E2.1 (login, sesión, guards) → commit de E2.1
 
 ### Fase 1: Infraestructura
 - [x] **E1.1 Herramientas** (2026-10-13: Angular CLI 22.2.2, Node 24.18, PostgreSQL client 17.11): Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
@@ -97,7 +107,7 @@
 
 ### Fase 2: Features (en orden de dificultad)
 Cada feature es un entregable con modelo, repo, store, vistas y lección.
-- [ ] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`)
+- [ ] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`) (implementado 2026-10-14, pendiente prueba del dueño y commit): `AuthRepository` + `SupabaseAuthRepository`, `SessionStore` restaurado en `provideAppInitializer`, guards `authGuard`/`guestGuard`/`roleGuard`, login con Reactive Forms y `LoginStore`, menú y topbar con el usuario real, cerrar sesión (CDK Menu). Permisos de página iguales a Flutter. Antes: arreglo de seguridad en `perfiles` (cambio #2). Lección L04
 - [ ] **E2.2 Buscar paciente** (`/dashboard/search-patient`): primera tabla (C-07), búsqueda, paginación
 - [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`): Reactive Forms, validación, máscaras
 - [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
@@ -155,6 +165,7 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | Escribir por error en PROD | Regla 1; scripts reciben URLs explícitas; MCP: usar siempre el ref de DEV para escribir |
 | Fuga de datos de pacientes desde DEV | DEV solo tiene datos falsos; secretos fuera de git |
 | RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | **Corregido** 2026-10-13 en DEV y PROD (cambio #1 en `db-changes.md`). Pendiente a futuro: restringir por rol (hoy cualquier usuario con sesión puede borrar) |
+| Escalada de rol: la política "own profile update" dejaba que cualquier usuario se pusiera `rol = 'megadmin'` en `perfiles` | **Corregido** 2026-10-14 en DEV y PROD (cambio #2 en `db-changes.md`) |
 | Corte final no reproducible | Migraciones + transforms obligatorios; ensayo de corte antes |
 | Proyecto DEV pausado por inactividad | Reactivar desde el dashboard |
 | Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, tailwindcss.com) |
