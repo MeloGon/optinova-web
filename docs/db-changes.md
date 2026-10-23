@@ -19,3 +19,7 @@ El corte final (Fase 5) reimporta PROD completo y aplica los transforms **en est
 |---|---|---|---|---|
 | 0 | 2026-10-13 | `20261013174053_baseline.sql` | — (mismo esquema que PROD) | Punto de partida |
 | 1 | 2026-10-13 | `20261013190000_rls_solo_autenticados.sql` | — (no cambia datos) | 9 políticas abiertas a `public` pasan a `authenticated`: sin login ya no se lee ni escribe. Aplicado en DEV y en PROD (autorizado por el dueño) |
+| 2 | 2026-10-14 | `20261014230000_perfiles_sin_auto_update.sql` | — (no cambia datos) | Se borra la política "own profile update" de `perfiles`: cualquier usuario podía cambiar su propio `rol` a `megadmin` y usar la Edge Function `megadmin-users`. Flutter no actualiza `perfiles` desde el cliente. Verificado en DEV (un vendedor lee su perfil; su UPDATE afecta 0 filas). Aplicado en DEV y en PROD (autorizado por el dueño) |
+
+### Notas pendientes de RLS
+- `perfiles."admin all perfiles"` usa `jwt_role()` (lee `app_metadata.role` del JWT), pero ningún usuario tiene ese dato: la política nunca aplica. No causa daño (la gestión de usuarios usa la Edge Function), pero el rol vive en dos lugares. Revisar en la Fase 4.
