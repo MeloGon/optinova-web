@@ -14,6 +14,18 @@ Es un sistema de gestión para una óptica: pacientes y revisiones, ventas y pag
 
 Plan completo, fases y estado: **`docs/migration-plan.md`**. Revísalo al empezar cualquier sesión.
 
+### Lecciones en PDF (pedido del dueño)
+El dueño arma su propia documentación impresa. **Cada lección nueva o actualizada se entrega también en PDF:**
+
+```bash
+npm run pdf -- docs/lessons/fundamentos/F01-typescript-desde-dart.md
+```
+
+- El script es `scripts/docs/md-to-pdf.mjs` (pdfmake + marked + fuente Geist; sin Chrome ni Python, funciona en macOS y Windows).
+- El PDF queda en `docs/informes/` (ignorado por git): se regenera en cualquier máquina desde el `.md`, que sí está en git.
+- Lecciones de fundamentos: solo teoría con ejemplos comparados con Dart, sin ejercicios.
+- Emojis no salen en el PDF (la fuente no los tiene): `✅`/`❌` se convierten en `[ok]`/`[error]` y el resto se quita.
+
 ## Stack
 
 - Angular (última estable): standalone components, signals, `@if/@for`, zoneless. **No** usar NgModules, `*ngIf`/`*ngFor` ni patrones viejos.
@@ -87,6 +99,7 @@ npm install          # = flutter pub get
 ng serve             # = flutter run -d chrome  (http://localhost:4200)
 ng build             # = flutter build web
 ng test
+npm run pdf -- <lección.md>   # lección → PDF en docs/informes/
 ng generate component features/x/components/y
 ```
 (Se completan cuando exista el scaffold.)

@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "pdf": "node scripts/docs/md-to-pdf.mjs"
   },
   "private": true,
   "packageManager": "npm@12.0.2",
@@ -31,7 +32,10 @@
     "@angular/build": "^22.2.2",
     "@angular/cli": "^22.2.2",
     "@angular/compiler-cli": "^22.2.0",
+    "geist": "^1.8.2",
     "jsdom": "^30.0.0",
+    "marked": "^18.1.1",
+    "pdfmake": "^0.3.12",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"

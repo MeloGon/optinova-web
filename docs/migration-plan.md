@@ -72,7 +72,7 @@
 
 **Cambio de método (2026-10-14, ajustado 2026-10-23).** Hasta E2.1 se avanzó rápido y el dueño no entendía el código (por ejemplo, `computed`). Se pausan las features y se hace la Fase 0 primero:
 - Lecciones cortas, un tema por vez, **solo teoría con ejemplos** comparados con Dart (sin ejercicios, a pedido del dueño). Fuente en `docs/lessons/fundamentos/FNN-tema.md`.
-- Cada lección se entrega también como **PDF imprimible** en `docs/informes/` (ignorado por git; el dueño los junta en su propia documentación).
+- Cada lección se entrega también como **PDF imprimible** con `npm run pdf -- <lección.md>` (queda en `docs/informes/`, ignorado por git; se regenera en cualquier máquina). El dueño los junta en su propia documentación.
 - Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca su checkbox.
 - Después, cada pieza nueva de una feature se explica antes de escribirla.
 

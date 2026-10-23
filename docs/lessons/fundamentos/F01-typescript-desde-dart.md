@@ -9,7 +9,7 @@ String nombre = 'Ana';      // Dart
 let nombre: string = 'Ana'; // TypeScript
 ```
 
-Tiempo estimado: 20 minutos de lectura + 15 de ejercicio.
+Tiempo estimado: 20 minutos de lectura.
 
 ---
 
@@ -138,22 +138,43 @@ if (rol === 'admin') { ... }
 
 ---
 
-## Cómo probar código TypeScript
+## Errores típicos al venir de Dart
 
-Igual que `dart run archivo.dart`:
+Salieron del primer ejercicio del dueño. Funcionan, pero no son la forma correcta:
+
+| Así no | Así sí | Por qué |
+|---|---|---|
+| `nombre: String` | `nombre: string` | `String` con mayúscula es un envoltorio antiguo de JavaScript. Los tipos van en minúscula: `string`, `number`, `boolean` |
+| `nombre?: string \| null` | `nombre: string \| null` | En TS, `?` en un parámetro significa **opcional** (se puede no pasar y vale `undefined`). `String?` de Dart es solo `string \| null` |
+| `if (nombre === null) return 'X'; return nombre;` | `return nombre ?? 'X';` | `??` es igual que en Dart y además cubre `null` y `undefined` |
+| `rol == 'admin'` | `rol === 'admin'` | `==` convierte antes de comparar (`0 == ''` es `true`). Siempre `===` y `!==` |
+| `if (cond) { return true; } return false;` | `return cond;` | La condición ya es un `boolean` |
+| función sin tipo de retorno | `function f(): string { ... }` | Como en Dart: declarar qué devuelve ayuda a leer y evita errores |
+
+Ejemplo bien escrito:
+
+```ts
+function nombreOVacio(nombre: string | null): string {
+  return nombre ?? 'Sin nombre';
+}
+
+function esAdmin(rol: string): boolean {
+  return rol === 'admin' || rol === 'megadmin';
+}
+```
+
+## Cómo probar código TypeScript (opcional)
+
+Igual que `dart run archivo.dart`, Node corre un archivo `.ts` directo:
 
 ```bash
-node practica/F01/ejercicio.ts
+node archivo.ts
 ```
 
 Node ejecuta el archivo, pero **no revisa los tipos** (los ignora). Para que TypeScript revise los tipos, como el analizador de Dart:
 
 ```bash
-npx tsc --noEmit --strict --ignoreConfig practica/F01/ejercicio.ts
+npx tsc --noEmit --strict --ignoreConfig archivo.ts
 ```
 
-Si no imprime nada, no hay errores de tipos.
-
-## Ejercicio
-
-Abre [practica/F01/ejercicio.ts](../../../practica/F01/ejercicio.ts) y completa las 4 funciones marcadas con `TODO`. Cuando termines, córrelo con los dos comandos de arriba y dime cómo te fue. Yo reviso; no te doy la solución antes.
+Si no imprime nada, no hay errores de tipos. En `practica/F01/ejercicio.ts` está el primer ejercicio del dueño como ejemplo.
