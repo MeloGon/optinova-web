@@ -1,0 +1,196 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Búsqueda (P-02, solo texto): Enter o "Buscar" -->
+  <!-- (submit) y no (ngSubmit): ngSubmit solo existe con [formGroup]/FormsModule, y aquí basta un FormControl. -->
+  <form
+    (submit)="$event.preventDefault(); submit()"
+    role="search"
+    class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 elev-sm"
+  >
+    <div class="flex min-w-[280px] flex-1 flex-col gap-1.5">
+      <label for="patient-search" class="text-label">Buscar paciente</label>
+      <!-- Campo con estilo provisional: se reemplaza por C-02 Input cuando se construya. -->
+      <div
+        class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+      >
+        <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+        <input
+          id="patient-search"
+          type="search"
+          [formControl]="text"
+          autocomplete="off"
+          placeholder="Nombre del paciente"
+          class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+        />
+        @if (text.value) {
+          <button
+            type="button"
+            (click)="clear()"
+            aria-label="Limpiar búsqueda"
+            class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+          >
+            <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      Buscar
+    </button>
+
+    @if (store.loaded()) {
+      <span class="ml-auto self-center text-[13px] font-semibold tabular-nums" aria-live="polite">
+        {{ store.total() }} {{ store.total() === 1 ? 'paciente' : 'pacientes' }}
+      </span>
+    }
+  </form>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (store.loaded() && store.items().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      @if (search().query) {
+        <onv-empty-state
+          [icon]="icons.searchX"
+          title="Sin resultados"
+          [text]="'No encontramos pacientes con «' + search().query + '». Revisa la ortografía o prueba con otro nombre.'"
+        >
+          <button
+            type="button"
+            (click)="clear()"
+            class="inline-flex h-8 items-center rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+          >
+            Limpiar búsqueda
+          </button>
+        </onv-empty-state>
+      } @else {
+        <onv-empty-state
+          [icon]="icons.users"
+          title="Aún no hay pacientes"
+          text="Los pacientes que registres aparecerán aquí."
+        >
+          <a
+            routerLink="/dashboard/add-patient"
+            class="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground hover:bg-primary-hover"
+          >
+            <svg [lucideIcon]="icons.userPlus" [size]="14"></svg>
+            Agregar paciente
+          </a>
+        </onv-empty-state>
+      }
+    </div>
+  } @else if (!store.loaded() || store.items().length > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Paciente</th>
+            <th scope="col">Sucursal</th>
+            <th scope="col">Teléfono</th>
+            <th scope="col">Registro</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-52" /></td>
+                <td><onv-skeleton class="h-[22px] w-28 rounded-full" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (patient of store.items(); track patient.id) {
+              <tr>
+                <td class="font-medium">{{ patient.name }}</td>
+                <td>
+                  @if (patient.branch) {
+                    <onv-badge tone="outline" [icon]="icons.pin">{{ patient.branch }}</onv-badge>
+                  } @else {
+                    <span class="text-muted-foreground">—</span>
+                  }
+                </td>
+                <td class="tabular-nums">{{ patient.phone || '—' }}</td>
+                <td class="tabular-nums">{{ patient.registeredOn | date: 'dd/MM/yyyy' }}</td>
+                <td class="w-12 text-right">
+                  <button
+                    type="button"
+                    [cdkMenuTriggerFor]="rowMenu"
+                    [attr.aria-label]="'Más acciones para ' + patient.name"
+                    class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                  >
+                    <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      @if (store.loaded()) {
+        <onv-paginator
+          footer
+          class="border-t border-border"
+          [page]="search().page"
+          [pageSize]="search().pageSize"
+          [total]="store.total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="changePageSize($event)"
+        />
+      }
+    </onv-table-card>
+  }
+</div>
+
+<!-- Menú de acciones por fila (C-15). Se habilitan en E2.2b (eliminar), E2.2c (editar) y E2.3 (medidas). -->
+<ng-template #rowMenu>
+  <div
+    cdkMenu
+    class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
+  >
+    @for (item of ['Ver medidas', 'Agregar medida', 'Editar paciente']; track item) {
+      <button
+        cdkMenuItem
+        type="button"
+        [cdkMenuItemDisabled]="true"
+        class="flex h-8 w-full items-center justify-between gap-4 rounded-sm px-2.5 text-[14px] outline-none aria-disabled:text-disabled-foreground"
+      >
+        {{ item }}
+        <span class="text-caption font-normal">Próximamente</span>
+      </button>
+    }
+    <div class="my-1 h-px bg-border" role="separator"></div>
+    <button
+      cdkMenuItem
+      type="button"
+      [cdkMenuItemDisabled]="true"
+      class="flex h-8 w-full items-center justify-between gap-4 rounded-sm px-2.5 text-[14px] outline-none aria-disabled:text-disabled-foreground"
+    >
+      Eliminar…
+      <span class="text-caption font-normal">Próximamente</span>
+    </button>
+  </div>
+</ng-template>

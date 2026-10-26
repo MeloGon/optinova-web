@@ -1,0 +1,91 @@
+import { TestBed } from '@angular/core/testing';
+import { appError } from '../../core/errors/app-error';
+import { PatientRepository } from '../../core/repositories/patient.repository';
+import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
+import { SearchPatientStore } from './search-patient.store';
+
+describe('SearchPatientStore', () => {
+  let repo: FakePatientRepository;
+  let store: SearchPatientStore;
+
+  beforeEach(() => {
+    repo = new FakePatientRepository();
+    repo.patients = [
+      fakePatient(1, 'MARIA LOPEZ'),
+      fakePatient(2, 'JUAN GARCIA'),
+      fakePatient(3, 'ANA GARCIA'),
+    ];
+    TestBed.configureTestingModule({
+      providers: [SearchPatientStore, { provide: PatientRepository, useValue: repo }],
+    });
+    store = TestBed.inject(SearchPatientStore);
+  });
+
+  it('empieza sin cargar y sin resultados', () => {
+    expect(store.loaded()).toBe(false);
+    expect(store.items()).toEqual([]);
+    expect(store.total()).toBe(0);
+  });
+
+  it('carga la página pedida y el total', async () => {
+    await store.load({ query: '', page: 1, pageSize: 2 });
+    expect(store.items().map((p) => p.id)).toEqual([1, 2]);
+    expect(store.total()).toBe(3);
+    expect(store.loaded()).toBe(true);
+    expect(store.loading()).toBe(false);
+  });
+
+  it('filtra por nombre con varias palabras en cualquier orden', async () => {
+    await store.load({ query: 'garcia ana', page: 1, pageSize: 10 });
+    expect(store.items().map((p) => p.id)).toEqual([3]);
+    expect(store.total()).toBe(1);
+  });
+
+  it('un error se guarda como mensaje y conserva los resultados anteriores', async () => {
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    repo.failWith = appError('network', 'Sin conexión.');
+    await store.load({ query: 'x', page: 1, pageSize: 10 });
+    expect(store.error()).toBe('Sin conexión.');
+    expect(store.items().length).toBe(3);
+    expect(store.loading()).toBe(false);
+  });
+
+  it('una búsqueda nueva borra el error anterior', async () => {
+    repo.failWith = appError('server', 'Falló.');
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    repo.failWith = null;
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    expect(store.error()).toBeNull();
+  });
+
+  it('mientras carga conserva los resultados y marca loading', async () => {
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    let release!: () => void;
+    repo.gate = () => new Promise<void>((resolve) => (release = resolve));
+
+    const pending = store.load({ query: 'ana', page: 1, pageSize: 10 });
+    expect(store.loading()).toBe(true);
+    expect(store.items().length).toBe(3);
+
+    release();
+    await pending;
+    expect(store.loading()).toBe(false);
+    expect(store.items().length).toBe(1);
+  });
+
+  it('una respuesta vieja no pisa a una más nueva', async () => {
+    const releases: (() => void)[] = [];
+    repo.gate = () => new Promise<void>((resolve) => releases.push(resolve));
+
+    const first = store.load({ query: 'maria', page: 1, pageSize: 10 });
+    const second = store.load({ query: 'ana', page: 1, pageSize: 10 });
+
+    // La segunda responde primero; la primera llega tarde.
+    releases[1]();
+    await second;
+    releases[0]();
+    await first;
+
+    expect(store.items().map((p) => p.id)).toEqual([3]);
+  });
+});

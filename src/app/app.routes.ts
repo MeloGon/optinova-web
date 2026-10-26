@@ -49,11 +49,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
-      pending('search-patient', {
-        title: 'Buscar paciente',
-        description: 'Busca y gestiona los registros de pacientes.',
-        delivery: 'E2.2',
-      }),
+      {
+        path: 'search-patient',
+        title: 'Buscar paciente · Optinova',
+        data: {
+          title: 'Buscar paciente',
+          description: 'Busca y gestiona los registros de pacientes.',
+        } satisfies PageData,
+        loadComponent: () =>
+          import('./features/search-patient/search-patient.page').then((m) => m.SearchPatientPage),
+      },
       pending('add-patient', {
         title: 'Agregar paciente',
         description: 'Registra un paciente nuevo y su revisión.',

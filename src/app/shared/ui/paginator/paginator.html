@@ -1,0 +1,58 @@
+<label class="flex items-center gap-2 text-body-sm text-muted-foreground">
+  Filas por página
+  <!-- Select nativo con estilo provisional: se reemplaza por C-03 cuando se construya. -->
+  <select
+    (change)="changeSize($event)"
+    class="h-8 rounded-md border border-input bg-input-background px-2 text-body-sm text-foreground"
+  >
+    @for (size of pageSizes(); track size) {
+      <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
+    }
+  </select>
+</label>
+
+<span class="text-body-sm tabular-nums" aria-live="polite">
+  @if (total() === 0) {
+    Sin resultados
+  } @else {
+    Mostrando {{ firstShown() }}–{{ lastShown() }} de {{ total() }}
+  }
+</span>
+
+<nav aria-label="Paginación" class="flex items-center gap-1">
+  <button
+    type="button"
+    (click)="go(page() - 1)"
+    [disabled]="page() <= 1"
+    aria-label="Anterior"
+    class="grid size-8 place-items-center rounded-sm hover:bg-muted disabled:text-disabled-foreground disabled:hover:bg-transparent"
+  >
+    <svg [lucideIcon]="prevIcon" [size]="16"></svg>
+  </button>
+
+  @for (item of items(); track $index) {
+    @if (item === 'gap') {
+      <span class="grid size-8 place-items-center text-muted-foreground" aria-hidden="true">…</span>
+    } @else {
+      <button
+        type="button"
+        (click)="go(item)"
+        [attr.aria-current]="item === page() ? 'page' : null"
+        [attr.aria-label]="'Página ' + item"
+        class="grid size-8 place-items-center rounded-sm text-body-sm tabular-nums hover:bg-muted aria-[current=page]:font-semibold aria-[current=page]:inset-ring aria-[current=page]:inset-ring-input"
+      >
+        {{ item }}
+      </button>
+    }
+  }
+
+  <button
+    type="button"
+    (click)="go(page() + 1)"
+    [disabled]="page() >= totalPages()"
+    aria-label="Siguiente"
+    class="grid size-8 place-items-center rounded-sm hover:bg-muted disabled:text-disabled-foreground disabled:hover:bg-transparent"
+  >
+    <svg [lucideIcon]="nextIcon" [size]="16"></svg>
+  </button>
+</nav>

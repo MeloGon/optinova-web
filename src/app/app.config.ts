@@ -9,7 +9,9 @@ import { provideLucideConfig } from '@lucide/angular';
 import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
+import { SupabasePatientRepository } from './core/data/supabase-patient.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
+import { PatientRepository } from './core/repositories/patient.repository';
 import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -21,6 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideLucideConfig({ strokeWidth: 1.75 }),
     // Repositorio abstracto → implementación (= Provider<AuthRepository>((ref) => AuthRepositoryImpl())).
     { provide: AuthRepository, useClass: SupabaseAuthRepository },
+    { provide: PatientRepository, useClass: SupabasePatientRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.
     provideAppInitializer(() => {
       inject(ThemeService);
