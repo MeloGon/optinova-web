@@ -6,12 +6,12 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 
 | Flutter / Dart | Web / Angular |
 |---|---|
-| Dart SDK | Node.js (ejecuta las herramientas) |
+| Herramientas ejecutadas con el Dart SDK | Node.js ejecuta herramientas; TypeScript llega como paquete separado |
 | `fvm` | `fnm` / `nvm` |
 | `pub` | `npm` |
 | `pubspec.yaml` | `package.json` |
 | `pubspec.lock` | `package-lock.json` |
-| `.dart_tool/` | `node_modules/` |
+| Paquetes descargados por pub | `node_modules/` (paquetes locales; no equivale exactamente a `.dart_tool/`) |
 | `flutter` CLI | `ng` (Angular CLI) |
 | `flutter pub get` | `npm install` |
 | `flutter run -d chrome` | `ng serve` (localhost:4200) |
@@ -72,7 +72,7 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | Flutter | Angular |
 |---|---|
 | clase freezed | `interface` / `type` + spread `{...}` |
-| `fromJson`/`toJson` (json_serializable) | el JSON ya es un objeto JS; se tipa con la interfaz |
+| `fromJson`/`toJson` (json_serializable) | JSON se convierte a objetos JS; una interfaz no valida ni transforma sus datos |
 | fpdart `Either<L, R>` | `Result<T, E>` propio (`core/result.ts`) |
 | `Right(x)` / `Left(f)` / `fold` | `ok(x)` / `err(f)` / `if (r.ok) … else …` |
 | `sealed class Failure` (freezed) | `AppError` con `kind: 'server' \| 'network' \| …` |
@@ -105,3 +105,48 @@ Crece con cada entregable. Columna izquierda: lo que ya sabes. Derecha: su equiv
 | fl_chart | por decidir (Chart.js) |
 | paquete `pdf` | pdfmake |
 | `intl` `DateFormat` | `DatePipe` / `Intl.DateTimeFormat` |
+
+## Fundamentos F00: herramientas y ejecución
+
+Lectura: [F00: mapa del ecosistema web](lessons/fundamentos/F00-mapa-ecosistema-web.md).
+
+| Flutter / Dart | Web / Angular |
+|---|---|
+| `flutter run -d chrome` | `npm start` ejecuta el script local `ng serve` |
+| `flutter build web` y carpeta `build/web/` | `npm run build`, resultado en `dist/` según configuración |
+| Compilar Dart para el destino web | Angular prepara TypeScript, plantillas y estilos para el navegador |
+| Herramientas de desarrollo frente a aplicación publicada | Node ejecuta herramientas en tu computadora; el usuario abre la app en su navegador |
+
+## Fundamentos F02: datos y lenguaje
+
+Lectura: [F02: objetos y organización del código](lessons/fundamentos/F02-typescript-desde-dart-objetos.md).
+
+| Flutter / Dart | TypeScript |
+|---|---|
+| `final` con objeto mutable | `const` impide reasignar la variable, no mutar el objeto |
+| Modelo de datos | Objeto plano descrito por `interface` o `type`; no genera constructor |
+| Campo `final` | Propiedad `readonly`, restricción de tipos; no congela el objeto en ejecución |
+| `copyWith(name: 'Ana')` | `{ ...patient, name: 'Ana' }` para objetos planos; copia superficial |
+| `String?` | `string \| null`; una propiedad `name?: string` además puede omitirse |
+| Unión de freezed / jerarquía sellada | Unión discriminada mediante una propiedad literal como `status` |
+| `T identity<T>(T value)` | `function identity<T>(value: T): T` |
+| Importar nombres públicos de una biblioteca | Exportar con `export` e importar nombres con `import { ... }` |
+| Tipos usados al analizar código | `import type` se elimina del JavaScript generado |
+| `_campo`, privado de biblioteca | `private`, privado de clase al comprobar tipos; `#campo` ofrece privacidad en ejecución |
+| `Future<T>` y `await` | `Promise<T>` y `await`; `async` no crea por sí solo otro hilo |
+
+## Fundamentos F03: estructura HTML
+
+Lectura: [F03: árbol de etiquetas](lessons/fundamentos/F03-html-arbol-etiquetas.md).
+
+| Flutter | HTML / Angular |
+|---|---|
+| Árbol de widgets con `child` / `children` | Elementos anidados con padres e hijos; el navegador construye el DOM |
+| `Text` | Texto en `p`, `span` o un encabezado según su significado |
+| Etiqueta de un campo | `label` asociado al `input` mediante `for` e `id` |
+| Botón con callback | `button type="button"`; `(click)` conecta la acción en Angular |
+| Formulario con acción de guardar | `form` y `button type="submit"`; la lógica se conecta por separado |
+| `Text(patientName)` | `{{ patientName }}`; si es signal, `{{ patientName() }}` |
+| Propiedad booleana de un control | `[disabled]="saving"`; el atributo estático `disabled="false"` también deshabilita |
+
+La comparación del árbol no implica que HTML use el mismo motor de diseño que Flutter. CSS y Tailwind definen la distribución visual; se desarrollan en F04.

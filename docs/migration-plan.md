@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-10-14
+> Última actualización: 2026-10-26
 
 ## 1. Contexto
 
@@ -73,20 +73,20 @@
 **Cambio de método (2026-10-14, ajustado 2026-10-23).** Hasta E2.1 se avanzó rápido y el dueño no entendía el código (por ejemplo, `computed`). Se pausan las features y se hace la Fase 0 primero:
 - Lecciones cortas, un tema por vez, **solo teoría con ejemplos** comparados con Dart (sin ejercicios, a pedido del dueño). Fuente en `docs/lessons/fundamentos/FNN-tema.md`.
 - Cada lección se entrega también como **PDF imprimible** con `npm run pdf -- <lección.md>` (queda en `docs/informes/`, ignorado por git; se regenera en cualquier máquina). El dueño los junta en su propia documentación.
-- Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca su checkbox.
+- Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca el checkbox de F07. E2.1 ya tiene su propio commit; el recorrido didáctico sigue pendiente.
 - Después, cada pieza nueva de una feature se explica antes de escribirla.
 
 ## 6. Fases y entregables
 
 ### Fase 0: Fundamentos (prioridad actual; las features están en pausa)
-- [ ] F00: Mapa del ecosistema web: Node, npm, Angular CLI, el navegador (vs Dart SDK, pub, flutter CLI)
-- [ ] F01: TypeScript visto desde Dart (1): variables, tipos, null safety, funciones
-- [ ] F02: TypeScript visto desde Dart (2): objetos, interfaces, clases, uniones, genéricos, `import/export`, async/await
-- [ ] F03: HTML básico: el árbol de etiquetas como árbol de widgets
+- [x] F00: Mapa del ecosistema web: Node, npm, Angular CLI, el navegador (vs Dart SDK, pub, flutter CLI). Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
+- [x] F01: TypeScript visto desde Dart (1): variables, tipos, null safety, funciones (2026-10-23, commit `8b30961`).
+- [x] F02: TypeScript visto desde Dart (2): objetos, interfaces, clases, uniones, genéricos, `import/export`, async/await. Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
+- [x] F03: HTML básico: el árbol de etiquetas como árbol de widgets. Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
 - [ ] F04: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
 - [ ] F05: Componentes y signals: `signal`, `computed`, `input`, `output`, plantilla (`@if`, `@for`, `{{ }}`, `(click)`)
 - [ ] F06: Servicios e inyección: `inject`, `providedIn: 'root'` vs `providers: []`
-- [ ] F07: Recorrido guiado del código de E2.1 (login, sesión, guards) → commit de E2.1
+- [ ] F07: Recorrido guiado del código de E2.1 (login, sesión, guards; implementación ya registrada en `765c39e`)
 
 ### Fase 1: Infraestructura
 - [x] **E1.1 Herramientas** (2026-10-13: Angular CLI 22.2.2, Node 24.18, PostgreSQL client 17.11): Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
@@ -107,7 +107,7 @@
 
 ### Fase 2: Features (en orden de dificultad)
 Cada feature es un entregable con modelo, repo, store, vistas y lección.
-- [ ] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`) (implementado 2026-10-14, pendiente prueba del dueño y commit): `AuthRepository` + `SupabaseAuthRepository`, `SessionStore` restaurado en `provideAppInitializer`, guards `authGuard`/`guestGuard`/`roleGuard`, login con Reactive Forms y `LoginStore`, menú y topbar con el usuario real, cerrar sesión (CDK Menu). Permisos de página iguales a Flutter. Antes: arreglo de seguridad en `perfiles` (cambio #2). Lección L04
+- [x] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`) (implementado 2026-10-14, commit `765c39e` del 2026-10-23): `AuthRepository` + `SupabaseAuthRepository`, `SessionStore` restaurado en `provideAppInitializer`, guards `authGuard`/`guestGuard`/`roleGuard`, login con Reactive Forms y `LoginStore`, menú y topbar con el usuario real, cerrar sesión (CDK Menu). Permisos de página iguales a Flutter. Antes: arreglo de seguridad en `perfiles` (cambio #2). Lección L04. Recorrido didáctico pendiente en F07.
 - [ ] **E2.2 Buscar paciente** (`/dashboard/search-patient`): primera tabla (C-07), búsqueda, paginación
 - [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`): Reactive Forms, validación, máscaras
 - [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
@@ -180,3 +180,8 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-10-14 | E1.3 scaffold + environments | L00 | `feat(app): agrega environments de dev y prod` |
 | 2026-10-14 | E1.4a core | L02 | `feat(core): agrega cliente Supabase, Result, errores y config` |
 | 2026-10-14 | E1.4b layouts y rutas | L03 | `feat(layouts): agrega layouts, sidebar, topbar y rutas` |
+| 2026-10-23 | E2.1 login, sesión, guards y roles | L04 | `765c39e` — `feat(login): agrega sesión, guards y roles` |
+| 2026-10-23 | Fase 0 y F01 TypeScript desde Dart (1) | F01 | `8b30961` — `docs(fundamentos): agrega fase 0 y lección F01` |
+| 2026-10-26 | Sincronización del plan; F00 mapa del ecosistema web, Markdown y PDF preparados | F00 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
+| 2026-10-26 | F02 TypeScript desde Dart (2), Markdown y PDF preparados | F02 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
+| 2026-10-26 | F03 HTML como árbol de etiquetas, Markdown y PDF preparados | F03 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
