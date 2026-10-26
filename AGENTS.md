@@ -67,6 +67,24 @@ Las vistas nunca llaman a Supabase directamente. Así, cuando llegue NestJS, sol
 5. Ruta lazy en `app.routes.ts` y guard por rol si aplica.
 6. Lección en `docs/lessons/`, glosario actualizado y checkbox en el plan.
 
+## Equipo de agentes y roles
+
+Trabajan varios agentes sobre este repo (Claude, Codex, Antigravity). No se pueden mensajear entre sí: **se coordinan por archivos**.
+
+| Agente | Rol | Zona de trabajo |
+|---|---|---|
+| Claude | Código de features, migraciones SQL, explicación estilo Flutter antes de cada cambio | `src/`, `supabase/` |
+| Codex | Reportes de avance, lecciones (`.md` + PDF), mantener plan y estado | `docs/` |
+| Antigravity | Revisión de código, pruebas manuales en navegador, paridad contra Flutter | solo reporta hallazgos |
+
+Reglas:
+1. **Al empezar**, todo agente lee `AGENTS.md`, `docs/migration-plan.md` y `docs/status.md`.
+2. **Al cerrar una tarea**, el agente actualiza su fila en `docs/status.md` (hecho / en curso / siguiente) con fecha y su nombre. Codex consolida los checkboxes y el Registro de `docs/migration-plan.md`.
+3. Cada agente toca solo su zona. Si necesita un cambio fuera de ella, lo anota en "Pendientes entre agentes" de `docs/status.md`.
+4. Antigravity deja sus hallazgos en esa misma sección; el agente dueño de la zona los atiende.
+5. Reporte de avance: Codex lo genera en `docs/informes/` (ignorado por git) a partir de `git log`, `docs/status.md` y los checkboxes del plan; PDF con `npm run pdf`.
+6. Ningún agente hace `git commit` ni `git push` sin el "sí" del dueño (ver Convenciones).
+
 ## Convenciones
 
 - Ramas: se trabaja en `development`; `main` solo recibe lo estable.
