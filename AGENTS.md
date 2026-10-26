@@ -85,6 +85,8 @@ Reglas:
 5. Reporte de avance: Codex lo genera en `docs/informes/` (ignorado por git) a partir de `git log`, `docs/status.md` y los checkboxes del plan; PDF con `npm run pdf`.
 6. Ningún agente hace `git commit` ni `git push` sin el "sí" del dueño (ver Convenciones).
 
+Referencia del proyecto original: la app Flutter está en https://github.com/MeloGon/oftal_web (solo lectura). El dueño trabaja en dos computadoras, así que no dependas de rutas locales: usa el repo (`gh repo clone MeloGon/oftal_web` en una carpeta temporal fuera de este proyecto, o `gh api`). Antes de implementar o documentar una feature, léela ahí para igualar el comportamiento.
+
 ## Convenciones
 
 - Ramas: se trabaja en `development`; `main` solo recibe lo estable.

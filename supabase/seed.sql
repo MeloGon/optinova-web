@@ -9,8 +9,7 @@
 --   vendedor@optinova.test    rol vendedor   (MEDILENT)
 --
 -- Formatos de texto que espera la app (heredados de Flutter):
---   pacientes."FECHA DE REGISTRO"   dd-MMM-yyyy es  (13-oct-2026)
---   pacientes."FECHA DE NACIMIENTO" dd-MM-yyyy      (05-03-1990)
+--   pacientes.fecha_registro / fecha_nacimiento  date (yyyy-MM-dd); migración #3
 --   revisiones."FECHA"              dd-MMM-yyyy es
 --   ventas/ventas cortas FECHA      dd-MMM-yy en    (13-Oct-26)
 --   columnas *_actualizada / *_iso  date (yyyy-MM-dd)
@@ -138,14 +137,14 @@ select g,
        pg_temp.pick(array['OFTALVISION','MEDILENT']) as sucursal
 from generate_series(1, 50) g;
 
-insert into public.pacientes ("ID PACIENTE", "SUCURSAL", "FECHA DE REGISTRO", "NOMBRE COMPLETO",
-  "FECHA DE NACIMIENTO", "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro_actualizada)
-select id, sucursal, pg_temp.fecha_es(registro), nombre,
-       to_char(nacimiento, 'DD-MM-YYYY'),
+insert into public.pacientes ("ID PACIENTE", "SUCURSAL", "NOMBRE COMPLETO",
+  "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro, fecha_nacimiento)
+select id, sucursal, nombre,
        '555' || lpad((floor(random() * 10000000))::text, 7, '0'),
        pg_temp.pick(array['Masculino','Femenino']),
        'PACIENTE DE PRUEBA',
-       registro
+       registro,
+       nacimiento
 from seed_pacientes;
 
 insert into public.revisiones ("ID REFRACCION", "PACIENTE", "FECHA", "MOTIVO DE CONSULTA", "HISTORIA CLINICA",
