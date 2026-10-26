@@ -66,9 +66,17 @@ export class SearchPatientStore {
     }
   }
 
+  /** Guarda los cambios del paciente y, si salió bien, vuelve a pedir la lista. El error lo muestra quien llama. */
+  async update(patient: Patient): Promise<Result<void, AppError>> {
+    return this.refreshAfter(await this.repo.update(patient));
+  }
+
   /** Elimina al paciente y, si salió bien, vuelve a pedir la lista. El error lo muestra quien llama. */
   async remove(patient: Patient): Promise<Result<void, AppError>> {
-    const result = await this.repo.delete(patient.id);
+    return this.refreshAfter(await this.repo.delete(patient.id));
+  }
+
+  private async refreshAfter(result: Result<void, AppError>): Promise<Result<void, AppError>> {
     if (result.ok && this.lastSearch) await this.load(this.lastSearch);
     return result;
   }

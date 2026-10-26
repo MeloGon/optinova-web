@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -25,6 +26,8 @@ describe('SearchPatientPage', () => {
   async function settle(): Promise<void> {
     await harness.fixture.whenStable();
     harness.detectChanges();
+    // Los diálogos del CDK viven en el overlay, fuera de la vista de la página: se refrescan con el tick.
+    TestBed.inject(ApplicationRef).tick();
   }
 
   const el = () => harness.routeNativeElement as HTMLElement;
@@ -96,20 +99,117 @@ describe('SearchPatientPage', () => {
     expect(el().querySelector('[role=alert]')).toBeNull();
   });
 
+  const toasts = () => TestBed.inject(ToastService).toasts();
+  const byText = (root: ParentNode, selector: string, label: string) =>
+    Array.from(root.querySelectorAll<HTMLElement>(selector)).find((e) => e.textContent?.includes(label))!;
+
+  /** Abre el menú de la primera fila y elige la acción. */
+  async function openMenuAction(label: string): Promise<void> {
+    el().querySelector<HTMLButtonElement>('tbody button[aria-label^="Más acciones"]')!.click();
+    await settle();
+    byText(document.body, '[cdkMenuItem]', label).click();
+    await settle();
+  }
+
+  afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = '')));
+
+  describe('editar', () => {
+    const dialog = () => document.body.querySelector('[role=dialog]');
+    const field = (id: string) => document.body.querySelector<HTMLInputElement>(`#${id}`)!;
+    const type = (id: string, value: string) => {
+      field(id).value = value;
+      field(id).dispatchEvent(new Event('input'));
+      field(id).dispatchEvent(new Event('blur'));
+    };
+    const save = async () => {
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+    };
+
+    beforeEach(() => {
+      repo.patients[0] = { ...repo.patients[0], phone: '999111222', gender: 'Femenino', birthDate: '1990-05-17' };
+    });
+
+    it('abre con los datos actuales del paciente', async () => {
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+
+      expect(dialog()).not.toBeNull();
+      expect(field('patient-name').value).toBe('PACIENTE 1');
+      expect(field('patient-phone').value).toBe('999111222');
+      expect(field('patient-gender').value).toBe('Femenino');
+      expect(field('patient-birth').value).toBe('1990-05-17');
+      expect(field('patient-branch').value).toBe('OFTALVISION');
+    });
+
+    it('guarda los cambios (sin espacios sobrantes), cierra, refresca la lista y avisa', async () => {
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+      type('patient-name', '  MARIA NUEVA  ');
+      type('patient-birth', '');
+      await save();
+
+      expect(repo.updated.length).toBe(1);
+      expect(repo.updated[0]).toMatchObject({ id: 1, name: 'MARIA NUEVA', birthDate: null, phone: '999111222' });
+      expect(dialog()).toBeNull();
+      expect(text()).toContain('MARIA NUEVA');
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente actualizado']);
+    });
+
+    it('sin nombre muestra el error y no guarda', async () => {
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+      type('patient-name', '   ');
+      await save();
+
+      expect(document.body.textContent).toContain('Escribe el nombre del paciente.');
+      expect(repo.updated).toEqual([]);
+      expect(dialog()).not.toBeNull();
+    });
+
+    it('una fecha de nacimiento futura no se acepta', async () => {
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+      type('patient-birth', '2999-01-01');
+      await save();
+
+      expect(document.body.textContent).toContain('No puede ser una fecha futura.');
+      expect(repo.updated).toEqual([]);
+    });
+
+    it('si el servidor falla, el diálogo sigue abierto con el error y sin aviso de éxito', async () => {
+      repo.updateFailWith = { kind: 'server', message: 'No se pudo guardar.' };
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+      await save();
+
+      expect(dialog()!.querySelector('[role=alert]')?.textContent).toContain('No se pudo guardar.');
+      expect(toasts()).toEqual([]);
+    });
+
+    it('cancelar cierra sin guardar', async () => {
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+      byText(document.body, '[role=dialog] button', 'Cancelar').click();
+      await settle();
+
+      expect(dialog()).toBeNull();
+      expect(repo.updated).toEqual([]);
+      expect(toasts()).toEqual([]);
+    });
+
+    it('una sucursal cerrada del paciente se conserva en la lista', async () => {
+      repo.patients[0] = { ...repo.patients[0], branch: 'OFTALMIC CENTER' };
+      await open('/search-patient');
+      await openMenuAction('Editar paciente');
+
+      expect(field('patient-branch').value).toBe('OFTALMIC CENTER');
+      expect(document.body.textContent).toContain('OFTALMIC CENTER (cerrada)');
+    });
+  });
+
   describe('eliminar', () => {
-    const toasts = () => TestBed.inject(ToastService).toasts();
-    const byText = (root: ParentNode, selector: string, label: string) =>
-      Array.from(root.querySelectorAll<HTMLElement>(selector)).find((e) => e.textContent?.includes(label))!;
-
-    /** Abre el menú de la primera fila y elige "Eliminar…". */
-    async function openDeleteDialog(): Promise<void> {
-      el().querySelector<HTMLButtonElement>('tbody button[aria-label^="Más acciones"]')!.click();
-      await settle();
-      byText(document.body, '[cdkMenuItem]', 'Eliminar').click();
-      await settle();
-    }
-
-    afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = '')));
+    const openDeleteDialog = () => openMenuAction('Eliminar');
 
     it('pide confirmación con el nombre del paciente y no borra aún', async () => {
       await open('/search-patient');

@@ -86,6 +86,27 @@ describe('SearchPatientStore', () => {
     expect(store.total()).toBe(1);
   });
 
+  it('al editar guarda en el repositorio y refresca la lista', async () => {
+    await store.load({ query: '', page: 1, pageSize: 10 });
+
+    const result = await store.update({ ...store.items()[0], name: 'MARIA CAMBIADA' });
+
+    expect(result.ok).toBe(true);
+    expect(repo.updated.map((p) => p.name)).toEqual(['MARIA CAMBIADA']);
+    expect(store.items()[0].name).toBe('MARIA CAMBIADA');
+  });
+
+  it('si editar falla devuelve el error y no refresca', async () => {
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    const callsBefore = repo.calls.length;
+    repo.updateFailWith = appError('server', 'Falló.');
+
+    const result = await store.update({ ...store.items()[0], name: 'X' });
+
+    expect(result.ok).toBe(false);
+    expect(repo.calls.length).toBe(callsBefore);
+  });
+
   it('si eliminar falla devuelve el error y no cambia la lista', async () => {
     await store.load({ query: '', page: 1, pageSize: 10 });
     const callsBefore = repo.calls.length;

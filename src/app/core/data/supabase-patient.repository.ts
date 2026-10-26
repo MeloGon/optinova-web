@@ -45,6 +45,26 @@ export class SupabasePatientRepository extends PatientRepository {
     return ok({ items: data.map(toPatient), total: count ?? 0 });
   }
 
+  async update(patient: Patient): Promise<Result<void, AppError>> {
+    const { data, error } = await this.supabase
+      .from('pacientes')
+      .update({
+        'NOMBRE COMPLETO': patient.name,
+        'TELEFONO CEL': patient.phone,
+        // La DB solo acepta Masculino/Femenino/Otro o NULL (migración #4): "" se guarda como NULL.
+        GENERO: patient.gender || null,
+        fecha_nacimiento: patient.birthDate,
+        SUCURSAL: patient.branch,
+        OBSERVACIONES: patient.observations,
+      })
+      .eq('ID PACIENTE', patient.id)
+      .select('"ID PACIENTE"');
+
+    if (error) return err(toAppError(error));
+    if (data.length === 0) return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para editarlo.'));
+    return ok(undefined);
+  }
+
   async delete(id: number): Promise<Result<void, AppError>> {
     // .select() devuelve las filas borradas: si RLS impide borrar no hay error, solo 0 filas.
     const { data, error } = await this.supabase

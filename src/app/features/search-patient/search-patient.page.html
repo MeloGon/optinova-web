@@ -166,13 +166,13 @@
   }
 </div>
 
-<!-- Menú de acciones por fila (C-15). Editar se habilita en E2.2c y las medidas en E2.3. -->
+<!-- Menú de acciones por fila (C-15). Las medidas se habilitan en E2.3. -->
 <ng-template #rowMenu let-patient>
   <div
     cdkMenu
     class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
   >
-    @for (item of ['Ver medidas', 'Agregar medida', 'Editar paciente']; track item) {
+    @for (item of ['Ver medidas', 'Agregar medida']; track item) {
       <button
         cdkMenuItem
         type="button"
@@ -183,6 +183,14 @@
         <span class="text-caption font-normal">Próximamente</span>
       </button>
     }
+    <button
+      cdkMenuItem
+      type="button"
+      (cdkMenuItemTriggered)="edit(patient)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+    >
+      Editar paciente
+    </button>
     <div class="my-1 h-px bg-border" role="separator"></div>
     <button
       cdkMenuItem

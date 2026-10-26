@@ -16,6 +16,9 @@ export abstract class PatientRepository {
   /** Pacientes por nombre, del registro más reciente al más antiguo. */
   abstract search(params: PatientSearch): Promise<Result<Page<Patient>, AppError>>;
 
+  /** Guarda los datos editables del paciente (nombre, teléfono, género, nacimiento, sucursal, observaciones). */
+  abstract update(patient: Patient): Promise<Result<void, AppError>>;
+
   /** Elimina al paciente. Las revisiones y ventas enlazadas por nombre no se tocan (igual que en Flutter). */
   abstract delete(id: number): Promise<Result<void, AppError>>;
 }

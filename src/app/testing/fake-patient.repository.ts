@@ -22,6 +22,10 @@ export class FakePatientRepository extends PatientRepository {
   failWith: AppError | null = null;
   /** Búsquedas recibidas, en orden. */
   calls: PatientSearch[] = [];
+  /** Pacientes guardados con update, en orden. */
+  updated: Patient[] = [];
+  /** Si se asigna, el próximo update falla con este error. */
+  updateFailWith: AppError | null = null;
   /** Ids que se pidió eliminar, en orden. */
   deleted: number[] = [];
   /** Si se asigna, el próximo delete falla con este error. */
@@ -38,6 +42,13 @@ export class FakePatientRepository extends PatientRepository {
     const matches = this.patients.filter((p) => words.every((w) => p.name.toLowerCase().includes(w)));
     const from = (params.page - 1) * params.pageSize;
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
+  }
+
+  async update(patient: Patient): Promise<Result<void, AppError>> {
+    if (this.updateFailWith) return err(this.updateFailWith);
+    this.updated.push(patient);
+    this.patients = this.patients.map((p) => (p.id === patient.id ? patient : p));
+    return ok(undefined);
   }
 
   async delete(id: number): Promise<Result<void, AppError>> {

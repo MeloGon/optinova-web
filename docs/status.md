@@ -19,7 +19,7 @@
 | Agente | Tarea | Desde |
 |---|---|---|
 | Codex | F07 y su PDF preparados; espera revisión del dueño y aprobación de commit. Mensaje propuesto: `docs(fundamentos): agrega recorrido F07 de E2.1` | 2026-10-26 |
-| Claude | E2.2a Buscar paciente (commit `fd4a892`) y E2.2b Eliminar paciente (confirmación C-12, toasts C-13, borrado verificado contra DEV; 62 tests en verde), pendiente de prueba manual del dueño y commit de E2.2b. Quedan E2.2c (editar) y las acciones de medidas (E2.3) como "Próximamente" en el menú ⋯ | 2026-10-26 |
+| Claude | E2.2a y E2.2b ya en `development`. E2.2c Editar paciente implementada (diálogo con formulario, `onv-field`/`onvInput`, migración #4 de género aplicada en DEV; 71 tests en verde), pendiente de prueba manual del dueño y commit. Quedan las acciones de medidas (E2.3) como "Próximamente" en el menú ⋯ | 2026-10-26 |
 | Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente
