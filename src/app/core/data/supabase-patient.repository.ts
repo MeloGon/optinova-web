@@ -8,7 +8,8 @@ import { SUPABASE } from '../supabase/supabase.client';
 
 /** Fila de `pacientes` tal como viene de la DB (nombres heredados de Excel, con espacios). */
 interface PatientRow {
-  'ID PACIENTE': number;
+  /** Alias de `"ID PACIENTE"::text` (ver COLUMNS). */
+  id: string;
   'NOMBRE COMPLETO': string | null;
   SUCURSAL: string | null;
   'TELEFONO CEL': string | null;
@@ -18,8 +19,9 @@ interface PatientRow {
   fecha_nacimiento: string | null;
 }
 
+// El ID se pide como texto: un bigint grande llegaría como número JSON y perdería dígitos.
 const COLUMNS =
-  '"ID PACIENTE", "NOMBRE COMPLETO", "SUCURSAL", "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro, fecha_nacimiento';
+  'id:"ID PACIENTE"::text, "NOMBRE COMPLETO", "SUCURSAL", "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro, fecha_nacimiento';
 
 @Injectable()
 export class SupabasePatientRepository extends PatientRepository {
@@ -65,7 +67,7 @@ export class SupabasePatientRepository extends PatientRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
+  async delete(id: string): Promise<Result<void, AppError>> {
     // .select() devuelve las filas borradas: si RLS impide borrar no hay error, solo 0 filas.
     const { data, error } = await this.supabase
       .from('pacientes')
@@ -89,7 +91,7 @@ function escapeLike(text: string): string {
 
 function toPatient(row: PatientRow): Patient {
   return {
-    id: row['ID PACIENTE'],
+    id: row.id,
     name: row['NOMBRE COMPLETO'] ?? '',
     branch: row.SUCURSAL ?? '',
     phone: row['TELEFONO CEL'] ?? '',

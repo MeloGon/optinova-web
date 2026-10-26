@@ -29,7 +29,7 @@ describe('SearchPatientStore', () => {
 
   it('carga la página pedida y el total', async () => {
     await store.load({ query: '', page: 1, pageSize: 2 });
-    expect(store.items().map((p) => p.id)).toEqual([1, 2]);
+    expect(store.items().map((p) => p.id)).toEqual(['1', '2']);
     expect(store.total()).toBe(3);
     expect(store.loaded()).toBe(true);
     expect(store.loading()).toBe(false);
@@ -37,7 +37,7 @@ describe('SearchPatientStore', () => {
 
   it('filtra por nombre con varias palabras en cualquier orden', async () => {
     await store.load({ query: 'garcia ana', page: 1, pageSize: 10 });
-    expect(store.items().map((p) => p.id)).toEqual([3]);
+    expect(store.items().map((p) => p.id)).toEqual(['3']);
     expect(store.total()).toBe(1);
   });
 
@@ -80,9 +80,9 @@ describe('SearchPatientStore', () => {
     const result = await store.remove(store.items()[0]);
 
     expect(result.ok).toBe(true);
-    expect(repo.deleted).toEqual([2]);
+    expect(repo.deleted).toEqual(['2']);
     expect(repo.calls.at(-1)).toEqual({ query: 'garcia', page: 1, pageSize: 10 });
-    expect(store.items().map((p) => p.id)).toEqual([3]);
+    expect(store.items().map((p) => p.id)).toEqual(['3']);
     expect(store.total()).toBe(1);
   });
 
@@ -133,6 +133,6 @@ describe('SearchPatientStore', () => {
     releases[0]();
     await first;
 
-    expect(store.items().map((p) => p.id)).toEqual([3]);
+    expect(store.items().map((p) => p.id)).toEqual(['3']);
   });
 });

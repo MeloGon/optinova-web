@@ -147,6 +147,9 @@ select id, sucursal, nombre,
        nacimiento
 from seed_pacientes;
 
+-- Los pacientes del seed llevan ID explícito: la secuencia debe seguir después del mayor.
+select setval('public.pacientes_id_seq', (select coalesce(max("ID PACIENTE"), 0) + 1 from public.pacientes), false);
+
 insert into public.revisiones ("ID REFRACCION", "PACIENTE", "FECHA", "MOTIVO DE CONSULTA", "HISTORIA CLINICA",
   "OD ESF", "OD CIL", "OD EJE", "OD AV", "OI ESF", "OI CIL", "OI EJE", "OI AV", "ADD", "OBSERVACIONES", "DIP",
   "SUCURSAL", fecha_revision_actualizada)

@@ -4,8 +4,8 @@ import { Patient } from '../core/models/patient';
 import { PatientRepository, PatientSearch } from '../core/repositories/patient.repository';
 import { Result, err, ok } from '../core/result';
 
-export const fakePatient = (id: number, name = `PACIENTE ${id}`): Patient => ({
-  id,
+export const fakePatient = (id: number | string, name = `PACIENTE ${id}`): Patient => ({
+  id: String(id),
   name,
   branch: 'OFTALVISION',
   phone: '555',
@@ -27,7 +27,7 @@ export class FakePatientRepository extends PatientRepository {
   /** Si se asigna, el próximo update falla con este error. */
   updateFailWith: AppError | null = null;
   /** Ids que se pidió eliminar, en orden. */
-  deleted: number[] = [];
+  deleted: string[] = [];
   /** Si se asigna, el próximo delete falla con este error. */
   deleteFailWith: AppError | null = null;
   /** Si se asigna, cada búsqueda espera a que se llame a la función devuelta (para probar carreras). */
@@ -51,7 +51,7 @@ export class FakePatientRepository extends PatientRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
+  async delete(id: string): Promise<Result<void, AppError>> {
     if (this.deleteFailWith) return err(this.deleteFailWith);
     this.deleted.push(id);
     this.patients = this.patients.filter((p) => p.id !== id);

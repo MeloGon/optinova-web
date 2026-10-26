@@ -150,7 +150,7 @@ describe('SearchPatientPage', () => {
       await save();
 
       expect(repo.updated.length).toBe(1);
-      expect(repo.updated[0]).toMatchObject({ id: 1, name: 'MARIA NUEVA', birthDate: null, phone: '999111222' });
+      expect(repo.updated[0]).toMatchObject({ id: '1', name: 'MARIA NUEVA', birthDate: null, phone: '999111222' });
       expect(dialog()).toBeNull();
       expect(text()).toContain('MARIA NUEVA');
       expect(toasts().map((t) => t.title)).toEqual(['Paciente actualizado']);
@@ -237,7 +237,7 @@ describe('SearchPatientPage', () => {
       byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
       await settle();
 
-      expect(repo.deleted).toEqual([1]);
+      expect(repo.deleted).toEqual(['1']);
       expect(text()).toContain('29 pacientes');
       expect(toasts().map((t) => t.title)).toEqual(['Paciente eliminado']);
     });

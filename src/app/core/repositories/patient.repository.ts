@@ -20,5 +20,5 @@ export abstract class PatientRepository {
   abstract update(patient: Patient): Promise<Result<void, AppError>>;
 
   /** Elimina al paciente. Las revisiones y ventas enlazadas por nombre no se tocan (igual que en Flutter). */
-  abstract delete(id: number): Promise<Result<void, AppError>>;
+  abstract delete(id: string): Promise<Result<void, AppError>>;
 }
