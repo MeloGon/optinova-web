@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { AppError, toAppError } from '../errors/app-error';
+import { AppError, appError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Patient } from '../models/patient';
 import { PatientRepository, PatientSearch } from '../repositories/patient.repository';
@@ -43,6 +43,19 @@ export class SupabasePatientRepository extends PatientRepository {
 
     if (error) return err(toAppError(error));
     return ok({ items: data.map(toPatient), total: count ?? 0 });
+  }
+
+  async delete(id: number): Promise<Result<void, AppError>> {
+    // .select() devuelve las filas borradas: si RLS impide borrar no hay error, solo 0 filas.
+    const { data, error } = await this.supabase
+      .from('pacientes')
+      .delete()
+      .eq('ID PACIENTE', id)
+      .select('"ID PACIENTE"');
+
+    if (error) return err(toAppError(error));
+    if (data.length === 0) return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para eliminarlo.'));
+    return ok(undefined);
   }
 }
 

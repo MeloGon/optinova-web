@@ -22,6 +22,10 @@ export class FakePatientRepository extends PatientRepository {
   failWith: AppError | null = null;
   /** Búsquedas recibidas, en orden. */
   calls: PatientSearch[] = [];
+  /** Ids que se pidió eliminar, en orden. */
+  deleted: number[] = [];
+  /** Si se asigna, el próximo delete falla con este error. */
+  deleteFailWith: AppError | null = null;
   /** Si se asigna, cada búsqueda espera a que se llame a la función devuelta (para probar carreras). */
   gate: (() => Promise<void>) | null = null;
 
@@ -34,5 +38,12 @@ export class FakePatientRepository extends PatientRepository {
     const matches = this.patients.filter((p) => words.every((w) => p.name.toLowerCase().includes(w)));
     const from = (params.page - 1) * params.pageSize;
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
+  }
+
+  async delete(id: number): Promise<Result<void, AppError>> {
+    if (this.deleteFailWith) return err(this.deleteFailWith);
+    this.deleted.push(id);
+    this.patients = this.patients.filter((p) => p.id !== id);
+    return ok(undefined);
   }
 }

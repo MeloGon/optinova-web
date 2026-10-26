@@ -73,6 +73,32 @@ describe('SearchPatientStore', () => {
     expect(store.items().length).toBe(1);
   });
 
+  it('al eliminar borra en el repositorio y vuelve a pedir la misma búsqueda', async () => {
+    await store.load({ query: 'garcia', page: 1, pageSize: 10 });
+    expect(store.total()).toBe(2);
+
+    const result = await store.remove(store.items()[0]);
+
+    expect(result.ok).toBe(true);
+    expect(repo.deleted).toEqual([2]);
+    expect(repo.calls.at(-1)).toEqual({ query: 'garcia', page: 1, pageSize: 10 });
+    expect(store.items().map((p) => p.id)).toEqual([3]);
+    expect(store.total()).toBe(1);
+  });
+
+  it('si eliminar falla devuelve el error y no cambia la lista', async () => {
+    await store.load({ query: '', page: 1, pageSize: 10 });
+    const callsBefore = repo.calls.length;
+    repo.deleteFailWith = appError('unauthorized', 'Sin permiso.');
+
+    const result = await store.remove(store.items()[0]);
+
+    expect(result.ok).toBe(false);
+    expect(repo.calls.length).toBe(callsBefore);
+    expect(store.items().length).toBe(3);
+    expect(store.error()).toBeNull();
+  });
+
   it('una respuesta vieja no pisa a una más nueva', async () => {
     const releases: (() => void)[] = [];
     repo.gate = () => new Promise<void>((resolve) => releases.push(resolve));

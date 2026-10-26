@@ -19,7 +19,7 @@
 | Agente | Tarea | Desde |
 |---|---|---|
 | Codex | F07 y su PDF preparados; espera revisión del dueño y aprobación de commit. Mensaje propuesto: `docs(fundamentos): agrega recorrido F07 de E2.1` | 2026-10-26 |
-| Claude | E2.2a Buscar paciente (lista, búsqueda con Enter/botón, paginación 10/25/50/100) implementada con 53 tests en verde; pendiente de prueba manual del dueño y commit. Código: `core/{models,repositories,data}/*patient*`, `features/search-patient/`, `shared/ui/{badge,skeleton,empty-state,paginator,table}/`. Menú ⋯ con ítems deshabilitados hasta E2.2b/c y E2.3 | 2026-10-26 |
+| Claude | E2.2a Buscar paciente (commit `fd4a892`) y E2.2b Eliminar paciente (confirmación C-12, toasts C-13, borrado verificado contra DEV; 62 tests en verde), pendiente de prueba manual del dueño y commit de E2.2b. Quedan E2.2c (editar) y las acciones de medidas (E2.3) como "Próximamente" en el menú ⋯ | 2026-10-26 |
 | Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente

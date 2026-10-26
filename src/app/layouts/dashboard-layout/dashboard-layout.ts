@@ -7,6 +7,7 @@ import { SessionStore } from '../../core/auth/session.store';
 import { PageData } from '../../core/models/page-data';
 import { Role } from '../../core/models/role';
 import { Sidebar } from '../../shared/ui/sidebar/sidebar';
+import { ToastOutlet } from '../../shared/ui/toast/toast-outlet';
 import { Topbar } from '../../shared/ui/topbar/topbar';
 import { DASHBOARD_NAV } from './dashboard-nav';
 
@@ -23,7 +24,7 @@ const COLLAPSED_KEY = 'optinova.sidebar-collapsed';
  */
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [RouterOutlet, Sidebar, Topbar],
+  imports: [RouterOutlet, Sidebar, Topbar, ToastOutlet],
   templateUrl: './dashboard-layout.html',
   host: { '(document:keydown.escape)': 'overlayOpen.set(false)' },
 })

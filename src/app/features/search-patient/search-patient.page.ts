@@ -10,17 +10,21 @@ import {
   LucideRefreshCw,
   LucideSearch,
   LucideSearchX,
+  LucideTrash2,
   LucideTriangleAlert,
   LucideUserPlus,
   LucideUsers,
   LucideX,
 } from '@lucide/angular';
+import { Patient } from '../../core/models/patient';
 import { PatientSearch } from '../../core/repositories/patient.repository';
 import { Badge } from '../../shared/ui/badge/badge';
+import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { Paginator } from '../../shared/ui/paginator/paginator';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
+import { ToastService } from '../../shared/ui/toast/toast.service';
 import { SearchPatientStore } from './search-patient.store';
 
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -70,6 +74,8 @@ export class SearchPatientPage {
   protected readonly store = inject(SearchPatientStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly confirm = inject(ConfirmService);
+  private readonly toast = inject(ToastService);
 
   protected readonly search = computed<PatientSearch>(() => ({
     query: (this.q() ?? '').trim(),
@@ -92,6 +98,7 @@ export class SearchPatientPage {
     userPlus: LucideUserPlus,
     alert: LucideTriangleAlert,
     retry: LucideRefreshCw,
+    trash: LucideTrash2,
   };
 
   constructor() {
@@ -142,6 +149,22 @@ export class SearchPatientPage {
 
   protected retry(): void {
     void this.store.load(this.search());
+  }
+
+  protected async askDelete(patient: Patient): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: `¿Eliminar a ${patient.name}?`,
+      text: 'Se borra el registro del paciente y no se puede deshacer. Sus revisiones y ventas no se eliminan.',
+      confirmLabel: 'Eliminar paciente',
+    });
+    if (!confirmed) return;
+
+    const result = await this.store.remove(patient);
+    if (result.ok) {
+      this.toast.show({ tone: 'success', title: 'Paciente eliminado', text: patient.name });
+    } else {
+      this.toast.show({ tone: 'danger', title: 'No se pudo eliminar', text: result.error.message });
+    }
   }
 
   /** `null` quita el parámetro de la URL; lo demás se conserva. */

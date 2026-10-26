@@ -3,6 +3,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { PatientRepository } from '../../core/repositories/patient.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
+import { ToastService } from '../../shared/ui/toast/toast.service';
 import { SearchPatientPage } from './search-patient.page';
 
 describe('SearchPatientPage', () => {
@@ -93,6 +94,65 @@ describe('SearchPatientPage', () => {
     await settle();
     expect(rows().length).toBe(25);
     expect(el().querySelector('[role=alert]')).toBeNull();
+  });
+
+  describe('eliminar', () => {
+    const toasts = () => TestBed.inject(ToastService).toasts();
+    const byText = (root: ParentNode, selector: string, label: string) =>
+      Array.from(root.querySelectorAll<HTMLElement>(selector)).find((e) => e.textContent?.includes(label))!;
+
+    /** Abre el menú de la primera fila y elige "Eliminar…". */
+    async function openDeleteDialog(): Promise<void> {
+      el().querySelector<HTMLButtonElement>('tbody button[aria-label^="Más acciones"]')!.click();
+      await settle();
+      byText(document.body, '[cdkMenuItem]', 'Eliminar').click();
+      await settle();
+    }
+
+    afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = '')));
+
+    it('pide confirmación con el nombre del paciente y no borra aún', async () => {
+      await open('/search-patient');
+      await openDeleteDialog();
+
+      const dialog = document.body.querySelector('[role=alertdialog]')!;
+      expect(dialog.textContent).toContain('¿Eliminar a PACIENTE 1?');
+      expect(repo.deleted).toEqual([]);
+    });
+
+    it('cancelar no borra nada', async () => {
+      await open('/search-patient');
+      await openDeleteDialog();
+      byText(document.body, '[role=alertdialog] button', 'Cancelar').click();
+      await settle();
+
+      expect(repo.deleted).toEqual([]);
+      expect(document.body.querySelector('[role=alertdialog]')).toBeNull();
+      expect(toasts()).toEqual([]);
+    });
+
+    it('confirmar borra, actualiza la lista y avisa', async () => {
+      await open('/search-patient');
+      await openDeleteDialog();
+      byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
+      await settle();
+
+      expect(repo.deleted).toEqual([1]);
+      expect(text()).toContain('29 pacientes');
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente eliminado']);
+    });
+
+    it('si falla, avisa del error y deja la lista como estaba', async () => {
+      repo.deleteFailWith = { kind: 'unauthorized', message: 'Sin permiso.' };
+      await open('/search-patient');
+      await openDeleteDialog();
+      byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
+      await settle();
+
+      expect(toasts().map((t) => t.tone)).toEqual(['danger']);
+      expect(toasts()[0].text).toBe('Sin permiso.');
+      expect(text()).toContain('30 pacientes');
+    });
   });
 
   it('una página fuera de rango salta a la última', async () => {

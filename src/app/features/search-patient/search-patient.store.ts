@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AppError } from '../../core/errors/app-error';
 import { Patient } from '../../core/models/patient';
 import { PatientRepository, PatientSearch } from '../../core/repositories/patient.repository';
+import { Result } from '../../core/result';
 
 interface SearchState {
   items: Patient[];
@@ -39,7 +41,11 @@ export class SearchPatientStore {
   /** Número de la última búsqueda lanzada: una respuesta vieja no pisa a una más nueva. */
   private lastRequest = 0;
 
+  /** Última búsqueda pedida: se repite después de eliminar para que la lista quede al día. */
+  private lastSearch: PatientSearch | null = null;
+
   async load(search: PatientSearch): Promise<void> {
+    this.lastSearch = search;
     const request = ++this.lastRequest;
     // Se conservan los resultados anteriores mientras carga (el diseño pide atenuarlos, no vaciarlos).
     this.state.update((s) => ({ ...s, loading: true, error: null }));
@@ -58,5 +64,12 @@ export class SearchPatientStore {
     } else {
       this.state.update((s) => ({ ...s, loading: false, error: result.error.message, loaded: true }));
     }
+  }
+
+  /** Elimina al paciente y, si salió bien, vuelve a pedir la lista. El error lo muestra quien llama. */
+  async remove(patient: Patient): Promise<Result<void, AppError>> {
+    const result = await this.repo.delete(patient.id);
+    if (result.ok && this.lastSearch) await this.load(this.lastSearch);
+    return result;
   }
 }

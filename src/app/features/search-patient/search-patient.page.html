@@ -138,6 +138,7 @@
                   <button
                     type="button"
                     [cdkMenuTriggerFor]="rowMenu"
+                    [cdkMenuTriggerData]="{ $implicit: patient }"
                     [attr.aria-label]="'Más acciones para ' + patient.name"
                     class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
                   >
@@ -165,8 +166,8 @@
   }
 </div>
 
-<!-- Menú de acciones por fila (C-15). Se habilitan en E2.2b (eliminar), E2.2c (editar) y E2.3 (medidas). -->
-<ng-template #rowMenu>
+<!-- Menú de acciones por fila (C-15). Editar se habilita en E2.2c y las medidas en E2.3. -->
+<ng-template #rowMenu let-patient>
   <div
     cdkMenu
     class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
@@ -186,11 +187,11 @@
     <button
       cdkMenuItem
       type="button"
-      [cdkMenuItemDisabled]="true"
-      class="flex h-8 w-full items-center justify-between gap-4 rounded-sm px-2.5 text-[14px] outline-none aria-disabled:text-disabled-foreground"
+      (cdkMenuItemTriggered)="askDelete(patient)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] text-danger-subtle-foreground outline-none hover:bg-danger-subtle focus:bg-danger-subtle"
     >
+      <svg [lucideIcon]="icons.trash" [size]="16"></svg>
       Eliminar…
-      <span class="text-caption font-normal">Próximamente</span>
     </button>
   </div>
 </ng-template>
