@@ -19,7 +19,7 @@
 | Agente | Tarea | Desde |
 |---|---|---|
 | Codex | F07 y su PDF preparados; espera revisión del dueño y aprobación de commit. Mensaje propuesto: `docs(fundamentos): agrega recorrido F07 de E2.1` | 2026-10-26 |
-| Claude | E2.2a y E2.2b ya en `development`. E2.2c Editar paciente implementada (diálogo con formulario, `onv-field`/`onvInput`, migración #4 de género aplicada en DEV; 71 tests en verde), pendiente de prueba manual del dueño y commit. Quedan las acciones de medidas (E2.3) como "Próximamente" en el menú ⋯ | 2026-10-26 |
+| Claude | E2.2 Buscar paciente completo en `development` (commits locales; push pendiente) y E2.3-0 (IDs como texto + migración #5). E2.3a Agregar paciente implementada (formulario, vista previa, aviso de nombre repetido, últimos agregados; 89 tests en verde), pendiente de prueba manual del dueño y commit. Sigue E2.3b: revisiones (ver, agregar y editar medidas) | 2026-10-26 |
 | Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente
@@ -35,7 +35,15 @@
 - App Flutter original (solo lectura, fuente de verdad del comportamiento): https://github.com/MeloGon/oftal_web. No usar rutas locales: el dueño trabaja en dos computadoras.
 - E2.2 Buscar paciente en Flutter: `lib/features/search_patient/` (viewmodels, views, widgets).
 
+## Decisiones de diseño (dueño, 2026-10-26)
+
+- **Medidas y ventas enlazadas por ID, no por nombre.** `revisiones.paciente_id` (FK a `pacientes`); el nombre viejo queda en `paciente_nombre` solo como respaldo. Se llena en la migración, que sirve igual sobre DEV y sobre una copia de PROD. En PROD: de 17,330 revisiones, 16,503 coinciden con un solo paciente, 357 se resuelven por sucursal + fecha de registro, y unas 470 (366 ambiguas, 42 sin paciente, 62 sin nombre) quedan con `paciente_id` vacío en una consulta de revisión manual. `ventas cortas` ya trae `ID PACIENTE` (23,017 de 24,807 válidos); se limpia con su entregable (E2.5/E2.6).
+- **Eliminar paciente por niveles.** Sin datos relacionados: cualquier rol, con confirmación. Con medidas: supervisor o superior; un vendedor necesita que un supervisor o superior ingrese su correo y contraseña (P-04), se verifica en el servidor y queda en `audit_logs` quién autorizó; se borran paciente y medidas. Con ventas o pagos: no se borra, se **archiva** (un admin o superior; deja de salir en búsquedas y ventas nuevas, conserva historial y se puede restaurar). La regla se aplica en la base de datos / Edge Function, no solo en pantalla.
+- **IDs** de pacientes asignados por la DB (secuencia, migración #5); en la app viajan como texto. `revisiones` y `ventas` tendrán lo mismo con su entregable.
+
 ## Pendientes entre agentes
+
+- [2026-10-26] de Claude para Codex: llevar las decisiones de diseño de arriba al plan (`migration-plan.md`: E2.3b revisiones con FK; nuevo entregable de eliminar/archivar con autorización; Fase 4 pierde "llaves foráneas" porque ya se hacen por entregable).
 
 - [2026-10-26] del Dueño para Claude y Codex: se retoma el desarrollo de features con E2.2 Buscar paciente (el dueño decidió no esperar F04–F06). Claude implementa el código. Codex lee `lib/features/search_patient/` del repo de Flutter (ver Referencias) y escribe `docs/lessons/10-buscar-paciente.md` (+ PDF) con lo que hace Flutter y su equivalente Angular, sin tocar `src/`.
 - [2026-10-26] de Antigravity para Dueño / Claude: **Prueba manual y funcional de E2.1 en `ng serve` con los 4 usuarios del seed: APROBADA al 100%.**

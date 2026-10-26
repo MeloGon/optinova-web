@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AppError, appError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Patient } from '../models/patient';
-import { PatientRepository, PatientSearch } from '../repositories/patient.repository';
+import { NewPatient, PatientRepository, PatientSearch } from '../repositories/patient.repository';
 import { Result, err, ok } from '../result';
 import { SUPABASE } from '../supabase/supabase.client';
 
@@ -45,6 +45,38 @@ export class SupabasePatientRepository extends PatientRepository {
 
     if (error) return err(toAppError(error));
     return ok({ items: data.map(toPatient), total: count ?? 0 });
+  }
+
+  async create(patient: NewPatient): Promise<Result<Patient, AppError>> {
+    // Sin "ID PACIENTE" ni fecha_registro: la secuencia y el valor por defecto de la DB los asignan.
+    const { data, error } = await this.supabase
+      .from('pacientes')
+      .insert({
+        'NOMBRE COMPLETO': patient.name,
+        'TELEFONO CEL': patient.phone,
+        GENERO: patient.gender || null,
+        fecha_nacimiento: patient.birthDate,
+        SUCURSAL: patient.branch,
+        OBSERVACIONES: patient.observations,
+      })
+      .select(COLUMNS)
+      .single<PatientRow>();
+
+    if (error) return err(toAppError(error));
+    return ok(toPatient(data));
+  }
+
+  async findByName(name: string): Promise<Result<Patient[], AppError>> {
+    const { data, error } = await this.supabase
+      .from('pacientes')
+      .select(COLUMNS)
+      // Sin comodines: igualdad exacta, sin distinguir mayúsculas.
+      .ilike('NOMBRE COMPLETO', escapeLike(name.trim()))
+      .limit(5)
+      .overrideTypes<PatientRow[], { merge: false }>();
+
+    if (error) return err(toAppError(error));
+    return ok(data.map(toPatient));
   }
 
   async update(patient: Patient): Promise<Result<void, AppError>> {

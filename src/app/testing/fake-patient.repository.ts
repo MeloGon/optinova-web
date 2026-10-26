@@ -1,7 +1,7 @@
 import { AppError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
 import { Patient } from '../core/models/patient';
-import { PatientRepository, PatientSearch } from '../core/repositories/patient.repository';
+import { NewPatient, PatientRepository, PatientSearch } from '../core/repositories/patient.repository';
 import { Result, err, ok } from '../core/result';
 
 export const fakePatient = (id: number | string, name = `PACIENTE ${id}`): Patient => ({
@@ -42,6 +42,26 @@ export class FakePatientRepository extends PatientRepository {
     const matches = this.patients.filter((p) => words.every((w) => p.name.toLowerCase().includes(w)));
     const from = (params.page - 1) * params.pageSize;
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
+  }
+
+  /** Pacientes creados con create, en orden. */
+  created: NewPatient[] = [];
+  /** Si se asigna, el próximo create falla con este error. */
+  createFailWith: AppError | null = null;
+  private nextId = 1000;
+
+  async create(patient: NewPatient): Promise<Result<Patient, AppError>> {
+    if (this.createFailWith) return err(this.createFailWith);
+    this.created.push(patient);
+    // Como la DB: ID nuevo y fecha de registro de hoy; el más reciente va primero en la lista.
+    const saved: Patient = { ...patient, id: String(this.nextId++), registeredOn: '2026-10-26' };
+    this.patients = [saved, ...this.patients];
+    return ok(saved);
+  }
+
+  async findByName(name: string): Promise<Result<Patient[], AppError>> {
+    const wanted = name.trim().toLowerCase();
+    return ok(this.patients.filter((p) => p.name.toLowerCase() === wanted).slice(0, 5));
   }
 
   async update(patient: Patient): Promise<Result<void, AppError>> {

@@ -59,11 +59,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/search-patient/search-patient.page').then((m) => m.SearchPatientPage),
       },
-      pending('add-patient', {
-        title: 'Agregar paciente',
-        description: 'Registra un paciente nuevo y su revisión.',
-        delivery: 'E2.3',
-      }),
+      {
+        path: 'add-patient',
+        title: 'Agregar paciente · Optinova',
+        data: {
+          title: 'Agregar paciente',
+          description: 'Registra un paciente nuevo.',
+        } satisfies PageData,
+        loadComponent: () => import('./features/add-patient/add-patient.page').then((m) => m.AddPatientPage),
+      },
       pending('expenses', {
         title: 'Egresos',
         description: 'Registra y consulta los gastos de la sucursal.',

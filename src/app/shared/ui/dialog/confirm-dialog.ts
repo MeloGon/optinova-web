@@ -10,6 +10,8 @@ export interface ConfirmOptions {
   text: string;
   /** El verbo exacto del botón: "Eliminar paciente", nunca "Sí". */
   confirmLabel: string;
+  /** `danger` (por defecto) para acciones destructivas; `primary` para avisos que se pueden ignorar. */
+  tone?: 'danger' | 'primary';
 }
 
 export const CONFIRM_TITLE_ID = 'onv-confirm-title';
@@ -26,7 +28,7 @@ export const CONFIRM_TEXT_ID = 'onv-confirm-text';
     <div class="flex gap-4 p-6">
       <span
         aria-hidden="true"
-        class="grid size-10 shrink-0 place-items-center rounded-full bg-danger-subtle text-danger-subtle-foreground"
+        class="grid size-10 shrink-0 place-items-center rounded-full {{ danger ? 'bg-danger-subtle text-danger-subtle-foreground' : 'bg-warning-subtle text-warning-subtle-foreground' }}"
       >
         <svg [lucideIcon]="icon" [size]="20"></svg>
       </span>
@@ -46,7 +48,7 @@ export const CONFIRM_TEXT_ID = 'onv-confirm-text';
       <button
         type="button"
         (click)="ref.close(true)"
-        class="inline-flex h-(--onv-control-h) items-center rounded-md bg-danger px-4 text-[14px] font-medium text-danger-foreground hover:opacity-90"
+        class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:opacity-90 {{ danger ? 'bg-danger text-danger-foreground' : 'bg-primary text-primary-foreground' }}"
       >
         {{ options.confirmLabel }}
       </button>
@@ -60,6 +62,7 @@ export const CONFIRM_TEXT_ID = 'onv-confirm-text';
 export class ConfirmDialog {
   protected readonly options = inject<ConfirmOptions>(DIALOG_DATA);
   protected readonly ref = inject<DialogRef<boolean>>(DialogRef);
+  protected readonly danger = (this.options.tone ?? 'danger') === 'danger';
   protected readonly titleId = CONFIRM_TITLE_ID;
   protected readonly textId = CONFIRM_TEXT_ID;
   protected readonly icon = LucideTriangleAlert;

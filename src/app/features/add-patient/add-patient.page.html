@@ -1,0 +1,171 @@
+<form
+  [formGroup]="form"
+  (submit)="$event.preventDefault(); save()"
+  novalidate
+  class="mx-auto flex max-w-(--size-content-max) flex-col gap-6 p-4 md:p-6"
+>
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="text-heading">Nuevo paciente</h2>
+      <p class="text-body-sm text-muted-foreground">Los campos con * son obligatorios.</p>
+    </div>
+    <div class="flex gap-2">
+      <button
+        type="button"
+        (click)="clear()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        <svg [lucideIcon]="icons.clear" [size]="16"></svg>
+        Limpiar
+      </button>
+      <button
+        type="submit"
+        [disabled]="store.saving()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+      >
+        @if (store.saving()) {
+          <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+          Guardando…
+        } @else {
+          <svg [lucideIcon]="icons.save" [size]="16"></svg>
+          Guardar paciente
+        }
+      </button>
+    </div>
+  </div>
+
+  <div class="grid items-start gap-6 lg:grid-cols-[1fr_280px]">
+    <div class="flex flex-col gap-4">
+      <section class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <h3 class="text-subheading">Datos personales</h3>
+        <p class="mb-4 text-body-sm text-muted-foreground">Información básica del paciente</p>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <onv-field
+            class="sm:col-span-2"
+            label="Nombre completo"
+            inputId="new-name"
+            [required]="true"
+            [errors]="{ required: 'Escribe el nombre del paciente.' }"
+          >
+            <input id="new-name" onvInput formControlName="name" autocomplete="off" placeholder="Ej. María Alejandra González" />
+          </onv-field>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-label">Fecha de registro</span>
+            <span class="flex h-(--onv-control-h) items-center rounded-md border border-border bg-muted px-3 text-body text-muted-foreground tabular-nums">
+              {{ today | date: 'dd/MM/yyyy' }}
+            </span>
+          </div>
+
+          <onv-field label="Fecha de nacimiento" inputId="new-birth" [errors]="{ future: 'No puede ser una fecha futura.' }">
+            <!-- Date nativo con estilo provisional: se reemplaza por C-04. -->
+            <input id="new-birth" type="date" onvInput formControlName="birthDate" min="1900-01-01" [max]="today" />
+          </onv-field>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-label">Género</span>
+            <onv-segmented formControlName="gender" label="Género" [options]="genders" [clearable]="true" />
+          </div>
+
+          <onv-field
+            label="Sucursal de registro"
+            inputId="new-branch"
+            [required]="true"
+            [errors]="{ required: 'Elige una sucursal.' }"
+            [hint]="canChangeBranch ? undefined : 'Solo un administrador puede registrar en otra sucursal.'"
+          >
+            <select id="new-branch" onvInput formControlName="branch">
+              @if (!form.controls.branch.value) {
+                <option value="" disabled>Seleccione</option>
+              }
+              @for (branch of branches(); track branch.value) {
+                <option [value]="branch.value">{{ branch.label }}</option>
+              }
+            </select>
+          </onv-field>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <h3 class="text-subheading">Contacto</h3>
+        <p class="mb-4 text-body-sm text-muted-foreground">Cómo llegar al paciente</p>
+        <onv-field
+          label="Teléfono"
+          inputId="new-phone"
+          [required]="true"
+          [errors]="{ required: 'Escribe un teléfono.', phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
+        >
+          <input id="new-phone" onvInput formControlName="phone" inputmode="tel" autocomplete="off" placeholder="999 123 456" />
+        </onv-field>
+      </section>
+
+      <section class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <h3 class="text-subheading">Notas</h3>
+        <p class="mb-4 text-body-sm text-muted-foreground">Observaciones del paciente (opcional)</p>
+        <onv-field label="Observaciones" inputId="new-notes">
+          <textarea id="new-notes" onvInput formControlName="observations" rows="3"></textarea>
+        </onv-field>
+      </section>
+    </div>
+
+    <!-- Vista previa del registro -->
+    <aside class="rounded-lg border border-border bg-card p-5 elev-sm lg:sticky lg:top-6" aria-label="Resumen del registro">
+      <h3 class="text-subheading">Resumen</h3>
+      <p class="mb-4 text-body-sm text-muted-foreground">Vista previa del registro</p>
+      <div class="flex items-center gap-3 border-b border-border pb-4">
+        <span
+          aria-hidden="true"
+          class="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-[16px] font-semibold text-primary-foreground"
+        >
+          {{ initials() || '•' }}
+        </span>
+        <div class="min-w-0">
+          <p class="truncate text-[14px] font-semibold">{{ draft().name.trim() ? draft().name.trim().toUpperCase() : 'Sin nombre' }}</p>
+          @if (form.controls.branch.getRawValue(); as branch) {
+            <onv-badge tone="outline" class="mt-1">{{ branch }}</onv-badge>
+          }
+        </div>
+      </div>
+      <dl class="mt-4 flex flex-col gap-2 text-body-sm">
+        <div class="flex justify-between gap-3">
+          <dt class="text-muted-foreground">Teléfono</dt>
+          <dd class="tabular-nums">{{ draft().phone.trim() || '—' }}</dd>
+        </div>
+        <div class="flex justify-between gap-3">
+          <dt class="text-muted-foreground">Género</dt>
+          <dd>{{ draft().gender || '—' }}</dd>
+        </div>
+        <div class="flex justify-between gap-3">
+          <dt class="text-muted-foreground">Nacimiento</dt>
+          <dd class="tabular-nums">{{ draft().birthDate ? formatDate(draft().birthDate) : '—' }}</dd>
+        </div>
+      </dl>
+    </aside>
+  </div>
+
+  @if (store.hasLatest()) {
+    <section class="rounded-lg border border-border bg-card p-5 elev-sm" aria-labelledby="latest-title">
+      <h3 id="latest-title" class="mb-2 text-subheading">Últimos pacientes agregados</h3>
+      <ul class="divide-y divide-border">
+        @for (patient of store.latest(); track patient.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 py-2.5">
+            <div class="min-w-0">
+              <p class="truncate text-[13px] font-medium">{{ patient.name }}</p>
+              <p class="text-caption font-normal text-muted-foreground">
+                {{ patient.branch || 'Sin sucursal' }} · {{ patient.registeredOn | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <a
+              routerLink="/dashboard/sell"
+              [queryParams]="{ patient: patient.id }"
+              class="inline-flex h-8 items-center rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+            >
+              Ir a vender
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</form>
