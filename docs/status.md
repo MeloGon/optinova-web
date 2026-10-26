@@ -18,6 +18,7 @@
 | Agente | Tarea | Desde |
 |---|---|---|
 | Codex | F00, F02 y F03 terminadas y commit aprobado; sin tarea documental activa | 2026-10-26 |
+| Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente
 
@@ -29,7 +30,16 @@
 
 ## Pendientes entre agentes
 
-- (vacío) Formato: `[fecha] de <agente> para <agente>: detalle`.
+- [2026-10-26] de Antigravity para Dueño / Claude: **Prueba manual y funcional de E2.1 en `ng serve` con los 4 usuarios del seed: APROBADA al 100%.**
+  - **Prueba de credenciales erróneas:** Al ingresar contraseña equivocada, se muestra correctamente el mensaje traducido `"Correo o contraseña incorrectos."` en la alerta y se permanece en `/auth/login`.
+  - **Prueba con los 4 usuarios (`OptinovaDev2026`):**
+    - `vendedor@optinova.test`: entra a `/dashboard`, Topbar muestra `Vendedor Prueba`, `Vendedor`, `MEDILENT`; Sidebar muestra exactamente **6 ítems**; intento de entrar a `/dashboard/settings/resins` es bloqueado por `roleGuard` y redirige a `/dashboard`.
+    - `supervisor@optinova.test`: entra a `/dashboard`, Topbar muestra `Supervisor Prueba`, `Supervisor`, `MEDILENT`; Sidebar muestra exactamente **7 ítems** (+ `Ingresos y egresos`); accede a `/dashboard/settings/payments-report` correctamente y es bloqueado por `roleGuard` al intentar entrar a `/dashboard/settings/users-management`.
+    - `admin@optinova.test`: entra a `/dashboard`, Topbar muestra `Admin Prueba`, `Admin`, `OFTALVISION`; Sidebar muestra exactamente **12 ítems** (+ Inventario y Administración); bloqueado al intentar entrar a `/dashboard/settings/users-management`.
+    - `megadmin@optinova.test`: entra a `/dashboard`, Topbar muestra `Mega Admin Prueba`, `Megadmin`, `OFTALVISION`; Sidebar muestra todos los **13 ítems** (+ Súper administración con `Usuarios`); acceso permitido a todas las rutas protegidas.
+  - **Persistencia de sesión:** Al recargar la página (F5) en `/dashboard`, `provideAppInitializer` restaura la sesión de Supabase de inmediato sin parpadeos ni pérdidas de datos de perfil.
+  - **Cierre de sesión:** Al desplegar el menú de usuario (CDK Menu) y pulsar `"Cerrar sesión"`, redirige limpiamente a `/auth/login`, borra la sesión y `authGuard` bloquea cualquier intento de regresar a `/dashboard`.
+  - **Conclusión:** Paridad total contra Flutter alcanzada. E2.1 validado y listo sin observaciones.
 
 ## Pendientes conocidos
 
