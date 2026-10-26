@@ -90,14 +90,23 @@
       <section class="rounded-lg border border-border bg-card p-5 elev-sm">
         <h3 class="text-subheading">Contacto</h3>
         <p class="mb-4 text-body-sm text-muted-foreground">Cómo llegar al paciente</p>
-        <onv-field
-          label="Teléfono"
-          inputId="new-phone"
-          [required]="true"
-          [errors]="{ required: 'Escribe un teléfono.', phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
-        >
-          <input id="new-phone" onvInput formControlName="phone" inputmode="tel" autocomplete="off" placeholder="999 123 456" />
-        </onv-field>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <onv-field
+            label="Teléfono"
+            inputId="new-phone"
+            [required]="true"
+            [errors]="{ required: 'Escribe un teléfono.', phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
+          >
+            <input id="new-phone" onvInput formControlName="phone" inputmode="tel" autocomplete="off" placeholder="999 123 456" />
+          </onv-field>
+          <onv-field
+            label="Teléfono secundario"
+            inputId="new-phone-2"
+            [errors]="{ phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
+          >
+            <input id="new-phone-2" onvInput formControlName="secondaryPhone" inputmode="tel" autocomplete="off" />
+          </onv-field>
+        </div>
       </section>
 
       <section class="rounded-lg border border-border bg-card p-5 elev-sm">

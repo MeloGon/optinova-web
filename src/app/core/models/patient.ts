@@ -13,6 +13,8 @@ export interface Patient {
   /** Texto de `pacientes.SUCURSAL` (OFTALVISION, MEDILENT...). */
   branch: string;
   phone: string;
+  /** Segundo número, solo si es distinto del principal. */
+  secondaryPhone: string;
   gender: string;
   observations: string;
   /** Cuándo se registró al cliente. */

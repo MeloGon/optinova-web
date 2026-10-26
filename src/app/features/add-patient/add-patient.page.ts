@@ -37,12 +37,22 @@ const notBlank = (control: AbstractControl<string>): ValidationErrors | null =>
   control.value.trim() ? null : { required: true };
 
 /** Teléfono: solo dígitos, espacios, +, - y paréntesis; entre 6 y 15 dígitos. */
+const phoneFormat = (value: string): boolean => {
+  if (!/^[\d\s+()-]+$/.test(value)) return false;
+  const digits = value.replace(/\D/g, '').length;
+  return digits >= 6 && digits <= 15;
+};
+
 const phoneValidator = (control: AbstractControl<string>): ValidationErrors | null => {
   const value = control.value.trim();
   if (!value) return { required: true };
-  if (!/^[\d\s+()-]+$/.test(value)) return { phone: true };
-  const digits = value.replace(/\D/g, '').length;
-  return digits >= 6 && digits <= 15 ? null : { phone: true };
+  return phoneFormat(value) ? null : { phone: true };
+};
+
+/** Igual, pero puede quedar vacío. */
+const optionalPhoneValidator = (control: AbstractControl<string>): ValidationErrors | null => {
+  const value = control.value.trim();
+  return !value || phoneFormat(value) ? null : { phone: true };
 };
 
 const notFuture = (control: AbstractControl<string>): ValidationErrors | null =>
@@ -100,6 +110,7 @@ export class AddPatientPage {
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [notBlank] }),
     phone: new FormControl('', { nonNullable: true, validators: [phoneValidator] }),
+    secondaryPhone: new FormControl('', { nonNullable: true, validators: [optionalPhoneValidator] }),
     gender: new FormControl('', { nonNullable: true }),
     birthDate: new FormControl('', { nonNullable: true, validators: [notFuture] }),
     branch: new FormControl(this.session.profile()?.branch ?? '', {
@@ -147,6 +158,7 @@ export class AddPatientPage {
     const result = await this.store.create({
       name,
       phone: v.phone.trim(),
+      secondaryPhone: v.secondaryPhone.trim(),
       gender: v.gender,
       birthDate: v.birthDate || null,
       branch: v.branch,

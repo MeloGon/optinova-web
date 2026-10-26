@@ -5,12 +5,16 @@
   </div>
 
   <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
-    <div class="grid gap-4 sm:grid-cols-[1fr_160px]">
-      <onv-field label="Apellidos y nombres" inputId="patient-name" [required]="true" [errors]="{ required: 'Escribe el nombre del paciente.' }">
-        <input id="patient-name" onvInput formControlName="name" autocomplete="off" />
-      </onv-field>
+    <onv-field label="Apellidos y nombres" inputId="patient-name" [required]="true" [errors]="{ required: 'Escribe el nombre del paciente.' }">
+      <input id="patient-name" onvInput formControlName="name" autocomplete="off" />
+    </onv-field>
+
+    <div class="grid gap-4 sm:grid-cols-2">
       <onv-field label="Teléfono" inputId="patient-phone">
         <input id="patient-phone" onvInput formControlName="phone" inputmode="tel" autocomplete="off" />
+      </onv-field>
+      <onv-field label="Teléfono secundario" inputId="patient-phone-2">
+        <input id="patient-phone-2" onvInput formControlName="secondaryPhone" inputmode="tel" autocomplete="off" />
       </onv-field>
     </div>
 

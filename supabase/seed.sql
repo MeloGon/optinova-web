@@ -137,8 +137,8 @@ select g,
        pg_temp.pick(array['OFTALVISION','MEDILENT']) as sucursal
 from generate_series(1, 50) g;
 
-insert into public.pacientes ("ID PACIENTE", "SUCURSAL", "NOMBRE COMPLETO",
-  "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro, fecha_nacimiento)
+insert into public.pacientes (id, sucursal, nombre,
+  telefono, genero, observaciones, fecha_registro, fecha_nacimiento)
 select id, sucursal, nombre,
        '555' || lpad((floor(random() * 10000000))::text, 7, '0'),
        pg_temp.pick(array['Masculino','Femenino']),
@@ -148,7 +148,7 @@ select id, sucursal, nombre,
 from seed_pacientes;
 
 -- Los pacientes del seed llevan ID explícito: la secuencia debe seguir después del mayor.
-select setval('public.pacientes_id_seq', (select coalesce(max("ID PACIENTE"), 0) + 1 from public.pacientes), false);
+select setval('public.pacientes_id_seq', (select coalesce(max(id), 0) + 1 from public.pacientes), false);
 
 insert into public.revisiones ("ID REFRACCION", "PACIENTE", "FECHA", "MOTIVO DE CONSULTA", "HISTORIA CLINICA",
   "OD ESF", "OD CIL", "OD EJE", "OD AV", "OI ESF", "OI CIL", "OI EJE", "OI AV", "ADD", "OBSERVACIONES", "DIP",

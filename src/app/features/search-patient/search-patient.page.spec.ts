@@ -127,7 +127,13 @@ describe('SearchPatientPage', () => {
     };
 
     beforeEach(() => {
-      repo.patients[0] = { ...repo.patients[0], phone: '999111222', gender: 'Femenino', birthDate: '1990-05-17' };
+      repo.patients[0] = {
+        ...repo.patients[0],
+        phone: '999111222',
+        secondaryPhone: '014567890',
+        gender: 'Femenino',
+        birthDate: '1990-05-17',
+      };
     });
 
     it('abre con los datos actuales del paciente', async () => {
@@ -137,6 +143,7 @@ describe('SearchPatientPage', () => {
       expect(dialog()).not.toBeNull();
       expect(field('patient-name').value).toBe('PACIENTE 1');
       expect(field('patient-phone').value).toBe('999111222');
+      expect(field('patient-phone-2').value).toBe('014567890');
       expect(field('patient-gender').value).toBe('Femenino');
       expect(field('patient-birth').value).toBe('1990-05-17');
       expect(field('patient-branch').value).toBe('OFTALVISION');
@@ -150,7 +157,13 @@ describe('SearchPatientPage', () => {
       await save();
 
       expect(repo.updated.length).toBe(1);
-      expect(repo.updated[0]).toMatchObject({ id: '1', name: 'MARIA NUEVA', birthDate: null, phone: '999111222' });
+      expect(repo.updated[0]).toMatchObject({
+        id: '1',
+        name: 'MARIA NUEVA',
+        birthDate: null,
+        phone: '999111222',
+        secondaryPhone: '014567890',
+      });
       expect(dialog()).toBeNull();
       expect(text()).toContain('MARIA NUEVA');
       expect(toasts().map((t) => t.title)).toEqual(['Paciente actualizado']);

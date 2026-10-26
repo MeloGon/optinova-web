@@ -6,22 +6,37 @@ import { NewPatient, PatientRepository, PatientSearch } from '../repositories/pa
 import { Result, err, ok } from '../result';
 import { SUPABASE } from '../supabase/supabase.client';
 
-/** Fila de `pacientes` tal como viene de la DB (nombres heredados de Excel, con espacios). */
+/** Fila de `pacientes` tal como viene de la DB. */
 interface PatientRow {
-  /** Alias de `"ID PACIENTE"::text` (ver COLUMNS). */
+  /** `id::text` (ver COLUMNS). */
   id: string;
-  'NOMBRE COMPLETO': string | null;
-  SUCURSAL: string | null;
-  'TELEFONO CEL': string | null;
-  GENERO: string | null;
-  OBSERVACIONES: string | null;
+  nombre: string | null;
+  sucursal: string | null;
+  telefono: string | null;
+  telefono_secundario: string | null;
+  genero: string | null;
+  observaciones: string | null;
   fecha_registro: string;
   fecha_nacimiento: string | null;
 }
 
 // El ID se pide como texto: un bigint grande llegaría como número JSON y perdería dígitos.
 const COLUMNS =
-  'id:"ID PACIENTE"::text, "NOMBRE COMPLETO", "SUCURSAL", "TELEFONO CEL", "GENERO", "OBSERVACIONES", fecha_registro, fecha_nacimiento';
+  'id::text, nombre, sucursal, telefono, telefono_secundario, genero, observaciones, fecha_registro, fecha_nacimiento';
+
+/** Lo que el usuario puede cambiar de un paciente (las mismas columnas al crear y al editar). */
+function toColumns(patient: NewPatient) {
+  return {
+    nombre: patient.name,
+    sucursal: patient.branch,
+    telefono: patient.phone,
+    telefono_secundario: patient.secondaryPhone,
+    // La DB solo acepta Masculino/Femenino/Otro o NULL (migración #4): "" se guarda como NULL.
+    genero: patient.gender || null,
+    observaciones: patient.observations,
+    fecha_nacimiento: patient.birthDate,
+  };
+}
 
 @Injectable()
 export class SupabasePatientRepository extends PatientRepository {
@@ -33,13 +48,13 @@ export class SupabasePatientRepository extends PatientRepository {
     let request = this.supabase.from('pacientes').select(COLUMNS, { count: 'exact' });
     // Cada palabra debe aparecer en el nombre, en cualquier orden: "garcia juan" encuentra "JUAN GARCIA".
     for (const word of query.split(/\s+/).filter(Boolean)) {
-      request = request.ilike('NOMBRE COMPLETO', `%${escapeLike(word)}%`);
+      request = request.ilike('nombre', `%${escapeLike(word)}%`);
     }
 
     const { data, count, error } = await request
       .order('fecha_registro', { ascending: false })
       // Desempate estable: sin él, dos pacientes del mismo día podrían saltar entre páginas.
-      .order('ID PACIENTE', { ascending: false })
+      .order('id', { ascending: false })
       .range(from, from + pageSize - 1)
       .overrideTypes<PatientRow[], { merge: false }>();
 
@@ -48,17 +63,10 @@ export class SupabasePatientRepository extends PatientRepository {
   }
 
   async create(patient: NewPatient): Promise<Result<Patient, AppError>> {
-    // Sin "ID PACIENTE" ni fecha_registro: la secuencia y el valor por defecto de la DB los asignan.
+    // Sin id ni fecha_registro: la secuencia y el valor por defecto de la DB los asignan.
     const { data, error } = await this.supabase
       .from('pacientes')
-      .insert({
-        'NOMBRE COMPLETO': patient.name,
-        'TELEFONO CEL': patient.phone,
-        GENERO: patient.gender || null,
-        fecha_nacimiento: patient.birthDate,
-        SUCURSAL: patient.branch,
-        OBSERVACIONES: patient.observations,
-      })
+      .insert(toColumns(patient))
       .select(COLUMNS)
       .single<PatientRow>();
 
@@ -71,7 +79,7 @@ export class SupabasePatientRepository extends PatientRepository {
       .from('pacientes')
       .select(COLUMNS)
       // Sin comodines: igualdad exacta, sin distinguir mayúsculas.
-      .ilike('NOMBRE COMPLETO', escapeLike(name.trim()))
+      .ilike('nombre', escapeLike(name.trim()))
       .limit(5)
       .overrideTypes<PatientRow[], { merge: false }>();
 
@@ -80,35 +88,28 @@ export class SupabasePatientRepository extends PatientRepository {
   }
 
   async update(patient: Patient): Promise<Result<void, AppError>> {
+    // .select() devuelve las filas cambiadas: si RLS lo impide no hay error, solo 0 filas.
     const { data, error } = await this.supabase
       .from('pacientes')
-      .update({
-        'NOMBRE COMPLETO': patient.name,
-        'TELEFONO CEL': patient.phone,
-        // La DB solo acepta Masculino/Femenino/Otro o NULL (migración #4): "" se guarda como NULL.
-        GENERO: patient.gender || null,
-        fecha_nacimiento: patient.birthDate,
-        SUCURSAL: patient.branch,
-        OBSERVACIONES: patient.observations,
-      })
-      .eq('ID PACIENTE', patient.id)
-      .select('"ID PACIENTE"');
+      .update(toColumns(patient))
+      .eq('id', patient.id)
+      .select('id');
 
     if (error) return err(toAppError(error));
-    if (data.length === 0) return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para editarlo.'));
+    if (data.length === 0) {
+      return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para editarlo.'));
+    }
     return ok(undefined);
   }
 
   async delete(id: string): Promise<Result<void, AppError>> {
     // .select() devuelve las filas borradas: si RLS impide borrar no hay error, solo 0 filas.
-    const { data, error } = await this.supabase
-      .from('pacientes')
-      .delete()
-      .eq('ID PACIENTE', id)
-      .select('"ID PACIENTE"');
+    const { data, error } = await this.supabase.from('pacientes').delete().eq('id', id).select('id');
 
     if (error) return err(toAppError(error));
-    if (data.length === 0) return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para eliminarlo.'));
+    if (data.length === 0) {
+      return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para eliminarlo.'));
+    }
     return ok(undefined);
   }
 }
@@ -124,11 +125,12 @@ function escapeLike(text: string): string {
 function toPatient(row: PatientRow): Patient {
   return {
     id: row.id,
-    name: row['NOMBRE COMPLETO'] ?? '',
-    branch: row.SUCURSAL ?? '',
-    phone: row['TELEFONO CEL'] ?? '',
-    gender: row.GENERO ?? '',
-    observations: row.OBSERVACIONES ?? '',
+    name: row.nombre ?? '',
+    branch: row.sucursal ?? '',
+    phone: row.telefono ?? '',
+    secondaryPhone: row.telefono_secundario ?? '',
+    gender: row.genero ?? '',
+    observations: row.observaciones ?? '',
     registeredOn: row.fecha_registro,
     birthDate: row.fecha_nacimiento,
   };

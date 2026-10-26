@@ -9,6 +9,7 @@ export const fakePatient = (id: number | string, name = `PACIENTE ${id}`): Patie
   name,
   branch: 'OFTALVISION',
   phone: '555',
+  secondaryPhone: '',
   gender: 'Femenino',
   observations: '',
   registeredOn: '2026-10-01',

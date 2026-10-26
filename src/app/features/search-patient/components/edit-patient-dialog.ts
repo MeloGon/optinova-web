@@ -66,6 +66,7 @@ export class EditPatientDialog {
   protected readonly form = new FormGroup({
     name: new FormControl(this.patient.name, { nonNullable: true, validators: [notBlank] }),
     phone: new FormControl(this.patient.phone, { nonNullable: true }),
+    secondaryPhone: new FormControl(this.patient.secondaryPhone, { nonNullable: true }),
     gender: new FormControl(this.patient.gender, { nonNullable: true }),
     birthDate: new FormControl(this.patient.birthDate ?? '', { nonNullable: true, validators: [notFuture] }),
     branch: new FormControl(this.patient.branch, { nonNullable: true, validators: [Validators.required] }),
@@ -86,6 +87,7 @@ export class EditPatientDialog {
       ...this.patient,
       name: v.name.trim(),
       phone: v.phone.trim(),
+      secondaryPhone: v.secondaryPhone.trim(),
       gender: v.gender,
       birthDate: v.birthDate || null,
       branch: v.branch,

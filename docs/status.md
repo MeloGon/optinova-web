@@ -19,7 +19,7 @@
 | Agente | Tarea | Desde |
 |---|---|---|
 | Codex | F07 y su PDF preparados; espera revisión del dueño y aprobación de commit. Mensaje propuesto: `docs(fundamentos): agrega recorrido F07 de E2.1` | 2026-10-26 |
-| Claude | E2.2 Buscar paciente completo en `development` (commits locales; push pendiente) y E2.3-0 (IDs como texto + migración #5). E2.3a Agregar paciente implementada (formulario, vista previa, aviso de nombre repetido, últimos agregados; 89 tests en verde), pendiente de prueba manual del dueño y commit. Sigue E2.3b: revisiones (ver, agregar y editar medidas) | 2026-10-26 |
+| Claude | E2.2 Buscar paciente completo en `development` (commits locales; push pendiente) y E2.3-0 (IDs como texto + migración #5). E2.3a Agregar paciente (commit `ef10044`). Migración #6: columnas de `pacientes` con nombres limpios y teléfono secundario (90 tests en verde), pendiente de prueba manual del dueño y commit. Sigue E2.3b: revisiones (FK a paciente, ver/agregar/editar medidas) | 2026-10-26 |
 | Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente

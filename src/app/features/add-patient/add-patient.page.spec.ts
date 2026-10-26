@@ -109,6 +109,19 @@ describe('AddPatientPage', () => {
     expect(repo.created).toEqual([]);
   });
 
+  it('el teléfono secundario es opcional, pero si se escribe debe ser válido', async () => {
+    await open();
+    await fillValid();
+    await type('new-phone-2', 'xx');
+    await submit();
+    expect(text()).toContain('Escribe un teléfono válido');
+    expect(repo.created).toEqual([]);
+
+    await type('new-phone-2', '01 234 5678');
+    await submit();
+    expect(repo.created[0].secondaryPhone).toBe('01 234 5678');
+  });
+
   it('rechaza una fecha de nacimiento futura', async () => {
     await open();
     await fillValid();
@@ -129,6 +142,7 @@ describe('AddPatientPage', () => {
       {
         name: 'ANA MARÍA LÓPEZ',
         phone: '999 111 222',
+        secondaryPhone: '',
         gender: '',
         birthDate: null,
         branch: 'OFTALVISION',

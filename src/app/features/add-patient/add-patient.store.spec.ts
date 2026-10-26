@@ -4,7 +4,7 @@ import { PatientRepository } from '../../core/repositories/patient.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
 import { AddPatientStore } from './add-patient.store';
 
-const draft = { name: 'ANA LOPEZ', phone: '999111222', gender: '', birthDate: null, branch: 'MEDILENT', observations: '' };
+const draft = { name: 'ANA LOPEZ', phone: '999111222', secondaryPhone: '', gender: '', birthDate: null, branch: 'MEDILENT', observations: '' };
 
 describe('AddPatientStore', () => {
   let repo: FakePatientRepository;
