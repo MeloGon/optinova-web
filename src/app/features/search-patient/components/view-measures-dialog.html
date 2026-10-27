@@ -1,0 +1,94 @@
+<div class="border-b border-border px-6 py-4">
+  <h2 [id]="titleId" class="text-heading">Medidas</h2>
+  <p class="text-body-sm text-muted-foreground">
+    {{ patient.name }} · {{ reviews().length }} {{ reviews().length === 1 ? 'medición registrada' : 'mediciones registradas' }}
+  </p>
+</div>
+
+<div class="flex-1 overflow-y-auto p-6">
+  @if (reviews().length === 0) {
+    <p class="text-body-sm text-muted-foreground">Este paciente no tiene medidas registradas.</p>
+  } @else {
+    <div class="flex flex-col gap-3">
+      @for (review of reviews(); track review.id) {
+        <div class="rounded-lg border border-border">
+          <div class="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-body-sm font-medium tabular-nums">{{ review.date | date: 'dd/MM/yyyy' }}</span>
+              @if (review.branch) {
+                <onv-badge tone="outline" [icon]="icons.branch">{{ review.branch }}</onv-badge>
+              }
+            </div>
+            <div class="flex items-center gap-0.5">
+              <button
+                type="button"
+                (click)="edit(review)"
+                [attr.aria-label]="'Editar medida del ' + (review.date | date: 'dd/MM/yyyy')"
+                class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+              >
+                <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+              </button>
+              <button
+                type="button"
+                (click)="remove(review)"
+                [attr.aria-label]="'Eliminar medida del ' + (review.date | date: 'dd/MM/yyyy')"
+                class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-danger-subtle hover:text-danger-subtle-foreground"
+              >
+                <svg [lucideIcon]="icons.trash" [size]="15"></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 p-4 text-body-sm">
+            @if (review.reasonConsult) {
+              <p><span class="font-medium text-foreground">Motivo:</span> <span class="text-muted-foreground">{{ review.reasonConsult }}</span></p>
+            }
+            @if (review.graduationType) {
+              <p><span class="font-medium text-foreground">Tipo de graduación:</span> <span class="text-muted-foreground">{{ review.graduationType }}</span></p>
+            }
+
+            @if (review.odEsf || review.oiEsf || review.odCil || review.oiCil || review.odEje || review.oiEje || review.odAv || review.oiAv) {
+              <onv-rx-table
+                mode="view"
+                [odView]="{ esf: review.odEsf, cil: review.odCil, eje: review.odEje, av: review.odAv }"
+                [oiView]="{ esf: review.oiEsf, cil: review.oiCil, eje: review.oiEje, av: review.oiAv }"
+              />
+            }
+
+            @if (review.addition || review.dip) {
+              <div class="flex flex-wrap gap-4">
+                @if (review.addition) {
+                  <p><span class="font-medium text-foreground">ADD:</span> <span class="text-muted-foreground">{{ review.addition }}</span></p>
+                }
+                @if (review.dip) {
+                  <p><span class="font-medium text-foreground">DIP:</span> <span class="text-muted-foreground">{{ review.dip }}</span></p>
+                }
+              </div>
+            }
+
+            @if (review.optometricDiagnosis) {
+              <p><span class="font-medium text-foreground">Diagnóstico optométrico:</span> <span class="text-muted-foreground">{{ review.optometricDiagnosis }}</span></p>
+            }
+
+            @if (review.observations) {
+              <div class="rounded-md bg-muted/40 p-3">
+                <p class="text-caption font-medium text-muted-foreground">Observaciones</p>
+                <p class="text-muted-foreground">{{ review.observations }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+  <button
+    type="button"
+    (click)="close()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+  >
+    Cerrar
+  </button>
+</div>

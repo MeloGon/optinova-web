@@ -1,7 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { AppError } from '../../core/errors/app-error';
 import { Patient } from '../../core/models/patient';
+import { Review } from '../../core/models/review';
 import { PatientRepository, PatientSearch } from '../../core/repositories/patient.repository';
+import { NewReview, ReviewRepository } from '../../core/repositories/review.repository';
 import { Result } from '../../core/result';
 
 interface SearchState {
@@ -23,6 +25,7 @@ interface SearchState {
 @Injectable()
 export class SearchPatientStore {
   private readonly repo = inject(PatientRepository);
+  private readonly reviewRepo = inject(ReviewRepository);
 
   private readonly state = signal<SearchState>({
     items: [],
@@ -79,5 +82,22 @@ export class SearchPatientStore {
   private async refreshAfter(result: Result<void, AppError>): Promise<Result<void, AppError>> {
     if (result.ok && this.lastSearch) await this.load(this.lastSearch);
     return result;
+  }
+
+  /** Medidas de un paciente, de la más reciente a la más antigua (= getReviewsByPatient de Flutter). */
+  async loadReviews(patientId: string): Promise<Result<Review[], AppError>> {
+    return this.reviewRepo.getByPatient(patientId);
+  }
+
+  async createReview(review: NewReview): Promise<Result<Review, AppError>> {
+    return this.reviewRepo.create(review);
+  }
+
+  async updateReview(review: Review): Promise<Result<void, AppError>> {
+    return this.reviewRepo.update(review);
+  }
+
+  async deleteReview(id: string): Promise<Result<void, AppError>> {
+    return this.reviewRepo.delete(id);
   }
 }

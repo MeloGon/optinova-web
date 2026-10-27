@@ -1,0 +1,125 @@
+<div [class.text-[13px]]="mode() === 'compact'" class="flex flex-col gap-2">
+  <div class="overflow-hidden rounded-md border border-border">
+    <table class="w-full border-collapse font-mono">
+      <thead>
+        <tr class="text-caption text-muted-foreground">
+          <th scope="col" class="w-14 py-1.5 pl-3 text-left font-sans font-normal"></th>
+          <th scope="col" class="py-1.5 text-right font-sans font-normal">ESF</th>
+          <th scope="col" class="py-1.5 text-right font-sans font-normal">CIL</th>
+          <th scope="col" class="py-1.5 text-right font-sans font-normal">EJE</th>
+          <th scope="col" class="border-l border-border py-1.5 pr-3 text-right font-sans font-normal">AV</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (mode() === 'edit') {
+          <tr class="border-t border-border">
+            <td class="py-2 pl-3"><span class="inline-flex h-[22px] w-[30px] items-center justify-center rounded-md bg-foreground font-sans text-[11px] font-bold text-background">OD</span></td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="odControls()!.esf" (blur)="normalizeDiopter(odControls()!.esf)" aria-label="ESF OD" class="h-8 w-16 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEsfCil(odControls()!.esf, 0.25)" aria-label="Aumentar ESF OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEsfCil(odControls()!.esf, -0.25)" aria-label="Disminuir ESF OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="odControls()!.cil" (blur)="normalizeDiopter(odControls()!.cil)" aria-label="CIL OD" class="h-8 w-16 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEsfCil(odControls()!.cil, 0.25)" aria-label="Aumentar CIL OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEsfCil(odControls()!.cil, -0.25)" aria-label="Disminuir CIL OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="odControls()!.eje" [attr.aria-invalid]="odControls()!.eje.invalid && (odControls()!.eje.touched || odControls()!.eje.dirty) ? true : null" aria-label="EJE OD" class="h-8 w-14 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring aria-invalid:border-danger" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEje(odControls()!.eje, 1)" aria-label="Aumentar EJE OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEje(odControls()!.eje, -1)" aria-label="Disminuir EJE OD" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="border-l border-border py-1.5 pr-3 text-right">
+              <input [formControl]="odControls()!.av" aria-label="AV OD" class="h-8 w-20 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+            </td>
+          </tr>
+          <tr class="border-t border-border">
+            <td class="py-2 pl-3"><span class="inline-flex h-[22px] w-[30px] items-center justify-center rounded-md border border-border-strong font-sans text-[11px] font-bold text-foreground">OI</span></td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="oiControls()!.esf" (blur)="normalizeDiopter(oiControls()!.esf)" aria-label="ESF OI" class="h-8 w-16 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEsfCil(oiControls()!.esf, 0.25)" aria-label="Aumentar ESF OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEsfCil(oiControls()!.esf, -0.25)" aria-label="Disminuir ESF OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="oiControls()!.cil" (blur)="normalizeDiopter(oiControls()!.cil)" aria-label="CIL OI" class="h-8 w-16 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEsfCil(oiControls()!.cil, 0.25)" aria-label="Aumentar CIL OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEsfCil(oiControls()!.cil, -0.25)" aria-label="Disminuir CIL OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="py-1.5 text-right">
+              <div class="flex items-center justify-end gap-0.5">
+                <input [formControl]="oiControls()!.eje" [attr.aria-invalid]="oiControls()!.eje.invalid && (oiControls()!.eje.touched || oiControls()!.eje.dirty) ? true : null" aria-label="EJE OI" class="h-8 w-14 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring aria-invalid:border-danger" />
+                <div class="flex flex-col">
+                  <button type="button" (click)="stepEje(oiControls()!.eje, 1)" aria-label="Aumentar EJE OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.up" [size]="10"></svg></button>
+                  <button type="button" (click)="stepEje(oiControls()!.eje, -1)" aria-label="Disminuir EJE OI" class="grid h-4 w-4 place-items-center text-muted-foreground hover:text-foreground"><svg [lucideIcon]="icons.down" [size]="10"></svg></button>
+                </div>
+              </div>
+            </td>
+            <td class="border-l border-border py-1.5 pr-3 text-right">
+              <input [formControl]="oiControls()!.av" aria-label="AV OI" class="h-8 w-20 rounded-md border border-input bg-input-background px-1.5 text-right tabular-nums outline-none focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring" />
+            </td>
+          </tr>
+        } @else {
+          @for (row of rows(); track row.eye) {
+            <tr class="border-t border-border">
+              <td class="py-1.5 pl-3">
+                @if (row.solid) {
+                  <span class="inline-flex h-[22px] w-[30px] items-center justify-center rounded-md bg-foreground font-sans text-[11px] font-bold text-background">{{ row.eye }}</span>
+                } @else {
+                  <span class="inline-flex h-[22px] w-[30px] items-center justify-center rounded-md border border-border-strong font-sans text-[11px] font-bold text-foreground">{{ row.eye }}</span>
+                }
+              </td>
+              <td class="py-1.5 text-right tabular-nums" [class.text-primary-text]="rxTone(row.view?.esf ?? '') === 'pos'" [class.text-muted-foreground]="rxTone(row.view?.esf ?? '') === 'zero' || rxTone(row.view?.esf ?? '') === 'empty'">
+                {{ formatDiopter(row.view?.esf ?? '') }}
+              </td>
+              <td class="py-1.5 text-right tabular-nums" [class.text-primary-text]="rxTone(row.view?.cil ?? '') === 'pos'" [class.text-muted-foreground]="rxTone(row.view?.cil ?? '') === 'zero' || rxTone(row.view?.cil ?? '') === 'empty'">
+                {{ formatDiopter(row.view?.cil ?? '') }}
+              </td>
+              <td class="py-1.5 text-right tabular-nums">
+                {{ formatAxis(row.view?.eje ?? '') }}
+              </td>
+              <td class="border-l border-border py-1.5 pr-3 text-right tabular-nums">
+                {{ formatText(row.view?.av ?? '') }}
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (mode() === 'edit') {
+    <div>
+      <button type="button" (click)="copyOdToOi()" class="inline-flex items-center gap-1.5 text-body-sm text-muted-foreground hover:text-foreground">
+        <svg [lucideIcon]="icons.copy" [size]="13"></svg>
+        Copiar OD → OI
+      </button>
+    </div>
+    @if (errors().length > 0) {
+      <ul class="text-body-sm text-danger-subtle-foreground">
+        @for (message of errors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+  }
+</div>

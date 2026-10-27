@@ -114,7 +114,12 @@
           @if (!store.loaded()) {
             @for (row of skeletonRows; track row) {
               <tr aria-hidden="true">
-                <td><onv-skeleton class="h-3 w-52" /></td>
+                <td>
+                  <div class="flex items-center gap-2.5">
+                    <onv-skeleton class="size-8 shrink-0 rounded-full" />
+                    <onv-skeleton class="h-3 w-44" />
+                  </div>
+                </td>
                 <td><onv-skeleton class="h-[22px] w-28 rounded-full" /></td>
                 <td><onv-skeleton class="h-3 w-24" /></td>
                 <td><onv-skeleton class="h-3 w-20" /></td>
@@ -124,7 +129,12 @@
           } @else {
             @for (patient of store.items(); track patient.id) {
               <tr>
-                <td class="font-medium">{{ patient.name }}</td>
+                <td class="font-medium">
+                  <div class="flex items-center gap-2.5">
+                    <onv-avatar [name]="patient.name" size="sm" [hidden]="true" />
+                    {{ patient.name }}
+                  </div>
+                </td>
                 <td>
                   @if (patient.branch) {
                     <onv-badge tone="outline" [icon]="icons.pin">{{ patient.branch }}</onv-badge>
@@ -134,16 +144,32 @@
                 </td>
                 <td class="tabular-nums">{{ patient.phone || '—' }}</td>
                 <td class="tabular-nums">{{ patient.registeredOn | date: 'dd/MM/yyyy' }}</td>
-                <td class="w-12 text-right">
-                  <button
-                    type="button"
-                    [cdkMenuTriggerFor]="rowMenu"
-                    [cdkMenuTriggerData]="{ $implicit: patient }"
-                    [attr.aria-label]="'Más acciones para ' + patient.name"
-                    class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
-                  >
-                    <svg [lucideIcon]="icons.more" [size]="16"></svg>
-                  </button>
+                <td class="w-20 text-right">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      (click)="edit(patient)"
+                      [attr.aria-label]="'Editar ' + patient.name"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+                    </button>
+                    @if (loadingMeasuresFor() === patient.id) {
+                      <span class="grid size-8 place-items-center" [attr.aria-label]="'Cargando medidas de ' + patient.name" aria-live="polite">
+                        <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
+                      </span>
+                    } @else {
+                      <button
+                        type="button"
+                        [cdkMenuTriggerFor]="rowMenu"
+                        [cdkMenuTriggerData]="{ $implicit: patient }"
+                        [attr.aria-label]="'Más acciones para ' + patient.name"
+                        class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                      >
+                        <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
             }
@@ -166,30 +192,27 @@
   }
 </div>
 
-<!-- Menú de acciones por fila (C-15). Las medidas se habilitan en E2.3. -->
+<!-- Menú de acciones por fila (C-15). -->
 <ng-template #rowMenu let-patient>
   <div
     cdkMenu
     class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
   >
-    @for (item of ['Ver medidas', 'Agregar medida']; track item) {
-      <button
-        cdkMenuItem
-        type="button"
-        [cdkMenuItemDisabled]="true"
-        class="flex h-8 w-full items-center justify-between gap-4 rounded-sm px-2.5 text-[14px] outline-none aria-disabled:text-disabled-foreground"
-      >
-        {{ item }}
-        <span class="text-caption font-normal">Próximamente</span>
-      </button>
-    }
     <button
       cdkMenuItem
       type="button"
-      (cdkMenuItemTriggered)="edit(patient)"
+      (cdkMenuItemTriggered)="viewMeasures(patient)"
       class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
     >
-      Editar paciente
+      Ver medidas
+    </button>
+    <button
+      cdkMenuItem
+      type="button"
+      (cdkMenuItemTriggered)="addMeasure(patient)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+    >
+      Agregar medida
     </button>
     <div class="my-1 h-px bg-border" role="separator"></div>
     <button

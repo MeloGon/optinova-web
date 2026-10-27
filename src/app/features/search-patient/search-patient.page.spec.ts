@@ -3,12 +3,15 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { PatientRepository } from '../../core/repositories/patient.repository';
+import { ReviewRepository } from '../../core/repositories/review.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
+import { FakeReviewRepository, fakeReview } from '../../testing/fake-review.repository';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { SearchPatientPage } from './search-patient.page';
 
 describe('SearchPatientPage', () => {
   let repo: FakePatientRepository;
+  let reviewRepo: FakeReviewRepository;
   let harness: RouterTestingHarness;
 
   async function open(url: string): Promise<void> {
@@ -16,6 +19,7 @@ describe('SearchPatientPage', () => {
       providers: [
         provideRouter([{ path: 'search-patient', component: SearchPatientPage }], withComponentInputBinding()),
         { provide: PatientRepository, useValue: repo },
+        { provide: ReviewRepository, useValue: reviewRepo },
       ],
     });
     harness = await RouterTestingHarness.create();
@@ -40,6 +44,7 @@ describe('SearchPatientPage', () => {
     repo.patients = Array.from({ length: 30 }, (_, i) =>
       fakePatient(i + 1, i === 4 ? 'ANA TORRES' : `PACIENTE ${i + 1}`),
     );
+    reviewRepo = new FakeReviewRepository();
   });
 
   it('muestra la primera página (25) y el total', async () => {
@@ -103,11 +108,17 @@ describe('SearchPatientPage', () => {
   const byText = (root: ParentNode, selector: string, label: string) =>
     Array.from(root.querySelectorAll<HTMLElement>(selector)).find((e) => e.textContent?.includes(label))!;
 
-  /** Abre el menú de la primera fila y elige la acción. */
+  /** Abre el menú ⋯ de la primera fila y elige la acción. */
   async function openMenuAction(label: string): Promise<void> {
     el().querySelector<HTMLButtonElement>('tbody button[aria-label^="Más acciones"]')!.click();
     await settle();
     byText(document.body, '[cdkMenuItem]', label).click();
+    await settle();
+  }
+
+  /** "Editar" ya es un ícono visible en la fila (P-03), no vive en el menú ⋯. */
+  async function openEditPatient(): Promise<void> {
+    el().querySelector<HTMLButtonElement>('tbody button[aria-label^="Editar "]')!.click();
     await settle();
   }
 
@@ -138,7 +149,7 @@ describe('SearchPatientPage', () => {
 
     it('abre con los datos actuales del paciente', async () => {
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
 
       expect(dialog()).not.toBeNull();
       expect(field('patient-name').value).toBe('PACIENTE 1');
@@ -151,7 +162,7 @@ describe('SearchPatientPage', () => {
 
     it('guarda los cambios (sin espacios sobrantes), cierra, refresca la lista y avisa', async () => {
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
       type('patient-name', '  MARIA NUEVA  ');
       type('patient-birth', '');
       await save();
@@ -171,7 +182,7 @@ describe('SearchPatientPage', () => {
 
     it('sin nombre muestra el error y no guarda', async () => {
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
       type('patient-name', '   ');
       await save();
 
@@ -182,7 +193,7 @@ describe('SearchPatientPage', () => {
 
     it('una fecha de nacimiento futura no se acepta', async () => {
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
       type('patient-birth', '2999-01-01');
       await save();
 
@@ -193,7 +204,7 @@ describe('SearchPatientPage', () => {
     it('si el servidor falla, el diálogo sigue abierto con el error y sin aviso de éxito', async () => {
       repo.updateFailWith = { kind: 'server', message: 'No se pudo guardar.' };
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
       await save();
 
       expect(dialog()!.querySelector('[role=alert]')?.textContent).toContain('No se pudo guardar.');
@@ -202,7 +213,7 @@ describe('SearchPatientPage', () => {
 
     it('cancelar cierra sin guardar', async () => {
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
       byText(document.body, '[role=dialog] button', 'Cancelar').click();
       await settle();
 
@@ -214,10 +225,129 @@ describe('SearchPatientPage', () => {
     it('una sucursal cerrada del paciente se conserva en la lista', async () => {
       repo.patients[0] = { ...repo.patients[0], branch: 'OFTALMIC CENTER' };
       await open('/search-patient');
-      await openMenuAction('Editar paciente');
+      await openEditPatient();
 
       expect(field('patient-branch').value).toBe('OFTALMIC CENTER');
       expect(document.body.textContent).toContain('OFTALMIC CENTER (cerrada)');
+    });
+  });
+
+  describe('ver medidas', () => {
+    const dialog = () => document.body.querySelector('[role=dialog]');
+
+    it('carga y muestra las medidas del paciente', async () => {
+      reviewRepo.reviews = [
+        fakeReview(1, '1', { date: '2026-09-01', odEsf: '-1.00', reasonConsult: 'Revisión anual' }),
+      ];
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      expect(dialog()).not.toBeNull();
+      expect(reviewRepo.calls).toEqual(['1']);
+      expect(dialog()!.textContent).toContain('Revisión anual');
+      // P-05 Graduación: signo menos tipográfico (−), no el guion ASCII.
+      expect(dialog()!.textContent).toContain('−1.00');
+    });
+
+    it('sin medidas avisa con un toast y no abre el diálogo (= Flutter: no abre si la lista viene vacía)', async () => {
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      expect(dialog()).toBeNull();
+      expect(toasts().map((t) => ({ tone: t.tone, title: t.title, text: t.text }))).toEqual([
+        { tone: 'info', title: 'Sin medidas', text: 'Este paciente no tiene medidas registradas.' },
+      ]);
+    });
+
+    it('si falla la carga, avisa con un toast de error y no abre el diálogo', async () => {
+      reviewRepo.getFailWith = { kind: 'server', message: 'Falló.' };
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      expect(dialog()).toBeNull();
+      expect(toasts().map((t) => t.tone)).toEqual(['danger']);
+    });
+
+    it('eliminar una medida pide confirmación, la quita de la lista y avisa', async () => {
+      reviewRepo.reviews = [fakeReview(1, '1', { date: '2026-09-01' }), fakeReview(2, '1', { date: '2026-08-01' })];
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      document.body.querySelectorAll<HTMLButtonElement>('[aria-label^="Eliminar medida"]')[0].click();
+      await settle();
+      byText(document.body, '[role=alertdialog] button', 'Eliminar medida').click();
+      await settle();
+
+      expect(reviewRepo.deleted).toEqual(['1']);
+      expect(document.body.querySelectorAll('[aria-label^="Eliminar medida"]').length).toBe(1);
+      expect(toasts().map((t) => t.title)).toContain('Medida eliminada');
+    });
+
+    it('si eliminar falla, avisa del error y no la quita de la lista', async () => {
+      reviewRepo.reviews = [fakeReview(1, '1')];
+      reviewRepo.deleteFailWith = { kind: 'server', message: 'No se pudo.' };
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      document.body.querySelector<HTMLButtonElement>('[aria-label^="Eliminar medida"]')!.click();
+      await settle();
+      byText(document.body, '[role=alertdialog] button', 'Eliminar medida').click();
+      await settle();
+
+      expect(document.body.querySelectorAll('[aria-label^="Eliminar medida"]').length).toBe(1);
+      expect(toasts().map((t) => t.tone)).toEqual(['danger']);
+    });
+
+    it('editar una medida la guarda y recarga la lista', async () => {
+      reviewRepo.reviews = [fakeReview(1, '1', { odEsf: '-1.00' })];
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      document.body.querySelector<HTMLButtonElement>('[aria-label^="Editar medida"]')!.click();
+      await settle();
+
+      const field = document.body.querySelector<HTMLInputElement>('[aria-label="ESF OD"]')!;
+      field.value = '-1.50';
+      field.dispatchEvent(new Event('input'));
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+
+      expect(reviewRepo.updated.at(-1)?.odEsf).toBe('-1.50');
+      expect(toasts().map((t) => t.title)).toContain('Medida actualizada');
+    });
+  });
+
+  describe('agregar medida', () => {
+    const dialog = () => document.body.querySelector('[role=dialog]');
+    const save = async () => {
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+    };
+
+    it('crea la medida con el paciente y la fecha de hoy, cierra y avisa', async () => {
+      await open('/search-patient');
+      await openMenuAction('Agregar medida');
+      expect(dialog()).not.toBeNull();
+
+      const field = document.body.querySelector<HTMLInputElement>('[aria-label="ESF OD"]')!;
+      field.value = '-2.00';
+      field.dispatchEvent(new Event('input'));
+      await save();
+
+      expect(reviewRepo.created.length).toBe(1);
+      expect(reviewRepo.created[0]).toMatchObject({ patientId: '1', odEsf: '-2.00' });
+      expect(dialog()).toBeNull();
+      expect(toasts().map((t) => t.title)).toEqual(['Medida agregada']);
+    });
+
+    it('si el servidor falla, el diálogo sigue abierto con el error', async () => {
+      reviewRepo.createFailWith = { kind: 'server', message: 'No se pudo guardar.' };
+      await open('/search-patient');
+      await openMenuAction('Agregar medida');
+      await save();
+
+      expect(dialog()!.querySelector('[role=alert]')?.textContent).toContain('No se pudo guardar.');
+      expect(toasts()).toEqual([]);
     });
   });
 

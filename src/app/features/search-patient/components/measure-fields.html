@@ -1,0 +1,71 @@
+<div [formGroup]="form()" class="flex flex-col gap-5">
+  <div class="flex flex-col gap-4">
+    <h3 class="text-label text-muted-foreground">Consulta</h3>
+    <onv-field label="Motivo de consulta" [inputId]="idPrefix() + '-reason'">
+      <input [id]="idPrefix() + '-reason'" onvInput formControlName="reasonConsult" autocomplete="off" />
+    </onv-field>
+    <onv-field label="Historia clínica" [inputId]="idPrefix() + '-history'">
+      <textarea [id]="idPrefix() + '-history'" onvInput formControlName="clinicHistory" rows="2"></textarea>
+    </onv-field>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <onv-field label="Tipo de graduación" [inputId]="idPrefix() + '-graduation-type'">
+        <input [id]="idPrefix() + '-graduation-type'" onvInput formControlName="graduationType" autocomplete="off" />
+      </onv-field>
+      <onv-field label="Diagnóstico optométrico" [inputId]="idPrefix() + '-diagnosis'">
+        <input [id]="idPrefix() + '-diagnosis'" onvInput formControlName="optometricDiagnosis" autocomplete="off" />
+      </onv-field>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-3">
+    <h3 class="text-label text-muted-foreground">Graduación (P-05)</h3>
+    <onv-rx-table mode="edit" [odControls]="odControls()" [oiControls]="oiControls()" />
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h3 class="text-label text-muted-foreground">Ojo derecho (OD)</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="CB LC" [inputId]="idPrefix() + '-od-cb-lc'"><input [id]="idPrefix() + '-od-cb-lc'" onvInput formControlName="odCbLc" /></onv-field>
+      <onv-field label="DIAM LC" [inputId]="idPrefix() + '-od-diam-lc'"><input [id]="idPrefix() + '-od-diam-lc'" onvInput formControlName="odDiamLc" /></onv-field>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="AV sin RX lejos" [inputId]="idPrefix() + '-od-avsin-lejos'"><input [id]="idPrefix() + '-od-avsin-lejos'" onvInput formControlName="avSinRxOdLejos" /></onv-field>
+      <onv-field label="CV lejos" [inputId]="idPrefix() + '-od-cv-lejos'"><input [id]="idPrefix() + '-od-cv-lejos'" onvInput formControlName="cvOdLejos" /></onv-field>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="AV sin RX cerca" [inputId]="idPrefix() + '-od-avsin-cerca'"><input [id]="idPrefix() + '-od-avsin-cerca'" onvInput formControlName="avSinRxOdCerca" /></onv-field>
+      <onv-field label="AV con RX cerca" [inputId]="idPrefix() + '-od-avcon-cerca'"><input [id]="idPrefix() + '-od-avcon-cerca'" onvInput formControlName="avConRxOdCerca" /></onv-field>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h3 class="text-label text-muted-foreground">Ojo izquierdo (OI)</h3>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="CB LC" [inputId]="idPrefix() + '-oi-cb-lc'"><input [id]="idPrefix() + '-oi-cb-lc'" onvInput formControlName="oiCbLc" /></onv-field>
+      <onv-field label="DIAM LC" [inputId]="idPrefix() + '-oi-diam-lc'"><input [id]="idPrefix() + '-oi-diam-lc'" onvInput formControlName="oiDiamLc" /></onv-field>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="AV sin RX lejos" [inputId]="idPrefix() + '-oi-avsin-lejos'"><input [id]="idPrefix() + '-oi-avsin-lejos'" onvInput formControlName="avSinRxOiLejos" /></onv-field>
+      <onv-field label="CV lejos" [inputId]="idPrefix() + '-oi-cv-lejos'"><input [id]="idPrefix() + '-oi-cv-lejos'" onvInput formControlName="cvOiLejos" /></onv-field>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <onv-field label="AV sin RX cerca" [inputId]="idPrefix() + '-oi-avsin-cerca'"><input [id]="idPrefix() + '-oi-avsin-cerca'" onvInput formControlName="avSinRxOiCerca" /></onv-field>
+      <onv-field label="AV con RX cerca" [inputId]="idPrefix() + '-oi-avcon-cerca'"><input [id]="idPrefix() + '-oi-avcon-cerca'" onvInput formControlName="avConRxOiCerca" /></onv-field>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h3 class="text-label text-muted-foreground">Datos adicionales</h3>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <onv-field label="ADD" [inputId]="idPrefix() + '-add'">
+        <input [id]="idPrefix() + '-add'" onvInput formControlName="addition" />
+      </onv-field>
+      <onv-field label="DIP" [inputId]="idPrefix() + '-dip'">
+        <input [id]="idPrefix() + '-dip'" onvInput formControlName="dip" />
+      </onv-field>
+    </div>
+    <onv-field label="Observaciones" [inputId]="idPrefix() + '-observations'">
+      <textarea [id]="idPrefix() + '-observations'" onvInput formControlName="observations" rows="3"></textarea>
+    </onv-field>
+  </div>
+</div>

@@ -10,8 +10,10 @@ import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
 import { SupabasePatientRepository } from './core/data/supabase-patient.repository';
+import { SupabaseReviewRepository } from './core/data/supabase-review.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { PatientRepository } from './core/repositories/patient.repository';
+import { ReviewRepository } from './core/repositories/review.repository';
 import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -24,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     // Repositorio abstracto → implementación (= Provider<AuthRepository>((ref) => AuthRepositoryImpl())).
     { provide: AuthRepository, useClass: SupabaseAuthRepository },
     { provide: PatientRepository, useClass: SupabasePatientRepository },
+    { provide: ReviewRepository, useClass: SupabaseReviewRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.
     provideAppInitializer(() => {
       inject(ThemeService);

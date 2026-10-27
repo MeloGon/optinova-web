@@ -1,0 +1,43 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">Agregar medida</h2>
+    <p class="text-body-sm text-muted-foreground">{{ patient.name }}</p>
+  </div>
+
+  <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-5 overflow-y-auto p-6">
+    <onv-field label="Fecha de la medida" inputId="add-review-date" [errors]="{ future: 'No puede ser una fecha futura.' }">
+      <input id="add-review-date" type="date" onvInput formControlName="date" min="1900-01-01" [max]="today" />
+    </onv-field>
+
+    <app-measure-fields [form]="measures" idPrefix="add-review" />
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        Guardar medida
+      }
+    </button>
+  </div>
+</form>

@@ -1,12 +1,13 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   LucideDynamicIcon,
+  LucideEdit,
   LucideEllipsis,
   LucideMapPin,
   LucideRefreshCw,
@@ -20,6 +21,7 @@ import {
 } from '@lucide/angular';
 import { Patient } from '../../core/models/patient';
 import { PatientSearch } from '../../core/repositories/patient.repository';
+import { Avatar } from '../../shared/ui/avatar/avatar';
 import { Badge } from '../../shared/ui/badge/badge';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
@@ -27,11 +29,13 @@ import { Paginator } from '../../shared/ui/paginator/paginator';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { ADD_REVIEW_TITLE_ID, AddReviewDialog, AddReviewDialogData } from './components/add-review-dialog';
 import {
   EDIT_PATIENT_TITLE_ID,
   EditPatientDialog,
   EditPatientDialogData,
 } from './components/edit-patient-dialog';
+import { VIEW_MEASURES_TITLE_ID, ViewMeasuresDialog, ViewMeasuresDialogData } from './components/view-measures-dialog';
 import { SearchPatientStore } from './search-patient.store';
 
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -62,6 +66,7 @@ function toPageSize(value: string | undefined): number {
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,
+    Avatar,
     Badge,
     EmptyState,
     Paginator,
@@ -101,6 +106,7 @@ export class SearchPatientPage {
     clear: LucideX,
     pin: LucideMapPin,
     more: LucideEllipsis,
+    edit: LucideEdit,
     users: LucideUsers,
     searchX: LucideSearchX,
     userPlus: LucideUserPlus,
@@ -108,6 +114,9 @@ export class SearchPatientPage {
     retry: LucideRefreshCw,
     trash: LucideTrash2,
   };
+
+  /** Id del paciente cuyas medidas se están pidiendo (ver `viewMeasures`): la fila muestra un spinner. */
+  protected readonly loadingMeasuresFor = signal<string | null>(null);
 
   constructor() {
     // Cada cambio de la URL lanza la búsqueda.
@@ -171,6 +180,54 @@ export class SearchPatientPage {
     });
     if (await firstValueFrom(ref.closed, { defaultValue: false })) {
       this.toast.show({ tone: 'success', title: 'Paciente actualizado', text: patient.name });
+    }
+  }
+
+  /**
+   * Pide las medidas antes de abrir el diálogo (la fila muestra un spinner mientras tanto, en vez
+   * de abrir un diálogo vacío "Cargando…"). Sin medidas, ni siquiera se abre: un aviso alcanza
+   * (= getReviews de Flutter, que tampoco abre el diálogo si la lista viene vacía).
+   */
+  protected async viewMeasures(patient: Patient): Promise<void> {
+    this.loadingMeasuresFor.set(patient.id);
+    const result = await this.store.loadReviews(patient.id);
+    this.loadingMeasuresFor.set(null);
+
+    if (!result.ok) {
+      this.toast.show({ tone: 'danger', title: 'No se pudieron cargar las medidas', text: result.error.message });
+      return;
+    }
+    if (result.value.length === 0) {
+      this.toast.show({ tone: 'info', title: 'Sin medidas', text: 'Este paciente no tiene medidas registradas.' });
+      return;
+    }
+
+    const data: ViewMeasuresDialogData = {
+      patient,
+      reviews: result.value,
+      reload: () => this.store.loadReviews(patient.id),
+      save: (review) => this.store.updateReview(review),
+      remove: (review) => this.store.deleteReview(review.id),
+    };
+    this.dialog.open<void>(ViewMeasuresDialog, {
+      data,
+      role: 'dialog',
+      ariaLabelledBy: VIEW_MEASURES_TITLE_ID,
+      backdropClass: ['bg-overlay'],
+    });
+  }
+
+  protected async addMeasure(patient: Patient): Promise<void> {
+    const data: AddReviewDialogData = { patient, save: (review) => this.store.createReview(review) };
+    const ref = this.dialog.open<boolean>(AddReviewDialog, {
+      data,
+      role: 'dialog',
+      ariaLabelledBy: ADD_REVIEW_TITLE_ID,
+      disableClose: true,
+      backdropClass: ['bg-overlay'],
+    });
+    if (await firstValueFrom(ref.closed, { defaultValue: false })) {
+      this.toast.show({ tone: 'success', title: 'Medida agregada', text: patient.name });
     }
   }
 

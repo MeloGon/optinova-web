@@ -1,11 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { appError } from '../../core/errors/app-error';
 import { PatientRepository } from '../../core/repositories/patient.repository';
+import { ReviewRepository } from '../../core/repositories/review.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
+import { FakeReviewRepository, fakeReview } from '../../testing/fake-review.repository';
 import { SearchPatientStore } from './search-patient.store';
 
 describe('SearchPatientStore', () => {
   let repo: FakePatientRepository;
+  let reviewRepo: FakeReviewRepository;
   let store: SearchPatientStore;
 
   beforeEach(() => {
@@ -15,8 +18,13 @@ describe('SearchPatientStore', () => {
       fakePatient(2, 'JUAN GARCIA'),
       fakePatient(3, 'ANA GARCIA'),
     ];
+    reviewRepo = new FakeReviewRepository();
     TestBed.configureTestingModule({
-      providers: [SearchPatientStore, { provide: PatientRepository, useValue: repo }],
+      providers: [
+        SearchPatientStore,
+        { provide: PatientRepository, useValue: repo },
+        { provide: ReviewRepository, useValue: reviewRepo },
+      ],
     });
     store = TestBed.inject(SearchPatientStore);
   });
@@ -134,5 +142,41 @@ describe('SearchPatientStore', () => {
     await first;
 
     expect(store.items().map((p) => p.id)).toEqual(['3']);
+  });
+
+  it('pide las medidas de un paciente al repositorio de medidas', async () => {
+    reviewRepo.reviews = [fakeReview(1, '2'), fakeReview(2, '3')];
+
+    const result = await store.loadReviews('2');
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.value.map((r) => r.id)).toEqual(['1']);
+    expect(reviewRepo.calls).toEqual(['2']);
+  });
+
+  it('crea una medida en el repositorio de medidas', async () => {
+    const { id, ...newReview } = fakeReview(0, '2');
+    void id;
+
+    const result = await store.createReview(newReview);
+
+    expect(result.ok).toBe(true);
+    expect(reviewRepo.created.length).toBe(1);
+  });
+
+  it('guarda los cambios de una medida en el repositorio de medidas', async () => {
+    const review = fakeReview(1, '2');
+
+    const result = await store.updateReview(review);
+
+    expect(result.ok).toBe(true);
+    expect(reviewRepo.updated).toEqual([review]);
+  });
+
+  it('elimina una medida en el repositorio de medidas', async () => {
+    const result = await store.deleteReview('1');
+
+    expect(result.ok).toBe(true);
+    expect(reviewRepo.deleted).toEqual(['1']);
   });
 });
