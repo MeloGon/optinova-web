@@ -1,0 +1,249 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end justify-end gap-2">
+    <button
+      type="button"
+      (click)="openCategories()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      <svg [lucideIcon]="icons.categories" [size]="16"></svg>
+      Categorías
+    </button>
+    <button
+      type="button"
+      (click)="openNew()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      <svg [lucideIcon]="icons.plus" [size]="16"></svg>
+      Nuevo egreso
+    </button>
+  </div>
+
+  <!-- Resumen: suma de la página actual, no de todos los egresos (igual que en Flutter). -->
+  <div class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Total de la página</span>
+        <span class="grid size-8 place-items-center rounded-md bg-danger-subtle text-danger-subtle-foreground">
+          <svg [lucideIcon]="icons.wallet" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.pageTotal() | money }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Registros</span>
+        <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
+          <svg [lucideIcon]="icons.receipt" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.total() }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Categorías</span>
+        <span class="grid size-8 place-items-center rounded-md bg-success-subtle text-success-subtle-foreground">
+          <svg [lucideIcon]="icons.tag" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.categories().length }}</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form
+    (submit)="$event.preventDefault(); submit()"
+    role="search"
+    class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 elev-sm"
+  >
+    <div class="flex min-w-[260px] flex-1 flex-col gap-1.5">
+      <label for="expense-search" class="text-label">Buscar</label>
+      <div
+        class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+      >
+        <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+        <input
+          id="expense-search"
+          type="search"
+          [formControl]="text"
+          autocomplete="off"
+          placeholder="Descripción o comprobante"
+          class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+        />
+        @if (text.value) {
+          <button
+            type="button"
+            (click)="clear()"
+            aria-label="Limpiar búsqueda"
+            class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+          >
+            <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="flex w-48 flex-col gap-1.5">
+      <label for="expense-branch-filter" class="text-label">Sucursal</label>
+      <select
+        id="expense-branch-filter"
+        class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        [value]="search().branch ?? ''"
+        (change)="setBranch($any($event.target).value)"
+      >
+        <option value="">Todas las sucursales</option>
+        @for (b of branches(); track b.value) {
+          <option [value]="b.value">{{ b.label }}</option>
+        }
+      </select>
+    </div>
+
+    <button
+      type="submit"
+      class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      Buscar
+    </button>
+    <button
+      type="button"
+      (click)="clearFilters()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Limpiar
+    </button>
+  </form>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (store.loaded() && store.items().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state
+        [icon]="icons.receipt"
+        title="Sin egresos"
+        text="No encontramos egresos con este filtro, o todavía no registraste ninguno."
+      >
+        <button
+          type="button"
+          (click)="openNew()"
+          class="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground hover:bg-primary-hover"
+        >
+          <svg [lucideIcon]="icons.plus" [size]="14"></svg>
+          Nuevo egreso
+        </button>
+      </onv-empty-state>
+    </div>
+  } @else if (!store.loaded() || store.items().length > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Descripción</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Método</th>
+            <th scope="col">Sucursal</th>
+            <th scope="col">Registrado por</th>
+            <th scope="col" class="text-right">Monto</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-44" /></td>
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (expense of store.items(); track expense.id) {
+              <tr>
+                <td class="font-medium">
+                  <div class="flex items-center gap-2">
+                    @if (expense.categoryColor) {
+                      <span
+                        aria-hidden="true"
+                        class="size-2 shrink-0 rounded-full"
+                        [style.background-color]="expense.categoryColor"
+                      ></span>
+                    }
+                    <span class="truncate">{{ expense.description }}</span>
+                  </div>
+                  <p class="text-caption font-normal text-muted-foreground">
+                    {{ expense.categoryName || 'Sin categoría' }}
+                    @if (expense.receipt) {
+                      · {{ expense.receipt }}
+                    }
+                  </p>
+                </td>
+                <td class="tabular-nums">{{ expense.date | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ capitalize(expense.paymentMethod) }}</td>
+                <td>{{ expense.branch || 'Global' }}</td>
+                <td>{{ expense.registeredBy || '—' }}</td>
+                <td class="text-right font-semibold text-danger tabular-nums">{{ expense.amount | money }}</td>
+                <td class="w-20 text-right">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      (click)="openEdit(expense)"
+                      [attr.aria-label]="'Editar ' + expense.description"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+                    </button>
+                    @if (loadingDelete() === expense.id) {
+                      <span class="grid size-8 place-items-center" aria-live="polite">
+                        <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
+                      </span>
+                    } @else {
+                      <button
+                        type="button"
+                        (click)="askDelete(expense)"
+                        [attr.aria-label]="'Eliminar ' + expense.description"
+                        class="grid size-8 place-items-center rounded-sm text-danger-subtle-foreground hover:bg-danger-subtle"
+                      >
+                        <svg [lucideIcon]="icons.trash" [size]="15"></svg>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      @if (store.loaded()) {
+        <onv-paginator
+          footer
+          class="border-t border-border"
+          [page]="search().page"
+          [pageSize]="search().pageSize"
+          [total]="store.total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="changePageSize($event)"
+        />
+      }
+    </onv-table-card>
+  }
+</div>

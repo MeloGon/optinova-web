@@ -1,0 +1,95 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">{{ isEditing ? 'Editar egreso' : 'Nuevo egreso' }}</h2>
+  </div>
+
+  <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Fecha" inputId="expense-date" [required]="true" [errors]="{ required: 'Elige una fecha.' }">
+        <input id="expense-date" type="date" onvInput formControlName="date" min="1900-01-01" />
+      </onv-field>
+      <onv-field
+        label="Monto"
+        inputId="expense-amount"
+        [required]="true"
+        [errors]="{ required: 'Ingresa un monto.', min: 'El monto debe ser mayor a 0.' }"
+      >
+        <input id="expense-amount" type="number" onvInput formControlName="amount" step="0.01" min="0.01" placeholder="0.00" />
+      </onv-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Categoría" inputId="expense-category">
+        <select id="expense-category" onvInput formControlName="categoryId">
+          <option [ngValue]="null">Sin categoría</option>
+          @for (category of categories; track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </onv-field>
+      <onv-field label="Método de pago" inputId="expense-method">
+        <select id="expense-method" onvInput formControlName="paymentMethod">
+          @for (method of paymentMethods; track method.value) {
+            <option [value]="method.value">{{ method.label }}</option>
+          }
+        </select>
+      </onv-field>
+    </div>
+
+    <onv-field
+      label="Descripción"
+      inputId="expense-description"
+      [required]="true"
+      [errors]="{ required: 'Describe el gasto.' }"
+    >
+      <input id="expense-description" onvInput formControlName="description" placeholder="Ej. Pago de luz" />
+    </onv-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Comprobante (opcional)" inputId="expense-receipt">
+        <input id="expense-receipt" onvInput formControlName="receipt" placeholder="N.° de factura o recibo" />
+      </onv-field>
+      <onv-field label="Sucursal" inputId="expense-branch">
+        <select id="expense-branch" onvInput formControlName="branch">
+          <option value="">Global</option>
+          @for (branch of branches; track branch.value) {
+            <option [value]="branch.value">{{ branch.label }}</option>
+          }
+        </select>
+      </onv-field>
+    </div>
+
+    <onv-field label="Notas (opcional)" inputId="expense-notes">
+      <textarea id="expense-notes" onvInput formControlName="notes" rows="2"></textarea>
+    </onv-field>
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ isEditing ? 'Guardar cambios' : 'Registrar' }}
+      }
+    </button>
+  </div>
+</form>

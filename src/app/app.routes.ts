@@ -68,11 +68,15 @@ export const routes: Routes = [
         } satisfies PageData,
         loadComponent: () => import('./features/add-patient/add-patient.page').then((m) => m.AddPatientPage),
       },
-      pending('expenses', {
-        title: 'Egresos',
-        description: 'Registra y consulta los gastos de la sucursal.',
-        delivery: 'E2.4',
-      }),
+      {
+        path: 'expenses',
+        title: 'Egresos · Optinova',
+        data: {
+          title: 'Egresos',
+          description: 'Registra y consulta los gastos de la sucursal.',
+        } satisfies PageData,
+        loadComponent: () => import('./features/expenses/expenses.page').then((m) => m.ExpensesPage),
+      },
       pending('sales-history', {
         title: 'Historial de ventas',
         description: 'Consulta y filtra las ventas registradas.',
