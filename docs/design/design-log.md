@@ -42,7 +42,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-16 | Tooltip | v1 | D-001 |
 | C-17 | Spinner / Skeleton | v1 | D-001 |
 | C-18 | Empty state | v1 | D-001 |
-| C-19 | Avatar | v1 | D-001 |
+| C-19 | Avatar | implementado v1 (2026-10-27, iniciales en Buscar paciente) | D-001 |
 | C-20 | Sidebar de navegación | implementado v1 | D-001 |
 | C-21 | Navbar / Topbar | implementado v1 | D-001 |
 | C-22 | Stepper | v1 | D-001 |
@@ -56,7 +56,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | P-02 | Barra de búsqueda + filtros | v1 | D-001 |
 | P-03 | Lista/tabla con acciones por fila | v1 | D-001 |
 | P-04 | Diálogo de autorización (supervisor) | v1 | D-001 |
-| P-05 | Tabla de graduación OD/OI | v1 | D-001 |
+| P-05 | Tabla de graduación OD/OI | implementado v1 (2026-10-27, `shared/ui/rx-table`) | D-001 |
 | P-06 | Resumen de cobro | v1 | D-001 |
 
 ### Pantallas de ejemplo
@@ -68,3 +68,9 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | S-04 | Nueva venta (3 pasos) | v1 | D-001 |
 | S-05 | Historial de ventas + registrar pago | v1 | D-001 |
 | S-06 | Configuración / Apariencia | v1 | D-001 |
+
+## Implementación de E2.3b (2026-10-27)
+
+P-05 se usa en Ver/Agregar/Editar medidas: signo tipográfico, OD relleno/OI delineado, atajo de centésimas en ESF/CIL, botones ±0.25/±1 y copia OD → OI. ADD y DIP permanecen aparte como valores únicos de cada revisión. C-19 agrega iniciales a la tabla de pacientes y P-03 deja Editar como ícono visible por fila. Detalle didáctico y diferencias frente a Flutter: [L08](../lessons/08-revisiones-medidas.md).
+
+S-03 completa (ficha maestro-detalle con pestañas Revisiones/Ventas/Pagos) sigue pendiente hasta que existan Ventas/Pagos, por decisión del dueño del 2026-10-27. Las medidas permanecen en diálogos. La implementación de P-05 no cambia ese alcance.

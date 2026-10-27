@@ -233,3 +233,30 @@ Lectura: [IDs, fechas y columnas](lessons/07-base-de-datos-ids-fechas-columnas.m
 | Receta para convertir datos históricos | Documentos de supabase/transforms; conversión ejecutable dentro del SQL actual |
 
 Un ID no es un contador de filas; una secuencia puede tener huecos. Convertir a string después de redondear no recupera precisión. Las futuras FK por ID y el borrado/archivo por historial siguen siendo entregables pendientes, separados del borrado básico disponible.
+
+## L08: revisiones, diálogos y P-05 Graduación
+
+Lectura: [revisiones y medidas](lessons/08-revisiones-medidas.md). Estado documentado: 2026-10-27; actualiza la situación de revisiones que L05–L07 describían como futura.
+
+| Flutter / Riverpod | Angular actual |
+|---|---|
+| `ReviewModel` con medidas `String?` | `Review` con medidas `string`; el mapper transforma `NULL` en texto vacío |
+| `getReviewsByPatient(patientName)` con `ilike` parcial | `getByPatient(patientId)` con igualdad de FK; el nombre histórico no es filtro alternativo |
+| ID aleatorio en `addReview` | `NewReview = Omit<Review, 'id'>`; secuencia PostgreSQL de la migración #7 |
+| `@JsonKey` y datasource | `toReview`/`toMeasureColumns`; propiedades inglesas y columnas españolas en `snake_case` |
+| `Future<Either<Failure, ...>>` | `Promise<Result<..., AppError>>` en `ReviewRepository` |
+| Notifier con banderas de apertura | Página que espera el resultado y abre CDK Dialog; store delega en el repo |
+| Controllers del alta y controllers locales del editor | `createMeasureForm(initial?)`, compartido por ambos diálogos |
+| Datos y callbacks por constructor de un widget | `DIALOG_DATA` con `patient`/`review`, `save`, `reload` o `remove` |
+| `copyWith` de la revisión | `{ ...review, ...measureValues(form) }`; el update excluye paciente, sucursal y fecha |
+| `showDialog<bool>` y su `Future` | `DialogRef.closed` y `firstValueFrom` para esperar el resultado |
+| Aviso sin abrir cuando no hay medidas | Consulta previa, spinner de fila y toast; diálogo solo con resultados |
+| Controllers, strings guardados y celdas `Text` sin formato numérico | P-05 `RxTable`: formato de lectura y normalización de captura separados |
+| Tablas locales OD/OI | Componente compartido con modos `view`, `edit`, `compact`; controles del padre en edición |
+| Texto negativo con guion, si así se escribió | Signo menos U+2212 al formatear; parser lo convierte a U+002D antes de `Number` |
+| Sin atajo de centésimas en los diálogos consultados | `blur` de ESF/CIL interpreta `125` como `+1.25`; botones cambian ±0.25 |
+| Etiquetas OD/OI en las tablas locales | OD relleno y OI delineado: forma y letras, sin depender solo del color |
+
+Las medidas siguen almacenándose como texto. Formatear para leer no escribe en la DB; normalizar al capturar sí cambia el valor del control que se guardará. ADD y DIP siguen fuera de P-05 como valores únicos de la revisión; el atajo no está conectado a ADD. El PDF sustituye el menos tipográfico por un guion, según el generador del proyecto.
+
+La FK está implementada en dev; los enlaces históricos ambiguos se revisan manualmente. En `2cbea08`, Claude corrigió los hallazgos iniciales: Agregar/Editar bloquean el envío con `measures.invalid`, EJE exige entero entre 0 y 180 y el detalle incluye LC, AV sin/con RX, CV e historia clínica. `RxTable` conecta `control.events` con un signal contador para actualizar errores en zoneless y cancela las suscripciones con `takeUntilDestroyed`, comparable a cancelar una escucha en `dispose`. S-03 con pestañas y el borrado/archivo del paciente con autorización siguen pendientes.

@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-10-26
+> Última actualización: 2026-10-27
 
 ## 1. Contexto
 
@@ -113,8 +113,11 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [x] **E2.2 Buscar paciente** (`/dashboard/search-patient`): tabla, búsqueda y paginación con URL como fuente de verdad (`fd4a892`), borrado básico con confirmación y toasts (`f78967d`), edición (`5135adf`); adaptación a IDs como texto y columnas limpias (`93b30a4`, `e3ef363`). No incluye la futura política de borrar/archivar por historial. Lección L05 revisada y commit aprobado.
 - [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`):
   - [x] **E2.3a Alta de paciente:** Reactive Forms, Field/Input, Segmented, validaciones, aviso de homónimos, vista previa y recientes (`ef10044`); teléfono secundario y columnas limpias (`e3ef363`). Lección L06 revisada y commit aprobado.
-  - [ ] **E2.3b Revisiones:** FK `revisiones.paciente_id`, nombre histórico como respaldo; ver, agregar y editar medidas. Resolver coincidencias por ID y revisar manualmente los casos ambiguos.
+  - [x] **E2.3b Revisiones (implementación base):** Claude, commit `9ef2111` del 2026-10-27: migración #7 aplicada en dev, FK `revisiones.paciente_id`, nombre histórico de respaldo, `ReviewRepository`, diálogos Ver/Agregar/Editar y eliminación de medida con confirmación; P-05 Graduación reutilizable. Seis mejoras tras prueba manual del dueño; Claude reporta 117 tests y build limpio. Lección [L08](lessons/08-revisiones-medidas.md) y PDF preparados por Codex.
+  - [x] **Correcciones de E2.3b:** `2cbea08` (2026-10-27): bloqueo de guardado con medidas inválidas, EJE entero 0–180, mensajes reactivos y detalle de LC/AV sin-con RX/CV/historia clínica. Claude reporta 122 tests en verde; prueba funcional de Antigravity aprobada. Reflejadas en L08 y PDF.
+  - [ ] **Enlaces históricos de E2.3b:** resolver manualmente los casos ambiguos y verificar los conteos en el ensayo de corte.
 - [ ] **Eliminar/archivar según historial:** sin relaciones, confirmación básica; con medidas, supervisor o autorización de uno; con ventas/pagos, archivo por admin y restauración. Validación en servidor y registro del autorizador en auditoría (decisión del dueño, 2026-10-26).
+- [ ] **S-03 Ficha maestro-detalle con tabs Revisiones/Ventas/Pagos:** diferida hasta que existan Ventas/Pagos, por decisión del dueño (2026-10-27). P-05 ya se usa en los diálogos de medidas; no completa por sí solo toda S-03.
 - [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
 - [ ] **E2.5 Historial de ventas** (`/dashboard/sales-history`): filtros, pagos
 - [ ] **E2.6 Vender** (`/dashboard/sell`): formulario complejo, cálculos, diálogo de autorización (supervisor/admin), recibo PDF
@@ -135,7 +138,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [ ] Pruebas con usuarios reales en beta
 
 ### Fase 4: Rediseño de DB (opcional, cuando haya paridad)
-- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Las FK se incorporan con cada feature, empezando por E2.3b; no se posponen a esta fase. Lección L07 preparada para los cambios #3–#6.
+- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Revisiones incorporó columnas limpias, fecha, secuencia y FK en E2.3b (#7, dev). Las FK se incorporan con cada feature; no se posponen a esta fase. Lección L07 para #3–#6 y L08 para #7; enlaces históricos ambiguos y ensayo de corte siguen pendientes.
 - [ ] Proponer mejoras: nombres, `created_at/updated_at`, renombrar `"ventas cortas"`, índices, RLS
 - [ ] Cada cambio = migración + transform + entrada en `db-changes.md` (regla 3)
 
@@ -196,3 +199,5 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-10-26 | Fechas de pacientes, IDs automáticos, columnas limpias y teléfonos | L07 preparada | `a7e6ae3`, `5135adf`, `93b30a4`, `e3ef363` |
 | 2026-10-26 | E2.3a alta de pacientes y teléfono secundario | L06 preparada | `ef10044`, `e3ef363` |
 | 2026-10-26 | Lecciones 05–07, informe de avance y entrega completa PDF/ZIP | L05–L07 e informe | Aprobado: `docs(lessons): agrega lecciones de pacientes e informe de avance` |
+| 2026-10-27 | E2.3b: migración #7 en dev, repositorio, diálogos, P-05 y correcciones de validación/detalle; S-03 completa diferida | L08, Markdown y PDF revisados | Código: `9ef2111`, `2cbea08`. Documentación aprobada por el dueño para commit y push |
+| 2026-10-27 | Numeración de la lección de revisiones corregida para continuar la secuencia 00–08; referencias y PDF actualizados; autorización de publicación del dueño | L08 | Mensaje autorizado: `docs(lessons): agrega lección de revisiones y medidas` |
