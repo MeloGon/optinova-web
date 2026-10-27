@@ -43,6 +43,9 @@
             @if (review.reasonConsult) {
               <p><span class="font-medium text-foreground">Motivo:</span> <span class="text-muted-foreground">{{ review.reasonConsult }}</span></p>
             }
+            @if (review.clinicHistory) {
+              <p><span class="font-medium text-foreground">Historia clínica:</span> <span class="text-muted-foreground">{{ review.clinicHistory }}</span></p>
+            }
             @if (review.graduationType) {
               <p><span class="font-medium text-foreground">Tipo de graduación:</span> <span class="text-muted-foreground">{{ review.graduationType }}</span></p>
             }
@@ -53,6 +56,61 @@
                 [odView]="{ esf: review.odEsf, cil: review.odCil, eje: review.odEje, av: review.odAv }"
                 [oiView]="{ esf: review.oiEsf, cil: review.oiCil, eje: review.oiEje, av: review.oiAv }"
               />
+            }
+
+            @if (review.odCbLc || review.oiCbLc || review.odDiamLc || review.oiDiamLc) {
+              <div>
+                <p class="mb-1 text-caption font-medium text-muted-foreground">Lentes de contacto</p>
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="text-caption text-muted-foreground"><th class="w-20 py-1"></th><th class="py-1">OD</th><th class="py-1">OI</th></tr>
+                  </thead>
+                  <tbody>
+                    @if (review.odCbLc || review.oiCbLc) {
+                      <tr><td class="py-1 font-medium">CB LC</td><td class="py-1 tabular-nums">{{ review.odCbLc || '—' }}</td><td class="py-1 tabular-nums">{{ review.oiCbLc || '—' }}</td></tr>
+                    }
+                    @if (review.odDiamLc || review.oiDiamLc) {
+                      <tr><td class="py-1 font-medium">DIAM LC</td><td class="py-1 tabular-nums">{{ review.odDiamLc || '—' }}</td><td class="py-1 tabular-nums">{{ review.oiDiamLc || '—' }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (review.avSinRxOdLejos || review.avSinRxOiLejos || review.cvOdLejos || review.cvOiLejos || review.avSinRxOdCerca || review.avSinRxOiCerca) {
+              <div>
+                <p class="mb-1 text-caption font-medium text-muted-foreground">AV sin RX</p>
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="text-caption text-muted-foreground"><th class="w-20 py-1"></th><th class="py-1">OD</th><th class="py-1">OI</th></tr>
+                  </thead>
+                  <tbody>
+                    @if (review.avSinRxOdLejos || review.avSinRxOiLejos) {
+                      <tr><td class="py-1 font-medium">Lejos</td><td class="py-1 tabular-nums">{{ review.avSinRxOdLejos || '—' }}</td><td class="py-1 tabular-nums">{{ review.avSinRxOiLejos || '—' }}</td></tr>
+                    }
+                    @if (review.cvOdLejos || review.cvOiLejos) {
+                      <tr><td class="py-1 font-medium">CV lejos</td><td class="py-1 tabular-nums">{{ review.cvOdLejos || '—' }}</td><td class="py-1 tabular-nums">{{ review.cvOiLejos || '—' }}</td></tr>
+                    }
+                    @if (review.avSinRxOdCerca || review.avSinRxOiCerca) {
+                      <tr><td class="py-1 font-medium">Cerca</td><td class="py-1 tabular-nums">{{ review.avSinRxOdCerca || '—' }}</td><td class="py-1 tabular-nums">{{ review.avSinRxOiCerca || '—' }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (review.avConRxOdCerca || review.avConRxOiCerca) {
+              <div>
+                <p class="mb-1 text-caption font-medium text-muted-foreground">AV con RX</p>
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="text-caption text-muted-foreground"><th class="w-20 py-1"></th><th class="py-1">OD</th><th class="py-1">OI</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="py-1 font-medium">Cerca</td><td class="py-1 tabular-nums">{{ review.avConRxOdCerca || '—' }}</td><td class="py-1 tabular-nums">{{ review.avConRxOiCerca || '—' }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
             }
 
             @if (review.addition || review.dip) {

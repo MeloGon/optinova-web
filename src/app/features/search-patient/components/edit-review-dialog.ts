@@ -43,7 +43,7 @@ export class EditReviewDialog {
 
   protected async submit(): Promise<void> {
     this.measures.markAllAsTouched();
-    if (this.saving()) return;
+    if (this.measures.invalid || this.saving()) return;
 
     const updated: Review = { ...this.review, ...measureValues(this.measures) };
 

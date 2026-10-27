@@ -1,5 +1,6 @@
 // P-05 Graduación
-import { Component, computed, input } from '@angular/core';
+import { Component, DestroyRef, afterNextRender, computed, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { LucideChevronDown, LucideChevronUp, LucideCopy, LucideDynamicIcon } from '@lucide/angular';
 import { formatAxis, formatDiopter, formatText, normalizeDiopterInput, rxTone, stepAxis, stepDiopter } from './rx-format';
@@ -51,7 +52,27 @@ export class RxTable {
     { eye: 'OI' as const, solid: false, view: this.oiView() },
   ]);
 
+  /**
+   * El estado de un FormControl (touched, errors) no es un signal: sin este contador, `errors()`
+   * y el `aria-invalid` de los inputs no se refrescaban en zoneless al marcar touched o validar
+   * (hallazgo de Codex, 2026-10-27). Mismo truco que `OnvInput` (shared/ui/field/input.ts).
+   */
+  private readonly changes = signal(0);
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      for (const controls of [this.odControls(), this.oiControls()]) {
+        if (!controls) continue;
+        for (const control of [controls.esf, controls.cil, controls.eje, controls.av]) {
+          control.events.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.changes.update((n) => n + 1));
+        }
+      }
+    });
+  }
+
   protected readonly errors = computed(() => {
+    this.changes();
     const list: string[] = [];
     for (const [eye, controls] of [
       ['OD', this.odControls()],

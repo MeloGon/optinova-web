@@ -59,7 +59,7 @@ export class AddReviewDialog {
   protected async submit(): Promise<void> {
     this.form.markAllAsTouched();
     this.measures.markAllAsTouched();
-    if (this.form.invalid || this.saving()) return;
+    if (this.form.invalid || this.measures.invalid || this.saving()) return;
 
     const review: NewReview = {
       patientId: this.patient.id,

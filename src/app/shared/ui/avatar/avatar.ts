@@ -32,7 +32,7 @@ function initialsOf(name: string): string {
  */
 @Component({
   selector: 'onv-avatar',
-  template: `<span [attr.aria-hidden]="hidden() ? true : null" [attr.aria-label]="hidden() ? null : name()">{{
+  template: `<span [attr.aria-hidden]="decorative() ? true : null" [attr.aria-label]="decorative() ? null : name()">{{
     initials()
   }}</span>`,
   host: { '[class]': 'classes()' },
@@ -41,8 +41,12 @@ export class Avatar {
   readonly name = input.required<string>();
   readonly size = input<AvatarSize>('md');
   readonly tone = input<AvatarTone>('neutral');
-  /** `true` cuando el nombre ya se muestra aparte (evita leerlo dos veces con el lector de pantalla). */
-  readonly hidden = input(false);
+  /**
+   * `true` cuando el nombre ya se muestra aparte (evita leerlo dos veces con el lector de
+   * pantalla). No se llama `hidden`: ese nombre choca con el atributo HTML nativo del mismo
+   * nombre y no oculta el avatar, solo su etiqueta accesible (hallazgo de Antigravity, 2026-10-27).
+   */
+  readonly decorative = input(false);
 
   protected readonly initials = computed(() => initialsOf(this.name()));
 

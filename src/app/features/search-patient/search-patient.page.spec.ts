@@ -315,6 +315,26 @@ describe('SearchPatientPage', () => {
       expect(reviewRepo.updated.at(-1)?.odEsf).toBe('-1.50');
       expect(toasts().map((t) => t.title)).toContain('Medida actualizada');
     });
+
+    it('EJE fuera de rango bloquea el guardado y muestra el error (P-05)', async () => {
+      reviewRepo.reviews = [fakeReview(1, '1')];
+      await open('/search-patient');
+      await openMenuAction('Ver medidas');
+
+      document.body.querySelector<HTMLButtonElement>('[aria-label^="Editar medida"]')!.click();
+      await settle();
+
+      const field = document.body.querySelector<HTMLInputElement>('[aria-label="EJE OD"]')!;
+      field.value = '200';
+      field.dispatchEvent(new Event('input'));
+      field.dispatchEvent(new Event('blur'));
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+
+      expect(reviewRepo.updated).toEqual([]);
+      expect(document.body.querySelector('[role=dialog]')).not.toBeNull();
+      expect(document.body.textContent).toContain('OD · EJE: debe estar entre 0 y 180.');
+    });
   });
 
   describe('agregar medida', () => {

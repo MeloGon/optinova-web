@@ -44,7 +44,7 @@ const axisRange = (c: AbstractControl<string>): ValidationErrors | null => {
   const raw = c.value.trim();
   if (!raw) return null;
   const n = Number(raw);
-  return Number.isFinite(n) && n >= 0 && n <= 180 ? null : { range: true };
+  return Number.isInteger(n) && n >= 0 && n <= 180 ? null : { range: true };
 };
 
 function axisControl(value: string): FormControl<string> {
