@@ -73,12 +73,14 @@
 **Cambio de método (2026-10-14, ajustado 2026-10-23).** Hasta E2.1 se avanzó rápido y el dueño no entendía el código (por ejemplo, `computed`). Se pausan las features y se hace la Fase 0 primero:
 - Lecciones cortas, un tema por vez, **solo teoría con ejemplos** comparados con Dart (sin ejercicios, a pedido del dueño). Fuente en `docs/lessons/fundamentos/FNN-tema.md`.
 - Cada lección se entrega también como **PDF imprimible** con `npm run pdf -- <lección.md>` (queda en `docs/informes/`, ignorado por git; se regenera en cualquier máquina). El dueño los junta en su propia documentación.
-- Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca el checkbox de F07. E2.1 ya tiene su propio commit; el recorrido didáctico sigue pendiente.
+- Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca el checkbox de F07. E2.1 ya tiene su propio commit; el recorrido didáctico F07 fue revisado y aprobado por el dueño el 2026-10-26.
 - Después, cada pieza nueva de una feature se explica antes de escribirla.
+
+**Actualización del dueño (2026-10-26):** se retoma el desarrollo de features con E2.2 sin esperar F04–F06. La formación continúa en paralelo. F07 fue revisada y aprobada; F04–F06 siguen pendientes.
 
 ## 6. Fases y entregables
 
-### Fase 0: Fundamentos (prioridad actual; las features están en pausa)
+### Fase 0: Fundamentos (continúan en paralelo a las features)
 - [x] F00: Mapa del ecosistema web: Node, npm, Angular CLI, el navegador (vs Dart SDK, pub, flutter CLI). Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
 - [x] F01: TypeScript visto desde Dart (1): variables, tipos, null safety, funciones (2026-10-23, commit `8b30961`).
 - [x] F02: TypeScript visto desde Dart (2): objetos, interfaces, clases, uniones, genéricos, `import/export`, async/await. Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
@@ -86,7 +88,7 @@
 - [ ] F04: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
 - [ ] F05: Componentes y signals: `signal`, `computed`, `input`, `output`, plantilla (`@if`, `@for`, `{{ }}`, `(click)`)
 - [ ] F06: Servicios e inyección: `inject`, `providedIn: 'root'` vs `providers: []`
-- [ ] F07: Recorrido guiado del código de E2.1 (login, sesión, guards; implementación ya registrada en `765c39e`)
+- [x] F07: Recorrido guiado del código de E2.1 (login, sesión, guards; implementación ya registrada en `765c39e`). Markdown `F07-recorrido-e2-1.md` y PDF revisados y aprobados por el dueño el 2026-10-26; incluidos en el commit documental aprobado. F04–F06 siguen pendientes.
 
 ### Fase 1: Infraestructura
 - [x] **E1.1 Herramientas** (2026-10-13: Angular CLI 22.2.2, Node 24.18, PostgreSQL client 17.11): Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
@@ -107,9 +109,12 @@
 
 ### Fase 2: Features (en orden de dificultad)
 Cada feature es un entregable con modelo, repo, store, vistas y lección.
-- [x] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`) (implementado 2026-10-14, commit `765c39e` del 2026-10-23): `AuthRepository` + `SupabaseAuthRepository`, `SessionStore` restaurado en `provideAppInitializer`, guards `authGuard`/`guestGuard`/`roleGuard`, login con Reactive Forms y `LoginStore`, menú y topbar con el usuario real, cerrar sesión (CDK Menu). Permisos de página iguales a Flutter. Antes: arreglo de seguridad en `perfiles` (cambio #2). Lección L04. Recorrido didáctico pendiente en F07.
-- [ ] **E2.2 Buscar paciente** (`/dashboard/search-patient`): primera tabla (C-07), búsqueda, paginación
-- [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`): Reactive Forms, validación, máscaras
+- [x] **E2.1 Login + splash + guards + sesión + roles** (`supervisor`, `admin`, `megadmin`) (implementado 2026-10-14, commit `765c39e` del 2026-10-23): `AuthRepository` + `SupabaseAuthRepository`, `SessionStore` restaurado en `provideAppInitializer`, guards `authGuard`/`guestGuard`/`roleGuard`, login con Reactive Forms y `LoginStore`, menú y topbar con el usuario real, cerrar sesión (CDK Menu). Permisos de página iguales a Flutter. Antes: arreglo de seguridad en `perfiles` (cambio #2). Lección L04. Recorrido didáctico F07 revisado y aprobado.
+- [x] **E2.2 Buscar paciente** (`/dashboard/search-patient`): tabla, búsqueda y paginación con URL como fuente de verdad (`fd4a892`), borrado básico con confirmación y toasts (`f78967d`), edición (`5135adf`); adaptación a IDs como texto y columnas limpias (`93b30a4`, `e3ef363`). No incluye la futura política de borrar/archivar por historial. Lección L05 revisada y commit aprobado.
+- [ ] **E2.3 Agregar paciente + revisiones** (`/dashboard/add-patient`):
+  - [x] **E2.3a Alta de paciente:** Reactive Forms, Field/Input, Segmented, validaciones, aviso de homónimos, vista previa y recientes (`ef10044`); teléfono secundario y columnas limpias (`e3ef363`). Lección L06 revisada y commit aprobado.
+  - [ ] **E2.3b Revisiones:** FK `revisiones.paciente_id`, nombre histórico como respaldo; ver, agregar y editar medidas. Resolver coincidencias por ID y revisar manualmente los casos ambiguos.
+- [ ] **Eliminar/archivar según historial:** sin relaciones, confirmación básica; con medidas, supervisor o autorización de uno; con ventas/pagos, archivo por admin y restauración. Validación en servidor y registro del autorizador en auditoría (decisión del dueño, 2026-10-26).
 - [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
 - [ ] **E2.5 Historial de ventas** (`/dashboard/sales-history`): filtros, pagos
 - [ ] **E2.6 Vender** (`/dashboard/sell`): formulario complejo, cálculos, diálogo de autorización (supervisor/admin), recibo PDF
@@ -130,6 +135,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [ ] Pruebas con usuarios reales en beta
 
 ### Fase 4: Rediseño de DB (opcional, cuando haya paridad)
+- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Las FK se incorporan con cada feature, empezando por E2.3b; no se posponen a esta fase. Lección L07 preparada para los cambios #3–#6.
 - [ ] Proponer mejoras: nombres, `created_at/updated_at`, renombrar `"ventas cortas"`, índices, RLS
 - [ ] Cada cambio = migración + transform + entrada en `db-changes.md` (regla 3)
 
@@ -185,3 +191,8 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-10-26 | Sincronización del plan; F00 mapa del ecosistema web, Markdown y PDF preparados | F00 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
 | 2026-10-26 | F02 TypeScript desde Dart (2), Markdown y PDF preparados | F02 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
 | 2026-10-26 | F03 HTML como árbol de etiquetas, Markdown y PDF preparados | F03 | Commit aprobado: `docs(fundamentos): agrega F00, F02 y F03 y sincroniza el plan` |
+| 2026-10-26 | F07 recorrido de E2.1, Markdown y PDF preparados; glosario ampliado | F07 | Aprobado: `docs(lessons): agrega lecciones de pacientes e informe de avance` |
+| 2026-10-26 | E2.2 búsqueda, paginación, borrado básico y edición | L05 preparada | `fd4a892`, `f78967d`, `5135adf` |
+| 2026-10-26 | Fechas de pacientes, IDs automáticos, columnas limpias y teléfonos | L07 preparada | `a7e6ae3`, `5135adf`, `93b30a4`, `e3ef363` |
+| 2026-10-26 | E2.3a alta de pacientes y teléfono secundario | L06 preparada | `ef10044`, `e3ef363` |
+| 2026-10-26 | Lecciones 05–07, informe de avance y entrega completa PDF/ZIP | L05–L07 e informe | Aprobado: `docs(lessons): agrega lecciones de pacientes e informe de avance` |

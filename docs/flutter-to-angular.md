@@ -150,3 +150,86 @@ Lectura: [F03: árbol de etiquetas](lessons/fundamentos/F03-html-arbol-etiquetas
 | Propiedad booleana de un control | `[disabled]="saving"`; el atributo estático `disabled="false"` también deshabilita |
 
 La comparación del árbol no implica que HTML use el mismo motor de diseño que Flutter. CSS y Tailwind definen la distribución visual; se desarrollan en F04.
+
+## Fundamentos F07: recorrido de E2.1
+
+Lectura: [F07: login, sesión, guards y roles](lessons/fundamentos/F07-recorrido-e2-1.md).
+
+| Flutter / Riverpod / go_router | Código actual de E2.1 |
+|---|---|
+| Enum de roles y comprobaciones de permisos | `Role` sale de `ROLES`; `hasRole(role, min)` compara posiciones en la jerarquía |
+| Getters como `isAdmin`, `adminOrSupervisor`, `isMegaadmin` usados para acceso heredado | Mínimos `admin`, `supervisor`, `megadmin`; para igualdad exacta se conserva `role === ...` |
+| `ProfileModel` | `Profile`; datos de `perfiles` más correo del usuario de Auth |
+| Repositorio abstracto + provider de implementación | `AuthRepository` + `{ provide: AuthRepository, useClass: SupabaseAuthRepository }` en `app.config.ts` |
+| `ref.read(repoProvider)` para obtener la dependencia | `inject(AuthRepository)`; obtener la instancia no suscribe por sí solo a cambios |
+| Datasource y conversión de modelo | `loadProfile` transforma `ProfileRow` en `Profile`; `toRole` comprueba el rol con `ROLES.includes` |
+| `Either<AppError, Profile>` | `Result<Profile, AppError>`; se distingue con `result.ok` |
+| Provider de sesión con `keepAlive` | `SessionStore`, `providedIn: 'root'`; guarda `Profile \| null` |
+| Lectura pública y cambios desde el Notifier | `state` privado, `profile = state.asReadonly()`; no implica inmutabilidad profunda |
+| Valor derivado de un perfil observado | `computed` para `isAuthenticated`; `can(min)` consulta perfil y `hasRole` |
+| Splash mientras se restaura la sesión | `provideAppInitializer` devuelve `restore()`; spinner inicial dentro de `app-root` |
+| `redirect` de go_router | `CanActivateFn` devuelve `true` o `UrlTree` creado con `parseUrl` |
+| Configurar una regla de acceso | `roleGuard('admin')` devuelve la función que comprobará la sesión actual |
+| Marco de navegación de un `ShellRoute` | Ruta padre con layout, `children` y `router-outlet`; no implica varias pilas conservadas |
+| Notifier del login con alcance de pantalla | `LoginStore`, provisto mediante `providers: [LoginStore]` en `LoginPage` |
+| Controller, validación y `FormState` | `FormControl`, `Validators`, `FormGroup`; `nonNullable` no sustituye a `required` |
+| `copyWith` para borrar un error | `state.update(s => ({ ...s, error: null }))` |
+| `obscureText` y callback del ojo | `[type]` depende de `showPassword()`; el botón invierte ese signal |
+| Lista de destinos visibles según permisos | `DASHBOARD_NAV` declara mínimos; `DashboardLayout.nav` filtra con `session.can` |
+| Widget que recibe datos y un `VoidCallback` | Inputs de `Topbar` y output `logout`; el layout llama a `session.logout()` |
+| `PopupMenuButton` | `cdkMenuTriggerFor`, `ng-template`, `cdkMenu` y `cdkMenuItemTriggered` |
+
+El contrato distingue las operaciones: `signIn` devuelve `Result`, `restoreSession` devuelve perfil o `null`, `signOut` devuelve `Promise<void>` y `onSignedOut` registra un callback. El menú y los guards usan el mismo mínimo, pero las reglas de acceso a los datos se aplican en el backend.
+
+## L05: búsqueda de pacientes y URL
+
+Lectura: [buscar paciente](lessons/05-buscar-paciente.md).
+
+| Flutter / Riverpod / go_router | Angular actual |
+|---|---|
+| SearchPatient Notifier | `SearchPatientStore`, provisto en la página |
+| Controller de búsqueda | `FormControl text`, borrador hasta Enter o Buscar |
+| Query parameters del router | Inputs `q`, `page`, `size` con `withComponentInputBinding` |
+| Estado de filtros serializable | `computed search` normaliza la URL; filas y carga viven en el store |
+| Cambiar offset y solicitar datos | Navegar con otra página; un effect vuelve a cargar |
+| `where(...).toList()` | `filter(...)` |
+| Resultado con `hasMore` en Flutter original | `Page<Patient>` con items y total exacto en Angular |
+| Evitar aplicar respuestas antiguas | Contador `lastRequest`; descarta respuesta vieja sin cancelar la red |
+| Widgets compartidos | Badge, Skeleton, EmptyState, Paginator, TableCard y directiva OnvTable |
+| `showDialog` y Future con resultado | CDK Dialog, `DialogRef.closed` y `firstValueFrom` |
+| `CustomSnackbar` | ToastService global y ToastOutlet del layout |
+| Callback de guardado de un diálogo | Función `save` en `EditPatientDialogData`; si falla permanece abierto |
+
+## L06: formulario de alta
+
+Lectura: [agregar paciente](lessons/06-agregar-paciente.md).
+
+| Flutter | Angular actual |
+|---|---|
+| Controller, validación y FormState | FormControl, Validators y FormGroup |
+| Campo con decoración y etiqueta | `onv-field` recibe un control proyectado con `onvInput` |
+| Widget que recibe child | `ng-content`; `contentChild` encuentra la directiva del control |
+| Cancelar una escucha en dispose | `takeUntilDestroyed` en OnvInput |
+| GenderToggle | Segmented con `ControlValueAccessor` y `formControlName` |
+| Escuchar controllers con AnimatedBuilder | `valueChanges` convertido con `toSignal`, y `computed` para iniciales |
+| Leer incluso un control bloqueado | `form.getRawValue()` incluye la sucursal deshabilitada |
+| Aviso de posible homónimo | `findByName` y ConfirmService; no es restricción única |
+| Modelo de entrada distinto del persistido | `NewPatient = Omit<Patient, 'id' \| 'registeredOn'>` |
+
+El alta valida ambos teléfonos, pero permite vacío en el secundario. El editor no tiene exactamente las mismas reglas. El provider Flutter original de alta es keepAlive; el store Angular tiene alcance de página.
+
+## L07: representación de los datos y evolución del esquema
+
+Lectura: [IDs, fechas y columnas](lessons/07-base-de-datos-ids-fechas-columnas.md).
+
+| Concepto conocido desde Dart / Flutter | Decisión del proyecto web |
+|---|---|
+| ID recibido como int | `Patient.id: string`; consulta `id::text` para evitar redondeo JavaScript |
+| Generar ID aleatorio en el cliente | Secuencia PostgreSQL y default; el insert omite el ID |
+| DateFormat para presentación | Fecha de negocio `date` en DB y string ISO en la app |
+| Instante con hora | `timestamptz` para created_at/updated_at |
+| Mapeo de modelo y JSON | `toPatient`/`toColumns` entre propiedades inglesas y columnas españolas |
+| Migrar versión de base local | SQL versionado de PostgreSQL en supabase/migrations |
+| Receta para convertir datos históricos | Documentos de supabase/transforms; conversión ejecutable dentro del SQL actual |
+
+Un ID no es un contador de filas; una secuencia puede tener huecos. Convertir a string después de redondear no recupera precisión. Las futuras FK por ID y el borrado/archivo por historial siguen siendo entregables pendientes, separados del borrado básico disponible.

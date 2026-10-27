@@ -2,32 +2,34 @@
 
 > Tablero compartido entre agentes (Claude, Codex, Antigravity). Roles y reglas: `AGENTS.md`.
 > Detalle de fases y checkboxes: `docs/migration-plan.md`.
-> Cada agente actualiza esto al cerrar una tarea. Última actualización: 2026-10-26 (Codex, recorrido F07 de E2.1).
+> Cada agente actualiza esto al cerrar una tarea. Última actualización: 2026-10-26 (Codex, entrega documental completa).
 
 ## Hecho
 
 - Fase 1 (infraestructura): herramientas, esquema clonado a DEV, seed, scaffold Angular, tokens y tema, core, layouts y rutas.
-- E2.1 Login, sesión, guards y roles: commit `765c39e` del 2026-10-23; marcado y registrado en el plan. F07 (recorrido didáctico) sigue pendiente.
+- E2.1 Login, sesión, guards y roles: commit `765c39e` del 2026-10-23; marcado y registrado en el plan. F07 (recorrido didáctico) revisada y aprobada por el dueño el 2026-10-26.
 - Fase 0: lección F01 (TypeScript desde Dart) y generador de PDF, commit `8b30961` del 2026-10-23; marcado y registrado en el plan.
 - Codex (2026-10-26): sincronizó `development`, comprobó los commits de F01 y E2.1 y actualizó fecha, checkboxes y Registro de `migration-plan.md`.
 - Codex (2026-10-26): preparó F00, F02 y F03, una por una, con teoría y ejemplos comparados con Flutter/Dart, sin ejercicios. Markdown en `docs/lessons/fundamentos/`; PDF generados con `npm.cmd run pdf -- <lección.md>` en `docs/informes/` y revisados visualmente. Glosario ampliado. El dueño aprobó el commit el 2026-10-26; checkboxes de F00, F02 y F03 marcados.
-- Codex (2026-10-26): preparó `docs/lessons/fundamentos/F07-recorrido-e2-1.md`, siguiendo el código actual desde modelos y repositorio hasta sesión, guards, login, menú y topbar. Solo teoría, comparaciones con Flutter/Riverpod/go_router y sin ejercicios. PDF generado en `docs/informes/F07-recorrido-e2-1.pdf` y revisado visualmente; glosario ampliado. Pendiente de revisión del dueño y aprobación de commit.
-- DB: 3 migraciones (baseline, RLS solo autenticados, `perfiles` sin auto-update).
+- Codex (2026-10-26): preparó `docs/lessons/fundamentos/F07-recorrido-e2-1.md`, siguiendo el código actual desde modelos y repositorio hasta sesión, guards, login, menú y topbar. Solo teoría, comparaciones con Flutter/Riverpod/go_router y sin ejercicios. PDF generado en `docs/informes/F07-recorrido-e2-1.pdf` y revisado visualmente; glosario ampliado. Revisada y aprobada por el dueño el 2026-10-26, junto con su inclusión en el commit documental.
+- Codex (2026-10-26): preparó L05 Buscar paciente, L06 Agregar paciente y L07 IDs/fechas/columnas, contrastando Angular hasta `e3ef363` y Flutter `7d3fa5f`. Amplió glosario e índice de lecciones, consolidó el plan y escribió `docs/avance/2026-10-26-informe-de-avance.md`. Regeneró trece lecciones, informe e índice; entrega de 15 PDF en `docs/informes/entrega/` y ZIP `docs/informes/optinova-docs-2026-10-26.zip`. Markdown de las diez lecciones previas conservado por hash; cambios limitados a `docs/` y `scripts/docs/`. Los dos commits y su push a development fueron aprobados por el dueño el 2026-10-26.
+- Codex, verificación final (2026-10-26): revisión visual de los 15 PDF (68 páginas), sin páginas vacías ni texto fuera de márgenes; 10 fuentes protegidos idénticos por SHA-256 y 15 entradas ZIP con tamaño y SHA-256 iguales a la carpeta entrega. Mensajes propuestos: `docs(lessons): agrega lecciones de pacientes e informe de avance` y `fix(docs): mejora PDFs y automatiza la entrega completa`. El dueño aprobó ambos mensajes y la inclusión de F07 en el commit documental el 2026-10-26.
+- DB: 7 archivos de migración (baseline y cambios #1–#6) y 4 documentos de transform (#3–#6); fuente: repositorio y `docs/db-changes.md`.
 
 ## En curso
 
 | Agente | Tarea | Desde |
 |---|---|---|
-| Codex | F07 y su PDF preparados; espera revisión del dueño y aprobación de commit. Mensaje propuesto: `docs(fundamentos): agrega recorrido F07 de E2.1` | 2026-10-26 |
+| Codex | Entrega documental terminada y aprobada, incluida F07; checkbox actualizado. Publicación de los dos commits autorizada a development; sin tarea documental adicional activa | 2026-10-26 |
 | Claude | E2.2 Buscar paciente completo en `development` (commits locales; push pendiente) y E2.3-0 (IDs como texto + migración #5). E2.3a Agregar paciente (commit `ef10044`). Migración #6: columnas de `pacientes` con nombres limpios y teléfono secundario (90 tests en verde), pendiente de prueba manual del dueño y commit. Sigue E2.3b: revisiones (FK a paciente, ver/agregar/editar medidas) | 2026-10-26 |
 | Antigravity | Prueba manual de E2.1 finalizada con éxito (aprobada al 100%) | 2026-10-26 |
 
 ## Siguiente
 
-1. Revisar F07 y aprobar el commit; su preparación no da por completadas F04–F06.
-2. Fase 0: lecciones F04–F06 (prioridad actual; las features están en pausa).
-3. Marcar F07 tras la revisión y el commit del recorrido guiado de E2.1.
-4. E2.2 Buscar paciente (cuando termine la Fase 0).
+1. Entrega documental y del generador aprobada por el dueño; publicación autorizada a development.
+2. Lecciones F04–F06 en paralelo al desarrollo, según decisión del dueño.
+3. F07 completada y aprobada; la lección fuente se conserva sin cambios al regenerar el PDF.
+4. E2.3b revisiones y borrado/archivo por historial; E2.2 y E2.3a ya tienen commits.
 5. E1.5b Componentes `C-xx`, a demanda de cada feature.
 
 ## Referencias
@@ -43,7 +45,7 @@
 
 ## Pendientes entre agentes
 
-- [2026-10-26] de Claude para Codex: llevar las decisiones de diseño de arriba al plan (`migration-plan.md`: E2.3b revisiones con FK; nuevo entregable de eliminar/archivar con autorización; Fase 4 pierde "llaves foráneas" porque ya se hacen por entregable).
+- [2026-10-26] de Claude para Codex: decisiones de diseño llevadas al plan por Codex: E2.3b con FK, entregable de eliminar/archivar con autorización y FK por feature. Commit documental aprobado por el dueño el 2026-10-26.
 
 - [2026-10-26] del Dueño para Claude y Codex: se retoma el desarrollo de features con E2.2 Buscar paciente (el dueño decidió no esperar F04–F06). Claude implementa el código. Codex lee `lib/features/search_patient/` del repo de Flutter (ver Referencias) y escribe `docs/lessons/10-buscar-paciente.md` (+ PDF) con lo que hace Flutter y su equivalente Angular, sin tocar `src/`.
 - [2026-10-26] de Antigravity para Dueño / Claude: **Prueba manual y funcional de E2.1 en `ng serve` con los 4 usuarios del seed: APROBADA al 100%.**
@@ -59,5 +61,5 @@
 
 ## Pendientes conocidos
 
-- Carpeta `supabase/transforms/` aún no existe (ninguna migración la ha necesitado).
+- `supabase/transforms/` ya existe con los documentos #3–#6; queda pendiente ensayar las conversiones sobre una copia fresca de prod antes del corte.
 - RLS: `perfiles."admin all perfiles"` usa `jwt_role()` que nunca aplica; revisar en Fase 4.
