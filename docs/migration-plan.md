@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-10-27
+> Última actualización: 2026-10-30
 
 ## 1. Contexto
 
@@ -103,6 +103,7 @@
 - [ ] **E1.5 Sistema de diseño**: pedido D-001 a Claude Design, tokens a `styles.css` (`@theme`), componentes base en `src/app/shared/ui/` construidos a medida que cada feature los necesite
   - [x] **E1.5a Tokens y tema** (2026-10-14): `optinova-theme.css` → `src/styles.css`, `primary-scale.ts` → `core/theme/`, `ThemeService` (modo claro/oscuro/sistema, densidad, primario; guardado en `localStorage`), fuentes Geist, script anti-destello en `index.html`. Lección L01
   - [ ] **E1.5b+ Componentes** `C-xx` en `src/app/shared/ui/`, a medida que cada feature los necesite
+    - [x] **C-04 Date picker** (`7b6faf5`, 2026-10-30): `shared/ui/date-picker`, input enmascarado `dd/mm/aaaa`, calendario propio con CDK Overlay, grid ARIA, Limpiar/Hoy y límites de fecha; integrado en formularios de pacientes, revisiones, egresos y pagos, y en el filtro de ventas. Sin variante de rango ni navegación por teclado día a día en la grilla (pendientes). Inventario de diseño: `docs/design/design-log.md`. Claude reportó 10 tests nuevos (156 en total) y build limpio. E1.5b sigue abierto para los demás componentes.
 - [x] **E1.4 Arquitectura base** (2026-10-14): `core/` (cliente Supabase, `Result`, modelos, repos abstractos + impl), `shared/`, layouts (auth, dashboard con sidebar + navbar), rutas
   - [x] **E1.4a Core** (2026-10-14): `@supabase/supabase-js`, token `SUPABASE`, `Result` + `ok/err`, `AppError` + `toAppError` (server, network, notFound, unauthorized, unknown), `ConfigService` (moneda, sucursales con `active`, métodos de pago; regla 4b; OFTALMIC CENTER = cerrada con historial), `MoneyPipe`. Tests. Lección L02
   - [x] **E1.4b Layouts y rutas** (2026-10-14): auth-layout (S-01 panel de marca), dashboard-layout responsive con C-20 Sidebar y C-21 Topbar (`@lucide/angular`; `lucide-angular` no soporta Angular 22), todas las rutas de Flutter lazy con página "en construcción", 404, login visual. Menú con las secciones del diseño (decisión del dueño) en vez del hub "Configuración"; filtro por rol, sucursal y usuario reales en E2.1. Lección L03
@@ -118,8 +119,8 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
   - [ ] **Enlaces históricos de E2.3b:** resolver manualmente los casos ambiguos y verificar los conteos en el ensayo de corte.
 - [ ] **Eliminar/archivar según historial:** sin relaciones, confirmación básica; con medidas, supervisor o autorización de uno; con ventas/pagos, archivo por admin y restauración. Validación en servidor y registro del autorizador en auditoría (decisión del dueño, 2026-10-26).
 - [ ] **S-03 Ficha maestro-detalle con tabs Revisiones/Ventas/Pagos:** diferida hasta que existan Ventas/Pagos, por decisión del dueño (2026-10-27). P-05 ya se usa en los diálogos de medidas; no completa por sí solo toda S-03.
-- [ ] **E2.4 Egresos** (`/dashboard/expenses`): CRUD + categorías
-- [ ] **E2.5 Historial de ventas** (`/dashboard/sales-history`): filtros, pagos
+- [x] **E2.4 Egresos** (`/dashboard/expenses`, `e0034f0`): repositorio y store, listado con paginación por URL, filtros de texto/sucursal, resumen de la página, diálogo único Nuevo/Editar y gestión de categorías. Aprobado por el dueño y publicado en `origin/development`; cierre consolidado el 2026-10-30 (commit fechado el 2026-10-27). Sin migración: esquema existente. Sin filtro por vendedor; una categoría en uso no se puede borrar por la FK actual. Claude reportó 135 tests y build limpio. Lección y PDF pendientes.
+- [x] **E2.5 Historial de ventas** (`/dashboard/sales-history`, `130d034`, 2026-10-30): S-05 con búsqueda conjunta por paciente/folio, fecha exacta y sucursal, estados con contadores, tabla y totales de la página, detalle y registro de abonos. `SaleRepository`, `PaymentRepository` y `SalesHistoryStore`; migración #8 aplicada en dev (`ventas`/`venta_items`, columnas limpias y FK de paciente). Publicado en `origin/development`. Sin CSV ni rango de fechas; crear, editar o anular ventas queda fuera del alcance y no completa E2.6. El nombre de otro registrador de pagos puede quedar vacío por RLS de perfiles. Claude reportó 146 tests antes de integrar C-04 y 156 con C-04, con build limpio. Lección y PDF pendientes.
 - [ ] **E2.6 Vender** (`/dashboard/sell`): formulario complejo, cálculos, diálogo de autorización (supervisor/admin), recibo PDF
 - [ ] **E2.7 Dashboard** (`/dashboard`): métricas y gráficas
 - [ ] **E2.8 Settings**
@@ -138,8 +139,8 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 - [ ] Pruebas con usuarios reales en beta
 
 ### Fase 4: Rediseño de DB (opcional, cuando haya paridad)
-- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Revisiones incorporó columnas limpias, fecha, secuencia y FK en E2.3b (#7, dev). Las FK se incorporan con cada feature; no se posponen a esta fase. Lección L07 para #3–#6 y L08 para #7; enlaces históricos ambiguos y ensayo de corte siguen pendientes.
-- [ ] Proponer mejoras: nombres, `created_at/updated_at`, renombrar `"ventas cortas"`, índices, RLS
+- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Revisiones incorporó columnas limpias, fecha, secuencia y FK en E2.3b (#7, dev). E2.5 aplicó la migración #8 en dev: `"ventas cortas"` pasó a `ventas` y el detalle antes llamado `ventas` a `venta_items`, con columnas limpias y FK de paciente; las fechas textuales se conservan como respaldo. Las FK se incorporan con cada feature; no se posponen a esta fase. Lección L07 para #3–#6 y L08 para #7; documentación de E2.5, enlaces históricos ambiguos y ensayo de corte siguen pendientes.
+- [ ] Proponer mejoras adicionales: nombres, `created_at/updated_at`, índices, RLS
 - [ ] Cada cambio = migración + transform + entrada en `db-changes.md` (regla 3)
 
 ### Fase 4b: Multi-empresa / SaaS (mapeado, NO se implementa todavía)
@@ -201,3 +202,6 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-10-26 | Lecciones 05–07, informe de avance y entrega completa PDF/ZIP | L05–L07 e informe | Aprobado: `docs(lessons): agrega lecciones de pacientes e informe de avance` |
 | 2026-10-27 | E2.3b: migración #7 en dev, repositorio, diálogos, P-05 y correcciones de validación/detalle; S-03 completa diferida | L08, Markdown y PDF revisados | Código: `9ef2111`, `2cbea08`. Documentación aprobada por el dueño para commit y push |
 | 2026-10-27 | Numeración de la lección de revisiones corregida para continuar la secuencia 00–08; referencias y PDF actualizados; autorización de publicación del dueño | L08 | Mensaje autorizado: `docs(lessons): agrega lección de revisiones y medidas` |
+| 2026-10-27 | E2.4 Egresos: listado, alta, edición y categorías; paginación por URL, filtros y resumen de la página; aprobado por el dueño. Publicación verificada y cierre consolidado el 2026-10-30 | Pendiente (Markdown y PDF) | `e0034f0` — `feat(egresos): agrega listado, alta, edición y categorías de egresos (E2.4)` |
+| 2026-10-30 | C-04 Date picker: captura enmascarada, calendario CDK, Limpiar/Hoy y límites de fecha; integrado en los formularios y filtro de ventas. Rango y teclado día a día pendientes | Inventario en `docs/design/design-log.md` | `7b6faf5` — `feat(design): agrega C-04 Date picker y lo usa en toda la app` |
+| 2026-10-30 | E2.5 Historial de ventas según S-05: filtros, estados, detalle y registrar pago; migración #8 en dev, tablas y FK de paciente | Pendiente (Markdown y PDF) | `130d034` — `feat(ventas): agrega historial de ventas con filtros, estado y registrar pago (E2.5)` |
