@@ -1,0 +1,83 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
+    <div>
+      <h2 [id]="titleId" class="text-heading">Registrar abono</h2>
+      <p class="text-body-sm text-muted-foreground">
+        <span class="font-mono">{{ sale.folio }}</span> · saldo actual
+        <b class="tabular-nums text-foreground">{{ sale.rest | money }}</b>
+      </p>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 p-6">
+    <onv-field
+      label="Importe"
+      inputId="payment-amount"
+      [required]="true"
+      [errors]="{ required: 'Ingresa un monto.', min: 'El monto debe ser mayor a 0.' }"
+      hint="Por defecto, el saldo completo."
+    >
+      <input id="payment-amount" type="number" onvInput formControlName="amount" step="0.01" min="0.01" />
+    </onv-field>
+
+    <div class="flex flex-col gap-1.5">
+      <span class="text-label">Método de pago</span>
+      <div role="radiogroup" aria-label="Método de pago" class="grid grid-cols-3 gap-2">
+        @for (method of methods; track method.value) {
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="form.controls.paymentMethod.value === method.value"
+            (click)="selectMethod(method.value)"
+            class="flex flex-col items-center gap-1 rounded-md border border-input px-2 py-2.5 text-caption font-medium text-muted-foreground hover:bg-muted aria-checked:border-primary aria-checked:bg-primary-subtle aria-checked:text-primary-subtle-foreground"
+          >
+            <svg [lucideIcon]="method.icon" [size]="18"></svg>
+            {{ method.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <onv-date-picker
+      label="Fecha"
+      inputId="payment-date"
+      formControlName="date"
+      [required]="true"
+      [errors]="{ required: 'Elige una fecha.' }"
+    />
+
+    <div class="flex items-start gap-2 rounded-md bg-info-subtle px-3 py-2.5 text-body-sm text-info-subtle-foreground">
+      <svg [lucideIcon]="okIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+      <span>Con este pago la venta quedará <b>{{ resultLabel() }}</b>.</span>
+    </div>
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ submitLabel() }}
+      }
+    </button>
+  </div>
+</form>

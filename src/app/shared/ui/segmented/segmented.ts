@@ -5,6 +5,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 export interface SegmentedOption {
   value: string;
   label: string;
+  /** Si viene, se muestra junto a la etiqueta (ej. "Con saldo 14"). */
+  count?: number;
 }
 
 /**
@@ -24,9 +26,12 @@ export interface SegmentedOption {
         [attr.aria-checked]="option.value === value()"
         [disabled]="disabled()"
         (click)="choose(option.value)"
-        class="h-[calc(var(--onv-control-h)-6px)] rounded-sm px-4 text-body-sm font-medium text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:text-disabled-foreground aria-checked:bg-primary-subtle aria-checked:text-primary-subtle-foreground"
+        class="inline-flex h-[calc(var(--onv-control-h)-6px)] items-center gap-1.5 rounded-sm px-4 text-body-sm font-medium text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:text-disabled-foreground aria-checked:bg-primary-subtle aria-checked:text-primary-subtle-foreground"
       >
         {{ option.label }}
+        @if (option.count != null) {
+          <span class="text-caption tabular-nums opacity-70">{{ option.count }}</span>
+        }
       </button>
     }
   `,

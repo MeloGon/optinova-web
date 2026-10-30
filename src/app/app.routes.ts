@@ -77,11 +77,16 @@ export const routes: Routes = [
         } satisfies PageData,
         loadComponent: () => import('./features/expenses/expenses.page').then((m) => m.ExpensesPage),
       },
-      pending('sales-history', {
-        title: 'Historial de ventas',
-        description: 'Consulta y filtra las ventas registradas.',
-        delivery: 'E2.5',
-      }),
+      {
+        path: 'sales-history',
+        title: 'Historial de ventas · Optinova',
+        data: {
+          title: 'Historial de ventas',
+          description: 'Consulta y filtra las ventas registradas.',
+        } satisfies PageData,
+        loadComponent: () =>
+          import('./features/sales-history/sales-history.page').then((m) => m.SalesHistoryPage),
+      },
       pending('sell', {
         title: 'Nueva venta',
         description: 'Sigue los pasos para registrar una venta.',

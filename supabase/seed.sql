@@ -11,7 +11,7 @@
 -- Formatos de texto que espera la app (heredados de Flutter):
 --   pacientes.fecha_registro / fecha_nacimiento  date (yyyy-MM-dd); migración #3
 --   revisiones."FECHA"              dd-MMM-yyyy es
---   ventas/ventas cortas FECHA      dd-MMM-yy en    (13-Oct-26)
+--   ventas.fecha_legado / venta_items.fecha_venta_legado   dd-MMM-yy en (13-Oct-26); migración #8
 --   columnas *_actualizada / *_iso  date (yyyy-MM-dd)
 -- =============================================================================
 
@@ -19,8 +19,8 @@ select setseed(0.2026);
 
 -- Limpieza (orden por llaves foráneas) ----------------------------------------
 delete from public.pagos;
+delete from public.venta_items;
 delete from public.ventas;
-delete from public."ventas cortas";
 delete from public.revisiones;
 delete from public.pacientes;
 delete from public.armazones;
@@ -186,8 +186,8 @@ join seed_pacientes p on p.g = s.n
 join lateral (select * from public.resinas order by random() + s.n * 0 limit 1) r on true
 join lateral (select * from public.armazones order by random() + s.n * 0 limit 1) a on true;
 
-insert into public."ventas cortas" ("ID REMISION", "SUCURSAL", "FECHA", "FOLIO REMISION", "PACIENTE", "AUTOR NOMBRE",
-  "TOTAL", "DESCUENTO", "TOTAL CON DESCUENTO", "A CUENTA", "RESTA", "MOTIVO DEL DESCUENTO",
+insert into public.ventas (id, sucursal, fecha_legado, folio, paciente_nombre, autor_nombre,
+  total, descuento, total_con_descuento, a_cuenta, resta, motivo_descuento,
   fecha_actualizada, fecha_venta_iso)
 select id_remision, sucursal, pg_temp.fecha_en(fecha), folio, paciente, autor,
        t.total, t.descuento, t.total - t.descuento,
@@ -200,34 +200,34 @@ from seed_ventas v,
                      case when con_descuento then round((precio_resina + precio_armazon) * 0.10, 0) else 0 end as descuento) t;
 
 -- Una línea de resina y una de armazón por venta.
-insert into public.ventas ("ID", "ID REMISION", "FOLIO DE VENTA", "FECHA DE VENTA", "PACIENTE", "ID OFTALMICO",
-  "DESCRIPCION", "DISEÑO", "LINEA", "MATERIAL", "TECNOLOGIA", "TEXTO", "CANTIDAD", "PRECIO", fecha_ventas_actualizada)
+insert into public.venta_items (id, venta_id, folio_venta, fecha_venta_legado, paciente_nombre, id_oftalmico,
+  descripcion, diseno, linea, material, tecnologia, texto, cantidad, precio, fecha_ventas_actualizada)
 select 20000000000000000 + g, id_remision, folio, pg_temp.fecha_en(fecha), paciente, id_oftalmico,
        descripcion, "diseño", linea, material, tecnologia, texto, '1', precio_resina, fecha
 from seed_ventas;
 
-insert into public.ventas ("ID", "ID REMISION", "FOLIO DE VENTA", "FECHA DE VENTA", "PACIENTE", "ID OFTALMICO",
-  "ID MONTURA", "MONTURA MARCA", "MONTURA MODELO", "MONTURA COLOR", "MONTURA CANTIDAD", "MONTURA PRECIO",
-  "MONTURA TEXTO", fecha_ventas_actualizada)
+insert into public.venta_items (id, venta_id, folio_venta, fecha_venta_legado, paciente_nombre, id_oftalmico,
+  id_montura, montura_marca, montura_modelo, montura_color, montura_cantidad, montura_precio,
+  montura_texto, fecha_ventas_actualizada)
 select 30000000000000000 + g, id_remision, folio, pg_temp.fecha_en(fecha), paciente, "ID ARMAZON",
        "ID ARMAZON", "MARCA", "MODELO", "COLOR", '1', precio_armazon, arm_desc, fecha
 from seed_ventas;
 
 -- Pago inicial (nueva_venta) cuando hubo anticipo.
 insert into public.pagos (id_remision, monto, fecha_pago, metodo_pago, registrado_por, notas, tipo_pago)
-select vc."ID REMISION", vc."A CUENTA", vc.fecha_venta_iso,
+select v.id, v.a_cuenta, v.fecha_venta_iso,
        pg_temp.pick(array['efectivo','tarjeta','transferencia','yape']),
        '44444444-4444-4444-8444-444444444444', 'Pago inicial de venta', 'nueva_venta'
-from public."ventas cortas" vc
-where vc."A CUENTA" > 0;
+from public.ventas v
+where v.a_cuenta > 0;
 
 -- Un abono posterior en algunas ventas con saldo.
 insert into public.pagos (id_remision, monto, fecha_pago, metodo_pago, registrado_por, notas, tipo_pago)
-select vc."ID REMISION", round(vc."RESTA" / 2, 0), least(vc.fecha_venta_iso + 7, current_date),
+select v.id, round(v.resta / 2, 0), least(v.fecha_venta_iso + 7, current_date),
        pg_temp.pick(array['efectivo','transferencia']),
        '33333333-3333-4333-8333-333333333333', 'Abono de prueba', 'abono_saldo'
-from public."ventas cortas" vc
-where vc."RESTA" > 100 and random() < 0.5;
+from public.ventas v
+where v.resta > 100 and random() < 0.5;
 
 -- Egresos --------------------------------------------------------------------------
 insert into public.egresos (fecha, categoria_id, descripcion, monto, metodo_pago, sucursal, registrado_por, notas)

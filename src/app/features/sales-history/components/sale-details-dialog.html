@@ -1,0 +1,129 @@
+<div class="flex items-start gap-3 border-b border-border px-6 py-4">
+  <div class="min-w-0 flex-1">
+    <h2 [id]="titleId" class="text-heading">
+      Venta <span class="font-mono">{{ sale.folio }}</span>
+    </h2>
+    <p class="text-body-sm text-muted-foreground">
+      {{ sale.date }}
+      @if (sale.branch) {
+        · {{ sale.branch }}
+      }
+      @if (sale.sellerName) {
+        · {{ sale.sellerName }}
+      }
+    </p>
+  </div>
+  <onv-badge [tone]="status.tone" [icon]="status.icon">{{ status.label }}</onv-badge>
+  <button
+    type="button"
+    (click)="close()"
+    aria-label="Cerrar"
+    class="grid size-8 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+  >
+    <svg [lucideIcon]="closeIcon" [size]="16"></svg>
+  </button>
+</div>
+
+<div class="flex max-h-[calc(100dvh-10rem)] flex-col gap-4 overflow-y-auto p-6">
+  <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-body-sm">
+    <dt class="text-muted-foreground">Paciente</dt>
+    <dd>{{ sale.patientName || '—' }}</dd>
+    @if (sale.discount > 0) {
+      <dt class="text-muted-foreground">Descuento</dt>
+      <dd>{{ sale.discount | money }}</dd>
+    }
+  </dl>
+
+  <!-- Productos -->
+  @if (lines().length > 0) {
+    <section>
+      <h3 class="mb-1.5 text-subheading">Productos</h3>
+      <div class="overflow-hidden rounded-md border border-border" data-density="compact">
+        <table class="w-full text-body-sm">
+          <thead>
+            <tr class="border-b border-border bg-muted text-caption text-muted-foreground">
+              <th class="h-8 px-3 text-left font-medium">Producto</th>
+              <th class="h-8 px-3 text-right font-medium">Cant.</th>
+              <th class="h-8 px-3 text-right font-medium">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track $index) {
+              <tr class="border-b border-border last:border-0">
+                <td class="h-9 px-3">{{ line.name }}</td>
+                <td class="h-9 px-3 text-right tabular-nums">{{ line.quantity }}</td>
+                <td class="h-9 px-3 text-right tabular-nums">{{ line.amount | money }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="bg-muted/40 font-semibold">
+              <td class="h-9 px-3" colspan="2">Total{{ sale.discount > 0 ? ' (con descuento)' : '' }}</td>
+              <td class="h-9 px-3 text-right tabular-nums">{{ sale.totalWithDiscount | money }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- Pagos -->
+  <section>
+    <h3 class="mb-1.5 text-subheading">Pagos</h3>
+    @if (payments.length === 0) {
+      <p class="text-body-sm text-muted-foreground">Sin abonos registrados todavía.</p>
+    } @else {
+      <div class="overflow-hidden rounded-md border border-border">
+        <table class="w-full text-body-sm">
+          <thead>
+            <tr class="border-b border-border bg-muted text-caption text-muted-foreground">
+              <th class="h-8 px-3 text-left font-medium">Fecha</th>
+              <th class="h-8 px-3 text-left font-medium">Método</th>
+              <th class="h-8 px-3 text-left font-medium">Registró</th>
+              <th class="h-8 px-3 text-right font-medium">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (payment of payments; track payment.id) {
+              <tr class="border-b border-border last:border-0">
+                <td class="h-9 px-3 tabular-nums">{{ payment.date }}</td>
+                <td class="h-9 px-3 capitalize">{{ payment.paymentMethod }}</td>
+                <td class="h-9 px-3">{{ payment.registeredBy || '—' }}</td>
+                <td class="h-9 px-3 text-right tabular-nums">{{ payment.amount | money }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <div class="mt-2 flex justify-between gap-3 text-body-sm">
+      <span class="font-medium">Saldo por cobrar</span>
+      <span
+        class="font-semibold tabular-nums"
+        [class.text-warning-subtle-foreground]="sale.rest > 0"
+        [class.text-success]="sale.rest === 0"
+      >
+        {{ sale.rest | money }}
+      </span>
+    </div>
+  </section>
+</div>
+
+<div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+  <button
+    type="button"
+    (click)="close()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+  >
+    Cerrar
+  </button>
+  @if (sale.rest > 0) {
+    <button
+      type="button"
+      (click)="openPayment()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      Registrar pago
+    </button>
+  }
+</div>

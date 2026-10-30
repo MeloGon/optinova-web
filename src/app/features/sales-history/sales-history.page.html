@@ -1,0 +1,217 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Filtros (P-02) -->
+  <div class="rounded-lg border border-border bg-card p-4 elev-sm">
+    <form (submit)="$event.preventDefault(); submit()" role="search" class="flex flex-wrap items-end gap-3">
+      <div class="flex min-w-[260px] flex-1 flex-col gap-1.5">
+        <label for="sales-search" class="text-label">Buscar</label>
+        <div
+          class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+        >
+          <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+          <input
+            id="sales-search"
+            type="search"
+            [formControl]="text"
+            autocomplete="off"
+            placeholder="Paciente o folio"
+            class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          />
+          @if (text.value) {
+            <button
+              type="button"
+              (click)="clearSearch()"
+              aria-label="Limpiar búsqueda"
+              class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+            >
+              <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="w-44">
+        <onv-date-picker label="Fecha" inputId="sales-date" [formControl]="dateControl" />
+      </div>
+
+      <div class="flex w-56 flex-col gap-1.5">
+        <label for="sales-branch" class="text-label">Sucursal</label>
+        <select
+          id="sales-branch"
+          class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          [value]="search().branch ?? ''"
+          (change)="setBranch($any($event.target).value)"
+        >
+          <option value="">Todas las sucursales</option>
+          @for (b of branches(); track b.value) {
+            <option [value]="b.value">{{ b.label }}</option>
+          }
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+      >
+        Buscar
+      </button>
+    </form>
+  </div>
+
+  <!-- Estado (segmented con contadores) -->
+  <onv-segmented [options]="statusOptions()" label="Estado" [formControl]="statusControl" class="self-start" />
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (store.loaded() && store.items().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state [icon]="icons.receipt" title="Sin ventas" text="No encontramos ventas con este filtro." />
+    </div>
+  } @else if (!store.loaded() || store.items().length > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Folio</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Sucursal</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="text-right">Total</th>
+            <th scope="col" class="text-right">Saldo</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="h-3 w-40" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="h-[22px] w-20 rounded-full" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (sale of store.items(); track sale.id) {
+              <tr>
+                <td class="font-mono">{{ sale.folio || '—' }}</td>
+                <td class="tabular-nums">{{ sale.date | date: 'dd/MM/yyyy' }}</td>
+                <td class="font-medium">{{ sale.patientName || '—' }}</td>
+                <td>{{ sale.branch || '—' }}</td>
+                <td>
+                  @let st = saleStatus(sale);
+                  <onv-badge [tone]="st.tone" [icon]="st.icon">{{ st.label }}</onv-badge>
+                </td>
+                <td class="text-right tabular-nums">{{ sale.totalWithDiscount | money }}</td>
+                <td
+                  class="text-right tabular-nums"
+                  [class.font-semibold]="sale.rest > 0"
+                  [class.text-warning-subtle-foreground]="sale.rest > 0"
+                  [class.text-muted-foreground]="sale.rest === 0"
+                >
+                  {{ sale.rest | money }}
+                </td>
+                <td class="w-20 text-right">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      (click)="viewDetails(sale)"
+                      [attr.aria-label]="'Ver ' + (sale.folio || sale.patientName)"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.view" [size]="16"></svg>
+                    </button>
+                    <button
+                      type="button"
+                      [cdkMenuTriggerFor]="rowMenu"
+                      [cdkMenuTriggerData]="{ $implicit: sale }"
+                      [attr.aria-label]="'Más acciones para ' + (sale.folio || sale.patientName)"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+        @if (store.loaded() && store.items().length > 0) {
+          <tfoot>
+            <tr>
+              <td colspan="5" class="font-medium">Total · {{ store.items().length }} {{ store.items().length === 1 ? 'venta' : 'ventas' }} de esta página</td>
+              <td class="text-right tabular-nums font-medium">
+                {{ store.items().reduce((sum, s) => sum + s.totalWithDiscount, 0) | money }}
+              </td>
+              <td class="text-right tabular-nums font-medium text-warning-subtle-foreground">
+                {{ store.items().reduce((sum, s) => sum + s.rest, 0) | money }}
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+
+      @if (store.loaded()) {
+        <onv-paginator
+          footer
+          class="border-t border-border"
+          [page]="search().page"
+          [pageSize]="search().pageSize"
+          [total]="store.total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="changePageSize($event)"
+        />
+      }
+    </onv-table-card>
+  }
+</div>
+
+<!-- Menú de acciones por fila (C-15). -->
+<ng-template #rowMenu let-sale>
+  <div
+    cdkMenu
+    class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
+  >
+    <button
+      cdkMenuItem
+      type="button"
+      (cdkMenuItemTriggered)="viewDetails(sale)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+    >
+      <svg [lucideIcon]="icons.view" [size]="16"></svg>
+      Ver detalle
+    </button>
+    @if (sale.rest > 0) {
+      <button
+        cdkMenuItem
+        type="button"
+        (cdkMenuItemTriggered)="registerPayment(sale)"
+        class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+      >
+        <svg [lucideIcon]="icons.pay" [size]="16"></svg>
+        Registrar pago
+      </button>
+    }
+  </div>
+</ng-template>
