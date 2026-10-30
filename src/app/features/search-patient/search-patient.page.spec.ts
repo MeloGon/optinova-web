@@ -156,7 +156,7 @@ describe('SearchPatientPage', () => {
       expect(field('patient-phone').value).toBe('999111222');
       expect(field('patient-phone-2').value).toBe('014567890');
       expect(field('patient-gender').value).toBe('Femenino');
-      expect(field('patient-birth').value).toBe('1990-05-17');
+      expect(field('patient-birth').value).toBe('17/05/1990');
       expect(field('patient-branch').value).toBe('OFTALVISION');
     });
 
@@ -194,7 +194,7 @@ describe('SearchPatientPage', () => {
     it('una fecha de nacimiento futura no se acepta', async () => {
       await open('/search-patient');
       await openEditPatient();
-      type('patient-birth', '2999-01-01');
+      type('patient-birth', '01/01/2999');
       await save();
 
       expect(document.body.textContent).toContain('No puede ser una fecha futura.');

@@ -125,7 +125,7 @@ describe('AddPatientPage', () => {
   it('rechaza una fecha de nacimiento futura', async () => {
     await open();
     await fillValid();
-    await type('new-birth', '2999-01-01');
+    await type('new-birth', '01/01/2999');
     await submit();
 
     expect(text()).toContain('No puede ser una fecha futura.');

@@ -8,6 +8,7 @@ import { ExpenseCategory } from '../../../core/models/expense-category';
 import { ConfigService } from '../../../core/config/config.service';
 import { NewExpense } from '../../../core/repositories/expense.repository';
 import { Result } from '../../../core/result';
+import { DatePicker } from '../../../shared/ui/date-picker/date-picker';
 import { Field } from '../../../shared/ui/field/field';
 import { OnvInput } from '../../../shared/ui/field/input';
 
@@ -31,7 +32,7 @@ function today(): string {
  */
 @Component({
   selector: 'app-expense-form-dialog',
-  imports: [ReactiveFormsModule, LucideDynamicIcon, Field, OnvInput],
+  imports: [ReactiveFormsModule, LucideDynamicIcon, DatePicker, Field, OnvInput],
   templateUrl: './expense-form-dialog.html',
   host: {
     class: 'block w-[560px] max-w-[calc(100vw-2rem)] rounded-xl bg-card text-card-foreground elev-xl',

@@ -29,10 +29,14 @@
         </select>
       </onv-field>
 
-      <onv-field label="Fecha de nacimiento" inputId="patient-birth" [errors]="{ future: 'No puede ser una fecha futura.' }">
-        <!-- Date nativo con estilo provisional: se reemplaza por C-04. Entrega yyyy-MM-dd, el formato de la DB. -->
-        <input id="patient-birth" type="date" onvInput formControlName="birthDate" min="1900-01-01" [max]="today" />
-      </onv-field>
+      <onv-date-picker
+        label="Fecha de nacimiento"
+        inputId="patient-birth"
+        formControlName="birthDate"
+        minDate="1900-01-01"
+        [maxDate]="today"
+        [errors]="{ future: 'No puede ser una fecha futura.' }"
+      />
 
       <onv-field label="Sucursal" inputId="patient-branch" [required]="true" [errors]="{ required: 'Elige una sucursal.' }">
         <select id="patient-branch" onvInput formControlName="branch">

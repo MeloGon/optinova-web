@@ -5,9 +5,14 @@
 
   <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
     <div class="grid grid-cols-2 gap-4">
-      <onv-field label="Fecha" inputId="expense-date" [required]="true" [errors]="{ required: 'Elige una fecha.' }">
-        <input id="expense-date" type="date" onvInput formControlName="date" min="1900-01-01" />
-      </onv-field>
+      <onv-date-picker
+        label="Fecha"
+        inputId="expense-date"
+        formControlName="date"
+        [required]="true"
+        minDate="1900-01-01"
+        [errors]="{ required: 'Elige una fecha.' }"
+      />
       <onv-field
         label="Monto"
         inputId="expense-amount"

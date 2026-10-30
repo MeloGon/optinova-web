@@ -6,6 +6,7 @@ import { ConfigService } from '../../../core/config/config.service';
 import { AppError } from '../../../core/errors/app-error';
 import { Patient } from '../../../core/models/patient';
 import { Result } from '../../../core/result';
+import { DatePicker } from '../../../shared/ui/date-picker/date-picker';
 import { Field } from '../../../shared/ui/field/field';
 import { OnvInput } from '../../../shared/ui/field/input';
 
@@ -36,7 +37,7 @@ const notFuture = (control: AbstractControl<string>): ValidationErrors | null =>
  */
 @Component({
   selector: 'app-edit-patient-dialog',
-  imports: [ReactiveFormsModule, LucideDynamicIcon, Field, OnvInput],
+  imports: [ReactiveFormsModule, LucideDynamicIcon, DatePicker, Field, OnvInput],
   templateUrl: './edit-patient-dialog.html',
   host: {
     class: 'block w-[560px] max-w-[calc(100vw-2rem)] rounded-xl bg-card text-card-foreground elev-xl',

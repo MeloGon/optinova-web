@@ -15,6 +15,7 @@ import { map, startWith } from 'rxjs';
 import { SessionStore } from '../../core/auth/session.store';
 import { ConfigService } from '../../core/config/config.service';
 import { Badge } from '../../shared/ui/badge/badge';
+import { DatePicker } from '../../shared/ui/date-picker/date-picker';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { Field } from '../../shared/ui/field/field';
 import { OnvInput } from '../../shared/ui/field/input';
@@ -74,7 +75,7 @@ function initialsOf(name: string): string {
  */
 @Component({
   selector: 'app-add-patient-page',
-  imports: [ReactiveFormsModule, DatePipe, RouterLink, LucideDynamicIcon, Badge, Field, OnvInput, Segmented],
+  imports: [ReactiveFormsModule, DatePipe, RouterLink, LucideDynamicIcon, Badge, DatePicker, Field, OnvInput, Segmented],
   providers: [AddPatientStore],
   templateUrl: './add-patient.page.html',
 })

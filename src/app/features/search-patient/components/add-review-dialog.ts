@@ -7,8 +7,7 @@ import { Patient } from '../../../core/models/patient';
 import { Review } from '../../../core/models/review';
 import { NewReview } from '../../../core/repositories/review.repository';
 import { Result } from '../../../core/result';
-import { Field } from '../../../shared/ui/field/field';
-import { OnvInput } from '../../../shared/ui/field/input';
+import { DatePicker } from '../../../shared/ui/date-picker/date-picker';
 import { createMeasureForm, measureValues } from './measure-form';
 import { MeasureFields } from './measure-fields';
 
@@ -33,7 +32,7 @@ const notFuture = (control: AbstractControl<string>): ValidationErrors | null =>
  */
 @Component({
   selector: 'app-add-review-dialog',
-  imports: [ReactiveFormsModule, LucideDynamicIcon, Field, OnvInput, MeasureFields],
+  imports: [ReactiveFormsModule, LucideDynamicIcon, DatePicker, MeasureFields],
   templateUrl: './add-review-dialog.html',
   host: {
     class: 'block w-[640px] max-w-[calc(100vw-2rem)] rounded-xl bg-card text-card-foreground elev-xl',

@@ -1,0 +1,118 @@
+<label [attr.for]="inputId()" class="text-label">
+  {{ label() }}
+  @if (required()) {
+    <span aria-hidden="true" class="text-danger-subtle-foreground">*</span>
+  }
+</label>
+
+<div
+  cdkOverlayOrigin
+  #trigger="cdkOverlayOrigin"
+  class="flex h-(--onv-control-h) items-center rounded-md border border-input bg-input-background px-3 hover:border-muted-foreground focus-within:border-ring focus-within:outline-2 focus-within:outline-ring aria-invalid:border-danger"
+  [attr.aria-invalid]="errorKey() ? true : null"
+>
+  <input
+    [id]="inputId()"
+    type="text"
+    inputmode="numeric"
+    autocomplete="off"
+    placeholder="dd/mm/aaaa"
+    maxlength="10"
+    [value]="displayValue()"
+    [disabled]="disabled()"
+    (input)="onInput($any($event.target).value)"
+    (focus)="toggle()"
+    (blur)="onBlur()"
+    class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground disabled:text-disabled-foreground"
+  />
+  <button
+    type="button"
+    (click)="toggle()"
+    [disabled]="disabled()"
+    [attr.aria-label]="open() ? 'Cerrar calendario' : 'Abrir calendario'"
+    class="grid size-6 shrink-0 place-items-center text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
+  >
+    <svg [lucideIcon]="calendarIcon" [size]="16"></svg>
+  </button>
+</div>
+
+@if (errorMessage(); as message) {
+  <p class="flex items-center gap-1 text-body-sm text-danger-subtle-foreground">
+    <svg [lucideIcon]="alertIcon" [size]="14" class="shrink-0"></svg>
+    {{ message }}
+  </p>
+} @else if (hint()) {
+  <p class="text-body-sm text-muted-foreground">{{ hint() }}</p>
+}
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="trigger"
+  [cdkConnectedOverlayOpen]="open()"
+  [cdkConnectedOverlayPositions]="positions"
+  cdkConnectedOverlayHasBackdrop
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="open.set(false)"
+  (detach)="open.set(false)"
+>
+  <div role="dialog" aria-label="Elegir fecha" class="z-(--z-popover) mt-1 w-[280px] rounded-lg border border-border bg-popover p-3 text-popover-foreground elev-lg">
+    <div class="mb-2 flex items-center justify-between">
+      <button
+        type="button"
+        (click)="prevMonth()"
+        aria-label="Mes anterior"
+        class="grid size-7 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+      >
+        <svg [lucideIcon]="prevIcon" [size]="15"></svg>
+      </button>
+      <span class="text-body-sm font-semibold capitalize">{{ monthTitle() }}</span>
+      <button
+        type="button"
+        (click)="nextMonth()"
+        aria-label="Mes siguiente"
+        class="grid size-7 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+      >
+        <svg [lucideIcon]="nextIcon" [size]="15"></svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-7 gap-0.5" role="grid">
+      @for (w of weekdays; track w) {
+        <span class="grid h-7 place-items-center text-caption font-medium text-muted-foreground">{{ w }}</span>
+      }
+      @for (day of days(); track day.iso) {
+        <button
+          type="button"
+          role="gridcell"
+          [disabled]="day.disabled"
+          [attr.aria-selected]="day.selected"
+          [attr.aria-label]="day.iso"
+          (click)="pick(day)"
+          class="grid h-8 place-items-center rounded-sm text-body-sm hover:bg-muted disabled:cursor-not-allowed disabled:text-disabled-foreground disabled:hover:bg-transparent"
+          [class.text-muted-foreground]="day.outside && !day.selected"
+          [class.font-bold]="day.today && !day.selected"
+          [class.border]="day.today && !day.selected"
+          [class.border-input]="day.today && !day.selected"
+          [class.bg-primary]="day.selected"
+          [class.text-primary-foreground]="day.selected"
+        >
+          {{ day.label }}
+        </button>
+      }
+    </div>
+
+    <div class="mt-2 flex items-center justify-between border-t border-border pt-2">
+      <button type="button" (click)="clear()" class="h-7 rounded-sm px-2 text-[13px] font-medium text-muted-foreground hover:bg-muted">
+        Limpiar
+      </button>
+      <button
+        type="button"
+        [disabled]="todayDisabled()"
+        (click)="setToday()"
+        class="h-7 rounded-md border border-border-strong px-2.5 text-[13px] font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Hoy
+      </button>
+    </div>
+  </div>
+</ng-template>
