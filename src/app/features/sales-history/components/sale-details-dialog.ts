@@ -1,4 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { LucideDynamicIcon, LucideX } from '@lucide/angular';
 import { Payment } from '../../../core/models/payment';
@@ -26,7 +27,7 @@ export type SaleDetailsResult = 'pay' | undefined;
  */
 @Component({
   selector: 'app-sale-details-dialog',
-  imports: [LucideDynamicIcon, MoneyPipe, Badge],
+  imports: [LucideDynamicIcon, MoneyPipe, DatePipe, Badge],
   templateUrl: './sale-details-dialog.html',
   host: {
     class: 'block w-[640px] max-w-[calc(100vw-2rem)] rounded-xl bg-card text-card-foreground elev-xl',

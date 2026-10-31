@@ -1,6 +1,6 @@
 // C-04 Date picker
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { DestroyRef, Component, computed, inject, input, signal } from '@angular/core';
+import { DestroyRef, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { LucideCalendar, LucideChevronLeft, LucideChevronRight, LucideCircleAlert, LucideDynamicIcon } from '@lucide/angular';
@@ -120,6 +120,19 @@ export class DatePicker implements ControlValueAccessor {
 
     const destroyRef = inject(DestroyRef);
     this.ngControl?.control?.events.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.changes.update((n) => n + 1));
+
+    // `formatInvalid` no es un validador registrado (evitaría el mismo NG0200 que NG_VALUE_ACCESSOR):
+    // se empuja a mano al control para que `invalid`/`aria-invalid` del padre lo vean también
+    // (ej. bloquear submit con una fecha a medio escribir, aunque el valor previo siga siendo válido).
+    effect(() => {
+      const invalid = this.formatInvalid();
+      const control = this.ngControl?.control;
+      if (!control) return;
+      const errors = { ...(control.errors ?? {}) };
+      if (invalid) errors['invalidFormat'] = true;
+      else delete errors['invalidFormat'];
+      control.setErrors(Object.keys(errors).length ? errors : null);
+    });
   }
 
   protected readonly monthTitle = computed(() => `${MONTHS[this.viewMonth().getMonth()]} ${this.viewMonth().getFullYear()}`);

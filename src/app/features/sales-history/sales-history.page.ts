@@ -195,6 +195,11 @@ export class SalesHistoryPage {
     void this.navigate({ branch: value || null, page: null });
   }
 
+  protected clearFilters(): void {
+    this.text.setValue('');
+    void this.navigate({ q: null, branch: null, date: null, page: null });
+  }
+
   protected goToPage(page: number): void {
     void this.navigate({ page: page === 1 ? null : page });
   }

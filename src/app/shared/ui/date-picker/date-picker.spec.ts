@@ -75,6 +75,18 @@ describe('DatePicker', () => {
     expect(errorText()).toContain('Fecha no válida.');
   });
 
+  it('con un valor válido precargado, escribir una fecha imposible invalida el control (bloquea submit)', () => {
+    host.control.setValue('2026-01-05');
+    fixture.detectChanges();
+    expect(host.control.valid).toBe(true);
+
+    type('31/02/2026');
+
+    expect(host.control.value).toBe('2026-01-05');
+    expect(host.control.valid).toBe(false);
+    expect(host.control.errors?.['invalidFormat']).toBe(true);
+  });
+
   it('vaciar el campo y salir limpia el valor (sin marcar "Fecha no válida")', () => {
     host.control.setValue('2026-01-05');
     fixture.detectChanges();

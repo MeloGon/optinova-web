@@ -4,7 +4,7 @@
       Venta <span class="font-mono">{{ sale.folio }}</span>
     </h2>
     <p class="text-body-sm text-muted-foreground">
-      {{ sale.date }}
+      {{ sale.date | date: 'dd/MM/yyyy' }}
       @if (sale.branch) {
         · {{ sale.branch }}
       }
@@ -86,7 +86,7 @@
           <tbody>
             @for (payment of payments; track payment.id) {
               <tr class="border-b border-border last:border-0">
-                <td class="h-9 px-3 tabular-nums">{{ payment.date }}</td>
+                <td class="h-9 px-3 tabular-nums">{{ payment.date | date: 'dd/MM/yyyy' }}</td>
                 <td class="h-9 px-3 capitalize">{{ payment.paymentMethod }}</td>
                 <td class="h-9 px-3">{{ payment.registeredBy || '—' }}</td>
                 <td class="h-9 px-3 text-right tabular-nums">{{ payment.amount | money }}</td>

@@ -45,6 +45,9 @@ export class SalesHistoryStore {
   readonly loading = computed(() => this.state().loading);
   readonly error = computed(() => this.state().error);
   readonly loaded = computed(() => this.state().loaded);
+  /** Suma de `totalWithDiscount`/`rest` de la página visible (= fila de totales de S-05, no el total general). */
+  readonly pageTotal = computed(() => this.state().items.reduce((sum, s) => sum + s.totalWithDiscount, 0));
+  readonly pageRest = computed(() => this.state().items.reduce((sum, s) => sum + s.rest, 0));
 
   /** Número de la última búsqueda lanzada: una respuesta vieja no pisa a una más nueva. */
   private lastRequest = 0;

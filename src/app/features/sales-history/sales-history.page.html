@@ -54,6 +54,13 @@
       >
         Buscar
       </button>
+      <button
+        type="button"
+        (click)="clearFilters()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        Limpiar
+      </button>
     </form>
   </div>
 
@@ -161,10 +168,10 @@
             <tr>
               <td colspan="5" class="font-medium">Total · {{ store.items().length }} {{ store.items().length === 1 ? 'venta' : 'ventas' }} de esta página</td>
               <td class="text-right tabular-nums font-medium">
-                {{ store.items().reduce((sum, s) => sum + s.totalWithDiscount, 0) | money }}
+                {{ store.pageTotal() | money }}
               </td>
               <td class="text-right tabular-nums font-medium text-warning-subtle-foreground">
-                {{ store.items().reduce((sum, s) => sum + s.rest, 0) | money }}
+                {{ store.pageRest() | money }}
               </td>
               <td></td>
             </tr>
