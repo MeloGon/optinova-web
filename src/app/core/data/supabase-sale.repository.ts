@@ -2,8 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { AppError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Sale } from '../models/sale';
-import { SaleItem } from '../models/sale-item';
-import { SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
+import { NewSaleItem, SaleItem } from '../models/sale-item';
+import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
 import { Result, err, ok } from '../result';
 import { SUPABASE } from '../supabase/supabase.client';
 
@@ -175,4 +175,72 @@ export class SupabaseSaleRepository extends SaleRepository {
     if (error) return err(toAppError(error));
     return ok(undefined);
   }
+
+  async create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>> {
+    const { data, error } = await this.supabase
+      .from('ventas')
+      .insert({
+        sucursal: sale.branch,
+        fecha_actualizada: sale.date,
+        fecha_venta_iso: sale.date,
+        paciente_nombre: sale.patientName,
+        paciente_id: sale.patientId,
+        autor_nombre: sale.sellerName,
+        total: sale.total,
+        descuento: sale.discount,
+        motivo_descuento: sale.discountReason,
+        total_con_descuento: sale.totalWithDiscount,
+        a_cuenta: sale.account,
+        resta: sale.rest,
+      })
+      .select(COLUMNS)
+      .single<SaleRow>();
+
+    if (error) return err(toAppError(error));
+    const created = toSale(data);
+
+    if (items.length > 0) {
+      const rows = items.map((item) => toNewItemRow(created, sale, item));
+      const { error: itemsError } = await this.supabase.from('venta_items').insert(rows);
+      if (itemsError) return err(toAppError(itemsError));
+    }
+
+    return ok(created);
+  }
+}
+
+function toNewItemRow(sale: Sale, draft: NewSale, item: NewSaleItem) {
+  const base = {
+    venta_id: sale.id,
+    folio_venta: sale.folio,
+    paciente_nombre: draft.patientName,
+    fecha_ventas_actualizada: draft.date,
+  };
+
+  if (item.kind === 'resin') {
+    return {
+      ...base,
+      id_oftalmico: item.resinId,
+      descripcion: item.description,
+      diseno: item.design,
+      linea: item.line,
+      material: item.material,
+      tecnologia: item.technology,
+      texto: item.text,
+      // Siempre '1': cada línea es una unidad (ver NewSaleItem).
+      cantidad: '1',
+      precio: item.price,
+    };
+  }
+
+  return {
+    ...base,
+    id_montura: item.mountId,
+    montura_marca: item.mountBrand,
+    montura_modelo: item.mountModel,
+    montura_color: item.mountColor,
+    montura_texto: item.mountText,
+    montura_cantidad: '1',
+    montura_precio: item.price,
+  };
 }

@@ -1,0 +1,107 @@
+<div class="flex items-center gap-2 border-b border-border px-6 py-4">
+  <svg [lucideIcon]="receiptIcon" [size]="18" class="text-muted-foreground"></svg>
+  <h2 [id]="titleId" class="text-heading">Vista previa de la venta</h2>
+</div>
+
+<div class="max-h-[70vh] overflow-y-auto p-6">
+  <p class="mb-3 text-body-sm text-muted-foreground">
+    Así quedaría la nota. El folio y la fecha de registro definitivos se asignan al confirmar; esto no es el recibo
+    para imprimir.
+  </p>
+
+  <div class="rounded-md border border-dashed border-border-strong bg-muted/30 p-4 font-mono text-[13px] leading-relaxed">
+    <div class="text-center">
+      <p class="font-semibold">{{ data.branch || 'SUCURSAL' }}</p>
+      <p class="text-muted-foreground">NOTA DE VENTA · borrador</p>
+    </div>
+
+    <div class="my-2 border-t border-dashed border-border-strong"></div>
+
+    <div class="flex justify-between">
+      <span>Fecha</span>
+      <span>{{ data.date | date: 'dd/MM/yyyy' }}</span>
+    </div>
+    <div class="flex justify-between">
+      <span>Vendedor</span>
+      <span class="truncate pl-2">{{ data.sellerName }}</span>
+    </div>
+    <div class="flex justify-between">
+      <span>Paciente</span>
+      <span class="truncate pl-2">{{ data.patientName }}</span>
+    </div>
+
+    <div class="my-2 border-t border-dashed border-border-strong"></div>
+
+    @for (item of data.items; track $index) {
+      <div class="flex justify-between gap-2">
+        <span class="min-w-0 truncate">{{ item.label }}</span>
+        <span class="shrink-0 tabular-nums">{{ item.price | money }}</span>
+      </div>
+    }
+    @if (data.items.length === 0) {
+      <p class="text-muted-foreground">Sin productos.</p>
+    }
+
+    <div class="my-2 border-t border-dashed border-border-strong"></div>
+
+    <div class="flex justify-between">
+      <span>Subtotal</span>
+      <span class="tabular-nums">{{ data.total | money }}</span>
+    </div>
+    @if (data.discount > 0) {
+      <div class="flex justify-between">
+        <span>Descuento{{ data.discountReason ? ' (' + data.discountReason + ')' : '' }}</span>
+        <span class="tabular-nums">−{{ data.discount | money }}</span>
+      </div>
+    }
+    <div class="flex justify-between font-semibold">
+      <span>TOTAL</span>
+      <span class="tabular-nums">{{ data.totalWithDiscount | money }}</span>
+    </div>
+
+    <div class="my-2 border-t border-dashed border-border-strong"></div>
+
+    <div class="flex justify-between">
+      <span>A cuenta{{ data.paymentMethodLabel ? ' (' + data.paymentMethodLabel + ')' : '' }}</span>
+      <span class="tabular-nums">{{ data.account | money }}</span>
+    </div>
+    <div class="flex justify-between font-semibold">
+      <span>{{ data.rest > 0 ? 'SALDO' : 'PAGADA' }}</span>
+      <span class="tabular-nums">{{ data.rest | money }}</span>
+    </div>
+
+    <div class="my-2 border-t border-dashed border-border-strong"></div>
+    <p class="text-center text-muted-foreground">··· vista previa, no es el recibo ···</p>
+  </div>
+
+  @if (error(); as message) {
+    <div role="alert" class="mt-3 flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body-sm text-danger-subtle-foreground">
+      <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+      <span>{{ message }}</span>
+    </div>
+  }
+</div>
+
+<div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+  <button
+    type="button"
+    (click)="cancel()"
+    [disabled]="saving()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted disabled:opacity-50"
+  >
+    Seguir editando
+  </button>
+  <button
+    type="button"
+    (click)="confirm()"
+    [disabled]="saving()"
+    class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+  >
+    @if (saving()) {
+      <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+      Creando venta…
+    } @else {
+      Confirmar venta
+    }
+  </button>
+</div>

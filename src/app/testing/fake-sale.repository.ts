@@ -1,8 +1,8 @@
 import { AppError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
 import { Sale } from '../core/models/sale';
-import { SaleItem } from '../core/models/sale-item';
-import { SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
+import { NewSaleItem, SaleItem } from '../core/models/sale-item';
+import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
 import { Result, err, ok } from '../core/result';
 
 export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`): Sale => ({
@@ -30,6 +30,10 @@ export class FakeSaleRepository extends SaleRepository {
 
   appliedPayments: { saleId: string; newAccount: number; newRest: number; paymentDate: string }[] = [];
   applyPaymentFailWith: AppError | null = null;
+
+  created: { sale: NewSale; items: NewSaleItem[] }[] = [];
+  createFailWith: AppError | null = null;
+  private nextId = 9000;
 
   private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date'>): Sale[] {
     const text = params.query.trim().toLowerCase();
@@ -81,4 +85,70 @@ export class FakeSaleRepository extends SaleRepository {
     this.sales = this.sales.map((s) => (s.id === saleId ? { ...s, account: newAccount, rest: newRest } : s));
     return ok(undefined);
   }
+
+  async create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>> {
+    if (this.createFailWith) return err(this.createFailWith);
+    this.created.push({ sale, items });
+    const id = this.nextId++;
+    const created: Sale = {
+      id: String(id),
+      folio: String(id),
+      branch: sale.branch,
+      date: sale.date,
+      patientName: sale.patientName,
+      sellerName: sale.sellerName,
+      total: sale.total,
+      discount: sale.discount,
+      totalWithDiscount: sale.totalWithDiscount,
+      account: sale.account,
+      rest: sale.rest,
+    };
+    this.sales = [...this.sales, created];
+    this.items[created.folio] = items.map((item, index) => toFakeSaleItem(index, item));
+    return ok(created);
+  }
+}
+
+function toFakeSaleItem(index: number, item: NewSaleItem): SaleItem {
+  const base: SaleItem = {
+    id: index,
+    description: '',
+    design: '',
+    line: '',
+    material: '',
+    technology: '',
+    serie: '',
+    text: '',
+    quantity: '',
+    price: 0,
+    mount: '',
+    mountBrand: '',
+    mountModel: '',
+    mountColor: '',
+    mountQuantity: '',
+    mountPrice: 0,
+    mountText: '',
+  };
+  if (item.kind === 'resin') {
+    return {
+      ...base,
+      description: item.description,
+      design: item.design,
+      line: item.line,
+      material: item.material,
+      technology: item.technology,
+      text: item.text,
+      quantity: '1',
+      price: item.price,
+    };
+  }
+  return {
+    ...base,
+    mountBrand: item.mountBrand,
+    mountModel: item.mountModel,
+    mountColor: item.mountColor,
+    mountQuantity: '1',
+    mountPrice: item.price,
+    mountText: item.mountText,
+  };
 }

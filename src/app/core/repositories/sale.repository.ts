@@ -1,7 +1,7 @@
 import { AppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Sale } from '../models/sale';
-import { SaleItem } from '../models/sale-item';
+import { NewSaleItem, SaleItem } from '../models/sale-item';
 import { Result } from '../result';
 
 export type SaleStatus = 'all' | 'balance' | 'paid';
@@ -22,6 +22,28 @@ export interface SaleStatusCounts {
   all: number;
   balance: number;
   paid: number;
+}
+
+/** Venta nueva a crear (= el encabezado que arma Vender antes de confirmar). */
+export interface NewSale {
+  branch: string;
+  /** `yyyy-MM-dd`. */
+  date: string;
+  patientName: string;
+  /**
+   * FK real a `pacientes.id`; siempre se conoce en Vender (viene de elegir un paciente de la
+   * búsqueda). Texto, no número: igual motivo que `Patient.id`/`Review.patientId` (ver
+   * supabase-patient.repository) — algunos IDs históricos de 17 dígitos superan lo que
+   * JavaScript puede guardar exacto.
+   */
+  patientId: string;
+  sellerName: string;
+  total: number;
+  discount: number;
+  discountReason: string | null;
+  totalWithDiscount: number;
+  account: number;
+  rest: number;
 }
 
 /** Contrato de ventas (= SaleRepository abstracto de Flutter, recortado al alcance de E2.5). */
@@ -48,4 +70,13 @@ export abstract class SaleRepository {
     newRest: number,
     paymentDate: string,
   ): Promise<Result<void, AppError>>;
+
+  /**
+   * Crea la venta y sus líneas (= `_createShortSale` de Flutter, con el orden invertido: primero
+   * el encabezado porque `venta_items.venta_id` tiene FK a `ventas.id` desde el cambio #8 — en
+   * PROD esa FK no existe, así que Flutter podía insertar las líneas antes sin problema).
+   * Dos inserts secuenciales, no atómico (misma tolerancia que `applyPayment`/`registerPayment`):
+   * si el segundo falla, la venta queda creada sin líneas.
+   */
+  abstract create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>>;
 }

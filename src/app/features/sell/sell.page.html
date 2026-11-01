@@ -1,0 +1,85 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <div class="rounded-lg border border-border bg-card p-4 elev-sm md:p-5">
+    <onv-stepper [steps]="steps()" (stepClick)="goToStep($event)" />
+  </div>
+
+  @switch (currentStep()) {
+    @case (1) {
+      <app-sell-patient-step />
+    }
+    @case (2) {
+      <app-sell-products-step />
+    }
+    @case (3) {
+      <app-sell-checkout-step />
+    }
+  }
+
+  <div
+    class="sticky bottom-0 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3.5 elev-sm md:px-6"
+  >
+    @if (currentStep() === 1) {
+      <button
+        type="button"
+        (click)="cancel()"
+        class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        Cancelar venta
+      </button>
+      <button
+        type="button"
+        (click)="next()"
+        [disabled]="!store.patient()"
+        class="ml-auto inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-[15px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Continuar a productos
+        <svg [lucideIcon]="icons.next" [size]="16"></svg>
+      </button>
+    }
+    @if (currentStep() === 2) {
+      <button
+        type="button"
+        (click)="back()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        <svg [lucideIcon]="icons.back" [size]="16"></svg>
+        Atrás
+      </button>
+      <span class="order-3 w-full text-body-sm text-muted-foreground sm:order-none sm:ml-auto sm:w-auto">
+        Paso 2 de 3
+      </span>
+      <button
+        type="button"
+        (click)="next()"
+        [disabled]="store.cart().length === 0"
+        class="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-[15px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50 sm:ml-0"
+      >
+        Revisar y confirmar
+        <svg [lucideIcon]="icons.next" [size]="16"></svg>
+      </button>
+    }
+    @if (currentStep() === 3) {
+      <button
+        type="button"
+        (click)="back()"
+        [disabled]="store.saving()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md px-4 text-[14px] font-medium hover:bg-muted disabled:opacity-50"
+      >
+        <svg [lucideIcon]="icons.back" [size]="16"></svg>
+        Atrás
+      </button>
+      <span class="order-3 w-full text-body-sm text-muted-foreground sm:order-none sm:ml-auto sm:w-auto">
+        Paso 3 de 3 · {{ chargeSummary() }}
+      </span>
+      <button
+        type="button"
+        (click)="openPreview()"
+        [disabled]="!store.canConfirm()"
+        class="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-[15px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50 sm:ml-0"
+      >
+        <svg [lucideIcon]="icons.confirm" [size]="16"></svg>
+        Ver y confirmar
+      </button>
+    }
+  </div>
+</div>

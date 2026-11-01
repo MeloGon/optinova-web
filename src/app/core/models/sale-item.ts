@@ -22,3 +22,32 @@ export interface SaleItem {
   mountPrice: number;
   mountText: string;
 }
+
+/**
+ * Línea nueva a insertar (= un producto agregado al carrito de Vender). Cada línea es siempre
+ * 1 unidad (igual que Flutter: no hay selector de cantidad, cada clic en "Agregar" crea una línea
+ * más; vender 3 armazones iguales son 3 líneas con el mismo `mountId`, no una línea con cantidad 3).
+ * A diferencia de `SaleItem` (que lee cualquier fila ya aplanada), acá se modela como unión
+ * discriminada: una línea nueva es una resina o un armazón, nunca ambos campos sueltos a la vez.
+ */
+export type NewSaleItem =
+  | {
+      kind: 'resin';
+      resinId: number;
+      description: string;
+      design: string;
+      line: string;
+      material: string;
+      technology: string;
+      text: string;
+      price: number;
+    }
+  | {
+      kind: 'mount';
+      mountId: number;
+      mountBrand: string;
+      mountModel: string;
+      mountColor: string;
+      mountText: string;
+      price: number;
+    };

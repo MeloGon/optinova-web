@@ -10,16 +10,22 @@ import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
 import { SupabaseExpenseRepository } from './core/data/supabase-expense.repository';
+import { SupabaseMountRepository } from './core/data/supabase-mount.repository';
 import { SupabasePatientRepository } from './core/data/supabase-patient.repository';
 import { SupabasePaymentRepository } from './core/data/supabase-payment.repository';
+import { SupabaseResinRepository } from './core/data/supabase-resin.repository';
 import { SupabaseReviewRepository } from './core/data/supabase-review.repository';
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
+import { SupabaseSellerRepository } from './core/data/supabase-seller.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { ExpenseRepository } from './core/repositories/expense.repository';
+import { MountRepository } from './core/repositories/mount.repository';
 import { PatientRepository } from './core/repositories/patient.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
+import { ResinRepository } from './core/repositories/resin.repository';
 import { ReviewRepository } from './core/repositories/review.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
+import { SellerRepository } from './core/repositories/seller.repository';
 import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -36,6 +42,9 @@ export const appConfig: ApplicationConfig = {
     { provide: ExpenseRepository, useClass: SupabaseExpenseRepository },
     { provide: SaleRepository, useClass: SupabaseSaleRepository },
     { provide: PaymentRepository, useClass: SupabasePaymentRepository },
+    { provide: MountRepository, useClass: SupabaseMountRepository },
+    { provide: ResinRepository, useClass: SupabaseResinRepository },
+    { provide: SellerRepository, useClass: SupabaseSellerRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.
     provideAppInitializer(() => {
       inject(ThemeService);

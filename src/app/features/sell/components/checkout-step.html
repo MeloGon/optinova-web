@@ -1,0 +1,229 @@
+<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_420px]">
+  <!-- Nota de venta -->
+  <div class="rounded-lg border border-border bg-card elev-sm">
+    <div class="border-b border-border px-5 py-4">
+      <h3 class="text-subheading">Nota de venta</h3>
+      <p class="text-body-sm text-muted-foreground">El precio unitario se puede editar.</p>
+    </div>
+
+    <div class="flex flex-col gap-4 p-5">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="col-span-2 flex flex-col gap-1 sm:col-span-4">
+          <span class="text-label">Paciente</span>
+          <span class="text-body font-medium">{{ store.patient()?.name }}</span>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="checkout-seller" class="text-label">Vendedor <span class="text-danger-subtle-foreground">*</span></label>
+          <select
+            id="checkout-seller"
+            [value]="store.seller()?.id ?? ''"
+            (change)="setSeller($any($event.target).value)"
+            class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-2 text-body-sm outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <option value="" disabled>Elige...</option>
+            @for (seller of store.sellers(); track seller.id) {
+              <option [value]="seller.id">{{ seller.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="checkout-branch" class="text-label">Sucursal <span class="text-danger-subtle-foreground">*</span></label>
+          <select
+            id="checkout-branch"
+            [value]="store.branch()"
+            (change)="setBranch($any($event.target).value)"
+            class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-2 text-body-sm outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            @for (b of branches(); track b.value) {
+              <option [value]="b.value">{{ b.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-span-2 flex flex-col gap-1.5 sm:col-span-2">
+          <onv-date-picker label="Fecha" inputId="checkout-date" [formControl]="dateControl" />
+        </div>
+      </div>
+
+      @if (store.cart().length === 0) {
+        <p class="text-body-sm text-muted-foreground">No agregaste productos todavía.</p>
+      } @else {
+        <div class="overflow-x-auto rounded-md border border-border">
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-right">Precio unit.</th>
+                <th scope="col" class="text-right">Importe</th>
+                <th scope="col"><span class="sr-only">Quitar</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of store.cart(); track line.localId) {
+                <tr>
+                  <td>
+                    <span class="font-medium">{{ line.label }}</span>
+                    <span class="block text-caption text-muted-foreground">{{ line.item.kind === 'mount' ? 'Armazón' : 'Resina' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="ml-auto flex h-8 w-32 items-center gap-1 rounded-md border border-input bg-input-background px-2">
+                      <span class="text-caption text-muted-foreground">{{ config().currency.symbol }}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        [value]="line.item.price"
+                        (change)="updatePrice(line, $any($event.target).value)"
+                        [attr.aria-label]="'Precio de ' + line.label"
+                        class="w-full min-w-0 bg-transparent text-right text-body-sm outline-none"
+                      />
+                    </div>
+                  </td>
+                  <td class="text-right tabular-nums">{{ line.item.price | money }}</td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      (click)="store.removeCartLine(line.localId)"
+                      [attr.aria-label]="'Quitar ' + line.label"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-danger-subtle hover:text-danger-subtle-foreground"
+                    >
+                      <svg [lucideIcon]="icons.trash" [size]="15"></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (store.selectedReview(); as review) {
+        <div>
+          <p class="mb-1.5 text-caption font-medium text-muted-foreground">Graduación · {{ review.date | date: 'dd/MM/yyyy' }}</p>
+          <onv-rx-table
+            mode="compact"
+            [odView]="{ esf: review.odEsf, cil: review.odCil, eje: review.odEje, av: review.odAv }"
+            [oiView]="{ esf: review.oiEsf, cil: review.oiCil, eje: review.oiEje, av: review.oiAv }"
+          />
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Resumen de cobro (P-06) -->
+  <div class="rounded-lg border border-border bg-card elev-sm">
+    <div class="border-b border-border px-5 py-4">
+      <h3 class="text-subheading">Resumen de cobro</h3>
+    </div>
+
+    <div class="flex flex-col gap-4 p-5">
+      <dl class="flex flex-col gap-2.5 text-body-sm">
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="text-muted-foreground">
+            Importe bruto <span class="text-caption">· {{ store.cart().length }} {{ store.cart().length === 1 ? 'producto' : 'productos' }}</span>
+          </dt>
+          <dd class="tabular-nums">{{ store.total() | money }}</dd>
+        </div>
+
+        @if (store.canApplyDiscount()) {
+          <div class="flex flex-col gap-2 rounded-md bg-muted/40 p-3">
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-muted-foreground">Descuento especial</dt>
+              <dd class="tabular-nums text-success">−{{ store.discount() | money }}</dd>
+            </div>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                placeholder="Motivo"
+                [formControl]="discountReason"
+                class="h-8 min-w-0 flex-1 rounded-md border border-input bg-input-background px-2 text-body-sm outline-none"
+              />
+              <div class="flex h-8 w-28 shrink-0 items-center gap-1 rounded-md border border-input bg-input-background px-2">
+                <span class="text-caption text-muted-foreground">{{ config().currency.symbol }}</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  [formControl]="discountAmount"
+                  aria-label="Monto del descuento"
+                  class="w-full min-w-0 bg-transparent text-right text-body-sm outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="flex items-baseline justify-between gap-3 text-muted-foreground">
+            <dt class="flex items-center gap-1.5">
+              <svg [lucideIcon]="icons.lock" [size]="13"></svg>
+              Descuento <span class="text-caption">· solo supervisor o superior</span>
+            </dt>
+            <dd class="tabular-nums">{{ 0 | money }}</dd>
+          </div>
+        }
+
+        <div class="flex items-baseline justify-between gap-3 border-t border-border-strong pt-2.5 text-[16px] font-semibold">
+          <dt>Total</dt>
+          <dd class="tabular-nums">{{ store.totalWithDiscount() | money }}</dd>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-muted-foreground">A cuenta <span class="text-caption">· abono inicial</span></dt>
+          <dd class="w-32">
+            <div class="flex h-8 items-center gap-1 rounded-md border border-input bg-input-background px-2">
+              <span class="text-caption text-muted-foreground">{{ config().currency.symbol }}</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                [max]="store.totalWithDiscount()"
+                [value]="store.account()"
+                (change)="setAccount($any($event.target).value)"
+                aria-label="A cuenta"
+                class="w-full min-w-0 bg-transparent text-right text-body-sm outline-none"
+              />
+            </div>
+          </dd>
+        </div>
+
+        <div
+          class="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 font-medium"
+          [class.bg-warning-subtle]="store.rest() > 0"
+          [class.text-warning-subtle-foreground]="store.rest() > 0"
+          [class.bg-success-subtle]="store.rest() === 0"
+          [class.text-success-subtle-foreground]="store.rest() === 0"
+        >
+          <dt class="flex items-center gap-1.5">
+            <svg [lucideIcon]="store.rest() > 0 ? icons.balance : icons.paid" [size]="15"></svg>
+            Saldo por cobrar
+          </dt>
+          <dd class="tabular-nums">{{ store.rest() | money }}</dd>
+        </div>
+      </dl>
+
+      <div class="flex flex-col gap-1.5">
+        <span class="text-label">
+          Método de pago del abono
+          @if (store.account() > 0) {
+            <span class="text-danger-subtle-foreground">*</span>
+          }
+        </span>
+        <div role="radiogroup" aria-label="Método de pago" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          @for (method of methods(); track method.value) {
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="store.paymentMethod() === method.value"
+              (click)="setMethod(method.value)"
+              class="flex flex-col items-center gap-1 rounded-md border border-input px-2 py-2.5 text-caption font-medium text-muted-foreground hover:bg-muted aria-checked:border-primary aria-checked:bg-primary-subtle aria-checked:text-primary-subtle-foreground"
+            >
+              <svg [lucideIcon]="method.icon" [size]="18"></svg>
+              {{ method.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

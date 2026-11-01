@@ -10,9 +10,10 @@
 --
 -- Formatos de texto que espera la app (heredados de Flutter):
 --   pacientes.fecha_registro / fecha_nacimiento  date (yyyy-MM-dd); migración #3
---   revisiones."FECHA"              dd-MMM-yyyy es
+--   revisiones.fecha                 date (yyyy-MM-dd); migración #7
 --   ventas.fecha_legado / venta_items.fecha_venta_legado   dd-MMM-yy en (13-Oct-26); migración #8
 --   columnas *_actualizada / *_iso  date (yyyy-MM-dd)
+--   armazones.fecha_registro_legado  texto irregular ("09-sept-24"), solo respaldo; migración #9
 -- =============================================================================
 
 select setseed(0.2026);
@@ -34,11 +35,6 @@ delete from auth.users where email like '%@optinova.test';  -- cascada a perfile
 delete from public.audit_logs;
 
 -- Helpers de fecha -------------------------------------------------------------
-create or replace function pg_temp.fecha_es(d date) returns text language sql immutable as $$
-  select to_char(d, 'DD') || '-' ||
-         (array['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'])[extract(month from d)::int]
-         || '-' || to_char(d, 'YYYY')
-$$;
 create or replace function pg_temp.fecha_en(d date) returns text language sql immutable as $$
   select to_char(d, 'DD') || '-' ||
          (array['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])[extract(month from d)::int]
@@ -92,10 +88,10 @@ insert into public.categorias_egresos (nombre, color) values
   ('Gastos operativos',    '#F59E0B'),
   ('Caja chica',           '#10B981');
 
-insert into public.vendedores ("NOMBRE")
+insert into public.vendedores (nombre)
 select unnest(array['ANA LOPEZ','CARLOS RUIZ','MARIA TORRES','JORGE DIAZ','LUCIA MORA','PEDRO SALAS','SOFIA VEGA','DIEGO ROJAS']);
 
-insert into public.resinas (descripcion, "diseño", linea, material, tecnologia, texto, cantidad, precio, precio_interno)
+insert into public.resinas (descripcion, diseno, linea, material, tecnologia, texto, cantidad, precio, precio_interno)
 select 'RESINA PRUEBA ' || g,
        pg_temp.pick(array['MONOFOCAL','BIFOCAL','PROGRESIVO','OCUPACIONAL']),
        pg_temp.pick(array['ESTANDAR','PREMIUM','DIGITAL']),
@@ -107,8 +103,8 @@ select 'RESINA PRUEBA ' || g,
        round((150 + random() * 1200)::numeric, 0)
 from generate_series(1, 50) g;
 
-insert into public.armazones ("ID ARMAZON", "MARCA", "MODELO", "COLOR", "DESCRIPCION", "PRECIO",
-  "NOMBRE DE LA OPTICA", "FECHA DE REGISTRO", "CODIGO DE BARRAS", "EXISTENCIAS", "PROVEEDOR", "CONSIGNACION")
+insert into public.armazones (id, marca, modelo, color, descripcion, precio,
+  sucursal, fecha_registro_legado, codigo_barras, existencias)
 select 900000 + g,
        pg_temp.pick(array['RAY-BAN','OAKLEY','VOGUE','CARRERA','GUESS','POLICE','TOMMY']),
        'MOD-' || lpad(g::text, 3, '0'),
@@ -118,9 +114,7 @@ select 900000 + g,
        pg_temp.pick(array['OFTALVISION','MEDILENT']),
        to_char(current_date - (random() * 365)::int, 'DD-MM-YYYY'),
        '75000' || lpad(g::text, 8, '0'),
-       floor(random() * 10)::smallint,
-       pg_temp.pick(array['PROVEEDOR A','PROVEEDOR B','PROVEEDOR C']),
-       'FALSO'
+       floor(random() * 10)::smallint
 from generate_series(1, 50) g;
 
 -- Pacientes y revisiones -----------------------------------------------------------
@@ -150,10 +144,9 @@ from seed_pacientes;
 -- Los pacientes del seed llevan ID explícito: la secuencia debe seguir después del mayor.
 select setval('public.pacientes_id_seq', (select coalesce(max(id), 0) + 1 from public.pacientes), false);
 
-insert into public.revisiones ("ID REFRACCION", "PACIENTE", "FECHA", "MOTIVO DE CONSULTA", "HISTORIA CLINICA",
-  "OD ESF", "OD CIL", "OD EJE", "OD AV", "OI ESF", "OI CIL", "OI EJE", "OI AV", "ADD", "OBSERVACIONES", "DIP",
-  "SUCURSAL", fecha_revision_actualizada)
-select 1000000000000 + p.g, p.nombre, pg_temp.fecha_es(p.registro + 1),
+insert into public.revisiones (paciente_nombre, paciente_id, fecha, motivo_consulta, historia_clinica,
+  od_esf, od_cil, od_eje, od_av, oi_esf, oi_cil, oi_eje, oi_av, adicion, observaciones, dip, sucursal)
+select p.nombre, p.id, p.registro + 1,
        pg_temp.pick(array['VISION BORROSA','REVISION ANUAL','DOLOR DE CABEZA','CAMBIO DE LENTES']),
        'Sin antecedentes relevantes',
        to_char(-4 + floor(random() * 33) * 0.25, 'FMS0.00'), to_char(-floor(random() * 9) * 0.25, 'FM0.00'),
@@ -162,7 +155,7 @@ select 1000000000000 + p.g, p.nombre, pg_temp.fecha_es(p.registro + 1),
        (floor(random() * 18) * 10)::text, '20/' || pg_temp.pick(array['20','25','30','40']),
        pg_temp.pick(array['','+1.00','+1.50','+2.00']),
        'Revisión de prueba', (58 + floor(random() * 10))::text,
-       p.sucursal, p.registro + 1
+       p.sucursal
 from seed_pacientes p;
 
 -- Ventas, detalle y pagos ----------------------------------------------------------
@@ -176,9 +169,9 @@ select s.n as g,
        p.sucursal,
        pg_temp.pick(array['ANA LOPEZ','CARLOS RUIZ','MARIA TORRES','JORGE DIAZ','LUCIA MORA']) as autor,
        r.precio as precio_resina,
-       a."PRECIO" as precio_armazon,
-       r.id_oftalmico, r.descripcion, r."diseño", r.linea, r.material, r.tecnologia, r.texto,
-       a."ID ARMAZON", a."MARCA", a."MODELO", a."COLOR", a."DESCRIPCION" as arm_desc,
+       a.precio as precio_armazon,
+       r.id_oftalmico, r.descripcion, r.diseno, r.linea, r.material, r.tecnologia, r.texto,
+       a.id as id_armazon, a.marca, a.modelo, a.color, a.descripcion as arm_desc,
        (random() < 0.3) as con_descuento,
        random()::numeric as pct_pagado
 from generate_series(1, 50) as s(n)
@@ -203,14 +196,14 @@ from seed_ventas v,
 insert into public.venta_items (id, venta_id, folio_venta, fecha_venta_legado, paciente_nombre, id_oftalmico,
   descripcion, diseno, linea, material, tecnologia, texto, cantidad, precio, fecha_ventas_actualizada)
 select 20000000000000000 + g, id_remision, folio, pg_temp.fecha_en(fecha), paciente, id_oftalmico,
-       descripcion, "diseño", linea, material, tecnologia, texto, '1', precio_resina, fecha
+       descripcion, diseno, linea, material, tecnologia, texto, '1', precio_resina, fecha
 from seed_ventas;
 
 insert into public.venta_items (id, venta_id, folio_venta, fecha_venta_legado, paciente_nombre, id_oftalmico,
   id_montura, montura_marca, montura_modelo, montura_color, montura_cantidad, montura_precio,
   montura_texto, fecha_ventas_actualizada)
-select 30000000000000000 + g, id_remision, folio, pg_temp.fecha_en(fecha), paciente, "ID ARMAZON",
-       "ID ARMAZON", "MARCA", "MODELO", "COLOR", '1', precio_armazon, arm_desc, fecha
+select 30000000000000000 + g, id_remision, folio, pg_temp.fecha_en(fecha), paciente, id_armazon,
+       id_armazon, marca, modelo, color, '1', precio_armazon, arm_desc, fecha
 from seed_ventas;
 
 -- Pago inicial (nueva_venta) cuando hubo anticipo.

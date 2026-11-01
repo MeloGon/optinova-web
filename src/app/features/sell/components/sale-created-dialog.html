@@ -1,0 +1,41 @@
+<div class="flex flex-col items-center gap-3 px-6 pt-8 pb-6 text-center">
+  <span class="grid size-14 place-items-center rounded-full bg-success-subtle text-success-subtle-foreground">
+    <svg [lucideIcon]="checkIcon" [size]="28"></svg>
+  </span>
+  <h2 [id]="titleId" class="text-heading">Venta registrada</h2>
+  <p class="text-body-sm text-muted-foreground">
+    Folio <span class="font-mono text-foreground">{{ sale.folio }}</span> · {{ sale.patientName }}
+  </p>
+
+  <div class="mt-2 flex w-full flex-col gap-1.5 rounded-md bg-muted/40 p-4 text-left text-body-sm">
+    <div class="flex justify-between">
+      <span class="text-muted-foreground">Total</span>
+      <span class="font-semibold tabular-nums">{{ sale.totalWithDiscount | money }}</span>
+    </div>
+    @if (sale.rest > 0) {
+      <div class="flex justify-between text-warning-subtle-foreground">
+        <span>Saldo por cobrar</span>
+        <span class="font-semibold tabular-nums">{{ sale.rest | money }}</span>
+      </div>
+    } @else {
+      <p class="text-success">Pagada por completo.</p>
+    }
+  </div>
+</div>
+
+<div class="flex justify-center gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+  <button
+    type="button"
+    (click)="close()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+  >
+    Cerrar
+  </button>
+  <button
+    type="button"
+    (click)="viewSale()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+  >
+    Ver venta
+  </button>
+</div>

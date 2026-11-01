@@ -87,11 +87,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/sales-history/sales-history.page').then((m) => m.SalesHistoryPage),
       },
-      pending('sell', {
-        title: 'Nueva venta',
-        description: 'Sigue los pasos para registrar una venta.',
-        delivery: 'E2.6',
-      }),
+      {
+        path: 'sell',
+        title: 'Nueva venta · Optinova',
+        data: {
+          title: 'Nueva venta',
+          description: 'Registra una venta en 3 pasos.',
+        } satisfies PageData,
+        loadComponent: () => import('./features/sell/sell.page').then((m) => m.SellPage),
+      },
       pending('settings/resins', {
         minRole: 'admin',
         title: 'Resinas',

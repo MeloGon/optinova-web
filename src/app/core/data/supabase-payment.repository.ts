@@ -13,10 +13,11 @@ interface PaymentRow {
   fecha_pago: string;
   metodo_pago: string | null;
   notas: string | null;
+  tipo_pago: string | null;
   perfiles: { nombre: string } | null;
 }
 
-const COLUMNS = 'id, id_remision, monto, fecha_pago, metodo_pago, notas, perfiles(nombre)';
+const COLUMNS = 'id, id_remision, monto, fecha_pago, metodo_pago, notas, tipo_pago, perfiles(nombre)';
 
 function toPayment(row: PaymentRow): Payment {
   return {
@@ -27,6 +28,7 @@ function toPayment(row: PaymentRow): Payment {
     paymentMethod: row.metodo_pago ?? '',
     registeredBy: row.perfiles?.nombre ?? '',
     notes: row.notas ?? '',
+    type: row.tipo_pago === 'nueva_venta' ? 'nueva_venta' : 'abono_saldo',
   };
 }
 
@@ -56,6 +58,7 @@ export class SupabasePaymentRepository extends PaymentRepository {
         fecha_pago: payment.date,
         metodo_pago: payment.paymentMethod,
         notas: payment.notes || null,
+        tipo_pago: payment.type,
         registrado_por: registeredById,
       })
       .select(COLUMNS)

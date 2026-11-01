@@ -1,0 +1,126 @@
+<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+  <!-- Buscar paciente -->
+  <div class="rounded-lg border border-border bg-card elev-sm">
+    <div class="border-b border-border px-5 py-4">
+      <h3 class="text-subheading">¿Para quién es la venta?</h3>
+      <p class="text-body-sm text-muted-foreground">Busca por nombre. Si es nuevo, agrégalo desde Buscar paciente.</p>
+    </div>
+
+    <div class="flex flex-col gap-3 p-5">
+      <form (submit)="$event.preventDefault(); submit()" role="search" class="flex gap-2">
+        <div
+          class="flex h-(--onv-control-h) flex-1 items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+        >
+          <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+          <input
+            id="sell-patient-search"
+            type="search"
+            [formControl]="text"
+            autocomplete="off"
+            placeholder="Nombre del paciente"
+            class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          />
+          @if (text.value) {
+            <button
+              type="button"
+              (click)="clear()"
+              aria-label="Limpiar búsqueda"
+              class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+            >
+              <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+            </button>
+          }
+        </div>
+        <button
+          type="submit"
+          class="inline-flex h-(--onv-control-h) shrink-0 items-center rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+        >
+          Buscar
+        </button>
+      </form>
+
+      @if (store.patientsError(); as message) {
+        <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body-sm text-danger-subtle-foreground">
+          <svg [lucideIcon]="icons.alert" [size]="16" class="mt-0.5 shrink-0"></svg>
+          <span>{{ message }}</span>
+        </div>
+      }
+
+      @if (store.searchingPatients()) {
+        <div class="flex flex-col gap-2">
+          @for (row of skeletonRows; track row) {
+            <div class="flex items-center gap-2.5 rounded-md p-2.5">
+              <onv-skeleton class="size-8 shrink-0 rounded-full" />
+              <onv-skeleton class="h-3 w-48" />
+            </div>
+          }
+        </div>
+      } @else if (store.patients().length > 0) {
+        <div class="flex flex-col gap-0.5">
+          @for (patient of store.patients(); track patient.id) {
+            <button
+              type="button"
+              (click)="select(patient)"
+              class="flex items-center gap-3 rounded-md p-2.5 text-left hover:bg-muted"
+            >
+              <onv-avatar [name]="patient.name" size="sm" tone="neutral" [decorative]="true" />
+              <span class="min-w-0 flex-1 truncate text-body font-medium">{{ patient.name }}</span>
+              <span class="shrink-0 text-body-sm text-muted-foreground">{{ patient.branch }}</span>
+            </button>
+          }
+        </div>
+      } @else if (text.value.trim() === '' && !store.patient()) {
+        <onv-empty-state [icon]="icons.search" title="Busca al paciente" text="Escribe un nombre y presiona Buscar." />
+      } @else if (!store.searchingPatients()) {
+        <onv-empty-state [icon]="icons.search" title="Sin resultados" text="Revisa la ortografía o prueba con otro nombre.">
+          <a
+            routerLink="/dashboard/add-patient"
+            class="inline-flex h-8 items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+          >
+            <svg [lucideIcon]="icons.userPlus" [size]="14"></svg>
+            Agregar paciente nuevo
+          </a>
+        </onv-empty-state>
+      }
+    </div>
+  </div>
+
+  <!-- Paciente elegido -->
+  @if (store.patient(); as patient) {
+    <div class="rounded-lg border-2 border-primary bg-card elev-sm">
+      <div class="flex items-center gap-3 border-b border-border px-5 py-4">
+        <onv-avatar [name]="patient.name" size="lg" tone="neutral" [decorative]="true" />
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-subheading">{{ patient.name }}</h3>
+          <p class="truncate text-body-sm text-muted-foreground">
+            {{ patient.branch }}
+            @if (patient.phone) {
+              · {{ patient.phone }}
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 p-5">
+        @if (store.selectedReview(); as review) {
+          <div>
+            <p class="mb-1.5 text-caption font-medium text-muted-foreground">
+              Graduación que se usará · {{ review.date | date: 'dd/MM/yyyy' }}
+            </p>
+            <onv-rx-table
+              mode="compact"
+              [odView]="{ esf: review.odEsf, cil: review.odCil, eje: review.odEje, av: review.odAv }"
+              [oiView]="{ esf: review.oiEsf, cil: review.oiCil, eje: review.oiEje, av: review.oiAv }"
+            />
+          </div>
+        } @else {
+          <p class="text-body-sm text-muted-foreground">Este paciente no tiene medidas registradas todavía.</p>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="hidden rounded-lg border border-dashed border-border-strong bg-card p-5 lg:block">
+      <onv-empty-state [icon]="icons.search" title="Elige un paciente" text="Aparecerá aquí con su graduación más reciente." />
+    </div>
+  }
+</div>

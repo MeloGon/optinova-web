@@ -43,10 +43,10 @@ describe('Rutas y guards', () => {
   });
 
   it('una página pendiente muestra su título y su entregable', async () => {
-    const h = await start('vendedor');
-    await h.navigateByUrl('/dashboard/sell');
-    expect(text(h)).toContain('Nueva venta');
-    expect(text(h)).toContain('E2.6');
+    const h = await start('admin');
+    await h.navigateByUrl('/dashboard/settings/resins');
+    expect(text(h)).toContain('Resinas');
+    expect(text(h)).toContain('E2.8');
   });
 
   it('un vendedor no entra a páginas de admin', async () => {

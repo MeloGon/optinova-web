@@ -5,13 +5,18 @@ import { Component, Directive, input } from '@angular/core';
  * Estilo de una `<table>` densa: cabecera fija, filas con borde y hover, alto y texto según
  * la densidad (variables --onv-row-h, --onv-cell-x, --onv-cell-fs del tema).
  *
+ * `min-w-full` (no `w-full`) + `whitespace-nowrap`: con viewport angosto (celular), la tabla
+ * mantiene su ancho natural y hace scroll horizontal dentro de `onv-table-card` en vez de
+ * encoger columnas y partir el texto en varias líneas (quedaba feo en mobile en Historial,
+ * Egresos y Buscar paciente; es el mismo componente en las tres).
+ *
  *   <table onvTable>...</table>
  */
 @Directive({
   selector: 'table[onvTable]',
   host: {
     class:
-      'w-full border-collapse text-[length:var(--onv-cell-fs)] ' +
+      'min-w-full border-collapse whitespace-nowrap text-[length:var(--onv-cell-fs)] ' +
       '[&_th]:sticky [&_th]:top-0 [&_th]:z-(--z-sticky) [&_th]:h-9 [&_th]:bg-muted [&_th]:px-(--onv-cell-x) ' +
       '[&_th]:text-left [&_th]:text-caption [&_th]:text-muted-foreground in-data-[density=compact]:[&_th]:h-8 ' +
       '[&_td]:h-(--onv-row-h) [&_td]:px-(--onv-cell-x) [&_tbody_tr]:border-t [&_tbody_tr]:border-border ' +

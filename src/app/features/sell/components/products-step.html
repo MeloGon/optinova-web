@@ -1,0 +1,266 @@
+<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
+  <!-- Catálogo -->
+  <div class="rounded-lg border border-border bg-card elev-sm">
+    <div class="flex flex-wrap items-center gap-3 border-b border-border p-4">
+      <onv-segmented [options]="categoryOptions" label="Categoría" [formControl]="category" />
+
+      @if (category.value === 'mount') {
+        <select
+          [formControl]="branchFilter"
+          aria-label="Filtrar por sucursal"
+          class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <option value="">Todas las sucursales</option>
+          @for (b of branches(); track b.value) {
+            <option [value]="b.value">{{ b.label }}</option>
+          }
+        </select>
+      }
+
+      <form (submit)="$event.preventDefault(); submit()" role="search" class="flex min-w-[220px] flex-1 gap-2">
+        <div
+          class="flex h-(--onv-control-h) flex-1 items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+        >
+          <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+          <input
+            type="search"
+            [formControl]="text"
+            autocomplete="off"
+            [placeholder]="category.value === 'mount' ? 'Buscar armazón por marca o modelo' : 'Buscar resina por descripción'"
+            class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          />
+          @if (text.value) {
+            <button
+              type="button"
+              (click)="clear()"
+              aria-label="Limpiar búsqueda"
+              class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+            >
+              <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+            </button>
+          }
+        </div>
+        <button
+          type="submit"
+          class="inline-flex h-(--onv-control-h) shrink-0 items-center rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+        >
+          Buscar
+        </button>
+      </form>
+    </div>
+
+    @if (store.catalogError(); as message) {
+      <div role="alert" class="flex items-start gap-2 p-4 text-body-sm text-danger-subtle-foreground">
+        <svg [lucideIcon]="icons.alert" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+
+    <div class="overflow-x-auto">
+      @if (store.searchingCatalog()) {
+        <table onvTable>
+          <tbody>
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-56" /></td>
+                <td class="text-right"><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td class="w-28"><onv-skeleton class="ml-auto h-7 w-20" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else if (!searched()) {
+        <onv-empty-state
+          [icon]="category.value === 'mount' ? icons.mount : icons.resin"
+          title="Busca un producto para empezar"
+          [text]="category.value === 'mount' ? 'Escribe una marca o modelo, o presiona Buscar para ver todo el stock.' : 'Escribe una descripción, o presiona Buscar para ver todo el catálogo.'"
+        />
+      } @else if (category.value === 'mount' && store.mounts().length === 0) {
+        <onv-empty-state [icon]="icons.mount" title="Sin armazones" text="No encontramos armazones con stock para este filtro." />
+      } @else if (category.value === 'resin' && store.resins().length === 0) {
+        <onv-empty-state [icon]="icons.resin" title="Sin resinas" text="No encontramos resinas con este filtro." />
+      } @else if (category.value === 'mount') {
+        <table onvTable>
+          <thead>
+            <tr>
+              <th scope="col">Armazón</th>
+              <th scope="col" class="text-right">Precio</th>
+              <th scope="col"><span class="sr-only">Acción</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mount of store.mounts(); track mount.id) {
+              <tr [attr.aria-selected]="mountCount(mount) > 0 ? true : null">
+                <td>
+                  <span class="font-medium">{{ mount.brand }} {{ mount.model }}</span>
+                  <span class="block text-caption text-muted-foreground">
+                    {{ mount.color }}
+                    @if (mount.description) {
+                      · {{ mount.description }}
+                    }
+                    · stock {{ remainingStock(mount) }}
+                  </span>
+                </td>
+                <td class="text-right tabular-nums">{{ mount.price | money }}</td>
+                <td class="text-right">
+                  @if (mountCount(mount) > 0) {
+                    <div class="inline-flex items-center gap-1 rounded-md border border-primary bg-primary-subtle p-0.5">
+                      <button
+                        type="button"
+                        (click)="decrementMount(mount)"
+                        [attr.aria-label]="'Quitar una unidad de ' + mount.brand + ' ' + mount.model"
+                        class="grid size-7 place-items-center rounded-sm text-primary-subtle-foreground hover:bg-card"
+                      >
+                        <svg [lucideIcon]="icons.minus" [size]="14"></svg>
+                      </button>
+                      <span class="w-5 text-center text-[13px] font-semibold tabular-nums text-primary-subtle-foreground">{{
+                        mountCount(mount)
+                      }}</span>
+                      <button
+                        type="button"
+                        (click)="addMount(mount)"
+                        [disabled]="remainingStock(mount) <= 0"
+                        [attr.aria-label]="'Agregar otra unidad de ' + mount.brand + ' ' + mount.model"
+                        class="grid size-7 place-items-center rounded-sm text-primary-subtle-foreground hover:bg-card disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <svg [lucideIcon]="icons.add" [size]="14"></svg>
+                      </button>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="addMount(mount)"
+                      class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.add" [size]="14"></svg>
+                      Agregar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <table onvTable>
+          <thead>
+            <tr>
+              <th scope="col">Resina</th>
+              <th scope="col" class="text-right">Precio</th>
+              <th scope="col"><span class="sr-only">Acción</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (resin of store.resins(); track resin.id) {
+              <tr [attr.aria-selected]="resinCount(resin) > 0 ? true : null">
+                <td>
+                  <span class="font-medium">{{ resin.description || resin.text || 'Resina' }}</span>
+                  <span class="block text-caption text-muted-foreground">
+                    {{ resin.design }}
+                    @if (resin.material) {
+                      · {{ resin.material }}
+                    }
+                  </span>
+                </td>
+                <td class="text-right tabular-nums">{{ resin.price | money }}</td>
+                <td class="text-right">
+                  @if (resinCount(resin) > 0) {
+                    <div class="inline-flex items-center gap-1 rounded-md border border-primary bg-primary-subtle p-0.5">
+                      <button
+                        type="button"
+                        (click)="decrementResin(resin)"
+                        [attr.aria-label]="'Quitar una unidad de ' + (resin.description || resin.text || 'resina')"
+                        class="grid size-7 place-items-center rounded-sm text-primary-subtle-foreground hover:bg-card"
+                      >
+                        <svg [lucideIcon]="icons.minus" [size]="14"></svg>
+                      </button>
+                      <span class="w-5 text-center text-[13px] font-semibold tabular-nums text-primary-subtle-foreground">{{
+                        resinCount(resin)
+                      }}</span>
+                      <button
+                        type="button"
+                        (click)="addResin(resin)"
+                        [attr.aria-label]="'Agregar otra unidad de ' + (resin.description || resin.text || 'resina')"
+                        class="grid size-7 place-items-center rounded-sm text-primary-subtle-foreground hover:bg-card"
+                      >
+                        <svg [lucideIcon]="icons.add" [size]="14"></svg>
+                      </button>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="addResin(resin)"
+                      class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.add" [size]="14"></svg>
+                      Agregar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (store.catalogTotal() > store.catalogPageSize) {
+      <onv-paginator
+        [page]="store.catalogPage()"
+        [pageSize]="store.catalogPageSize"
+        [total]="store.catalogTotal()"
+        [pageSizes]="[store.catalogPageSize]"
+        class="border-t border-border"
+        (pageChange)="goToPage($event)"
+      />
+    }
+  </div>
+
+  <!-- Carrito -->
+  <div class="rounded-lg border border-border bg-card elev-sm lg:sticky lg:top-4">
+    <div class="border-b border-border px-5 py-4">
+      <h3 class="text-subheading">Productos elegidos</h3>
+      <p class="text-body-sm text-muted-foreground">
+        {{ store.cart().length }} {{ store.cart().length === 1 ? 'producto' : 'productos' }}
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-3 p-5">
+      @if (store.cart().length === 0) {
+        <p class="text-body-sm text-muted-foreground">Agrega resinas o armazones desde el catálogo.</p>
+      } @else {
+        @for (line of store.cart(); track line.localId) {
+          <div class="flex items-start justify-between gap-3">
+            <span class="min-w-0">
+              <span class="block truncate font-medium">{{ line.label }}</span>
+              <span class="block text-caption text-muted-foreground">{{ line.item.kind === 'mount' ? 'Armazón' : 'Resina' }}</span>
+            </span>
+            <span class="flex shrink-0 items-center gap-2">
+              <span class="tabular-nums">{{ line.item.price | money }}</span>
+              <button
+                type="button"
+                (click)="remove(line.localId)"
+                [attr.aria-label]="'Quitar ' + line.label"
+                class="grid size-6 place-items-center rounded-sm text-muted-foreground hover:bg-danger-subtle hover:text-danger-subtle-foreground"
+              >
+                <svg [lucideIcon]="icons.clear" [size]="13"></svg>
+              </button>
+            </span>
+          </div>
+        }
+
+        @if (missingMount()) {
+          <div class="flex items-start gap-2 rounded-md bg-info-subtle px-3 py-2.5 text-body-sm text-info-subtle-foreground">
+            <svg [lucideIcon]="icons.info" [size]="16" class="mt-0.5 shrink-0"></svg>
+            <span>Falta el armazón. Si el paciente trae el suyo, continúa.</span>
+          </div>
+        }
+
+        <div class="flex justify-between border-t border-border pt-3">
+          <span class="font-semibold">Subtotal</span>
+          <span class="text-[18px] font-semibold tabular-nums">{{ store.total() | money }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

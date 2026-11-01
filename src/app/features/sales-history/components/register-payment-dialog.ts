@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   LucideBanknote,
@@ -78,14 +79,29 @@ export class RegisterPaymentDialog {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  /**
+   * El estado de un `FormControl` (su `.value`) no es una signal: sin este contador, `resultLabel`
+   * y `submitLabel` se calculaban una sola vez con el saldo precargado y nunca se refrescaban al
+   * escribir un monto distinto (el abono sí se registraba correcto; solo el texto quedaba viejo).
+   * Mismo truco que `OnvInput`/`RxTable` (shared/ui).
+   */
+  private readonly changes = signal(0);
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    this.form.controls.amount.events.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.changes.update((n) => n + 1));
+  }
+
   /** "la venta quedará Pagada" o "quedará con S/. X de saldo", según lo que se vaya a abonar. */
   protected readonly resultLabel = computed(() => {
+    this.changes();
     const amount = this.form.controls.amount.value ?? 0;
     const remaining = Math.max(this.sale.rest - amount, 0);
     return remaining <= 0 ? 'Pagada' : formatMoney(remaining, this.config().currency) + ' de saldo';
   });
 
   protected readonly submitLabel = computed(() => {
+    this.changes();
     const amount = this.form.controls.amount.value ?? 0;
     return `Registrar ${formatMoney(amount, this.config().currency)}`;
   });
@@ -111,6 +127,7 @@ export class RegisterPaymentDialog {
       date: value.date,
       paymentMethod: value.paymentMethod,
       notes: '',
+      type: 'abono_saldo',
     };
 
     this.saving.set(true);

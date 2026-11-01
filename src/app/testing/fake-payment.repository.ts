@@ -11,6 +11,7 @@ export const fakePayment = (id: number, saleId: string, amount = 50): Payment =>
   paymentMethod: 'efectivo',
   registeredBy: 'Vendedor Prueba',
   notes: '',
+  type: 'abono_saldo',
 });
 
 /** PaymentRepository en memoria para tests. */

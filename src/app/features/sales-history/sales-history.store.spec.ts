@@ -116,7 +116,7 @@ describe('SalesHistoryStore', () => {
 
     const result = await store.registerPayment(
       sale,
-      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '' },
+      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
       'user-id-1',
     );
 
@@ -138,7 +138,7 @@ describe('SalesHistoryStore', () => {
 
     const result = await store.registerPayment(
       sale,
-      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '' },
+      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
       'user-id-1',
     );
 
@@ -152,7 +152,7 @@ describe('SalesHistoryStore', () => {
 
     await store.registerPayment(
       sale,
-      { saleId: sale.id, amount: 150, date: '2026-10-10', paymentMethod: 'efectivo', notes: '' },
+      { saleId: sale.id, amount: 150, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
       'user-id-1',
     );
 
