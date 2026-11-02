@@ -37,7 +37,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-11 | Badge / Pill de estado | v1 | D-001 |
 | C-12 | Dialog / Modal | v1 | D-001 |
 | C-13 | Toast | v1 | D-001 |
-| C-14 | Tabs | v1 | D-001 |
+| C-14 | Tabs | implementado v1 (2026-11-02, `shared/ui/tabs/`, `e6d7a6c`; teclado/paneles ARIA completos pendientes) | D-001 |
 | C-15 | Dropdown menu | v1 | D-001 |
 | C-16 | Tooltip | v1 | D-001 |
 | C-17 | Spinner / Skeleton | v1 | D-001 |
@@ -64,7 +64,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 |---|---|---|---|
 | S-01 | Login | v1 | D-001 |
 | S-02 | Dashboard | v1 | D-001 |
-| S-03 | Buscar paciente + ficha con revisiones | v1 | D-001 |
+| S-03 | Buscar paciente + ficha con revisiones | implementado en `e6d7a6c` (2026-11-02): ruta propia, encabezado y Revisiones/Ventas/Pagos | D-001 |
 | S-04 | Nueva venta (3 pasos) | implementado en `59fa465` (recibo PDF y P-04 completo pendientes) | D-001 |
 | S-05 | Historial de ventas + registrar pago | v1 | D-001 |
 | S-06 | Configuración / Apariencia | v1 | D-001 |
@@ -73,7 +73,11 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 
 P-05 se usa en Ver/Agregar/Editar medidas: signo tipográfico, OD relleno/OI delineado, atajo de centésimas en ESF/CIL, botones ±0.25/±1 y copia OD → OI. ADD y DIP permanecen aparte como valores únicos de cada revisión. C-19 agrega iniciales a la tabla de pacientes y P-03 deja Editar como ícono visible por fila. Detalle didáctico y diferencias frente a Flutter: [L08](../lessons/08-revisiones-medidas.md).
 
-S-03 completa (ficha maestro-detalle con pestañas Revisiones/Ventas/Pagos) sigue pendiente hasta que existan Ventas/Pagos, por decisión del dueño del 2026-10-27. Las medidas permanecen en diálogos. La implementación de P-05 no cambia ese alcance.
+Al cierre de E2.3b (2026-10-27), S-03 se difirió hasta que existieran Ventas/Pagos; P-05 se usaba en diálogos y no completaba ese alcance. Este pendiente se resolvió después en `e6d7a6c` (2026-11-02), con una página propia, según se explica abajo.
+
+## Implementación de S-03 y C-14 (2026-11-02)
+
+`e6d7a6c`, commit local en `development`: ficha en `/dashboard/search-patient/:id`, encabezado y pestañas Revisiones/Ventas/Pagos con contadores. Decisión del dueño: página propia en lugar de panel partido; sección en `?tab=`. C-14 recibe selección y emite cambios; la página monta el contenido. Se reutilizan P-05, diálogos de revisión y venta/abono, y acciones de ciclo de vida extraídas. Los dos arreglos tras Antigravity están incluidos: Restaurar sustituye a Eliminar para archivados (admin+; Editar permanece) y Revisiones usa el mismo empty-state con tarjeta que Ventas/Pagos. Primera versión de Tabs con roles/selección ARIA; teclado y vínculo completo de paneles pendientes. Lectura y límites: [L12](../lessons/12-ficha-paciente.md). Sin equivalente de pantalla en Flutter `7d3fa5f`.
 
 ## Implementación de E2.5 y C-04 (2026-10-30)
 

@@ -16,6 +16,7 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 09 | [Vender en tres pasos](09-vender.md) | E2.6 y cambios #9/#10 |
 | 10 | [Egresos, formularios y categorías](10-egresos.md) | E2.4 |
 | 11 | [Historial de ventas y registro de abonos](11-historial-ventas.md) | E2.5 y cambio #8 |
+| 12 | [Ficha de paciente: ruta y pestañas](12-ficha-paciente.md) | S-03, C-14 y lectura de relaciones por ID |
 
 ## Fundamentos desde Flutter y Dart
 
@@ -37,6 +38,8 @@ L08 documenta el estado de revisiones del 2026-10-27, incluidas las correcciones
 L09–L11 se prepararon el 2026-11-01 comparando Angular `59fa465` con Flutter `7d3fa5f`. L09 atiende Vender; L10 y L11 completan las lecciones pendientes de Egresos e Historial. La numeración refleja el orden de entrega documental. No se modifican las lecciones previas para actualizar sus referencias históricas a componentes o features que llegaron después.
 
 ## PDF y entrega para Drive
+
+L12 se preparó el 2026-11-02 sobre el commit local `e6d7a6c`. Explica una mejora nueva sin pantalla equivalente en Flutter: ficha con Revisiones/Ventas/Pagos, ruta `:id`, C-14 y reutilización de acciones/diálogos. PDF individual en `docs/informes/12-ficha-paciente.pdf`; se entrega aparte del paquete histórico del 2026-11-01. Las lecciones 00–11 conservan el contexto de su fecha.
 
 Una lección: `npm run pdf -- docs/lessons/05-buscar-paciente.md`.
 
