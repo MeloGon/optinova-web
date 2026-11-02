@@ -64,6 +64,17 @@ export class SupabasePatientRepository extends PatientRepository {
     return ok({ items: data.map(toPatient), total: count ?? 0 });
   }
 
+  async getById(id: string): Promise<Result<Patient | null, AppError>> {
+    const { data, error } = await this.supabase
+      .from('pacientes')
+      .select(COLUMNS)
+      .eq('id', id)
+      .maybeSingle<PatientRow>();
+
+    if (error) return err(toAppError(error));
+    return ok(data ? toPatient(data) : null);
+  }
+
   async create(patient: NewPatient): Promise<Result<Patient, AppError>> {
     // Sin id ni fecha_registro: la secuencia y el valor por defecto de la DB los asignan.
     const { data, error } = await this.supabase

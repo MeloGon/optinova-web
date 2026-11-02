@@ -60,6 +60,16 @@ export const routes: Routes = [
           import('./features/search-patient/search-patient.page').then((m) => m.SearchPatientPage),
       },
       {
+        path: 'search-patient/:id',
+        title: 'Paciente · Optinova',
+        data: {
+          title: 'Paciente',
+          description: 'Ficha del paciente: revisiones, ventas y pagos.',
+        } satisfies PageData,
+        loadComponent: () =>
+          import('./features/search-patient/patient-detail.page').then((m) => m.PatientDetailPage),
+      },
+      {
         path: 'expenses',
         title: 'Egresos · Optinova',
         data: {

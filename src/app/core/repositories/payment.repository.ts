@@ -9,5 +9,8 @@ export abstract class PaymentRepository {
   /** Abonos de una venta, del más antiguo al más reciente (igual orden que Flutter). */
   abstract listBySale(saleId: string): Promise<Result<Payment[], AppError>>;
 
+  /** Abonos de todas las ventas de un paciente, del más reciente al más antiguo (= la ficha, S-03). */
+  abstract listByPatient(patientId: string): Promise<Result<Payment[], AppError>>;
+
   abstract create(payment: NewPayment, registeredById: string): Promise<Result<Payment, AppError>>;
 }

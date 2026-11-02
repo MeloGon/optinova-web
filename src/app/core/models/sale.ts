@@ -9,6 +9,8 @@ export interface Sale {
   /** `yyyy-MM-dd`. */
   date: string;
   patientName: string;
+  /** FK real a `pacientes.id`; `null` en ventas históricas sin enlazar (ver migración #8). */
+  patientId: string | null;
   sellerName: string;
   total: number;
   discount: number;

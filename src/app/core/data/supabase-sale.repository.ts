@@ -14,6 +14,7 @@ interface SaleRow {
   sucursal: string | null;
   fecha_actualizada: string | null;
   paciente_nombre: string | null;
+  paciente_id: string | null;
   autor_nombre: string | null;
   total: number | null;
   descuento: number | null;
@@ -42,8 +43,10 @@ interface SaleItemRow {
   montura_texto: string | null;
 }
 
+// paciente_id::text: es bigint, y un ID grande llegaría como número JSON y perdería dígitos
+// (mismo motivo que Patient.id).
 const COLUMNS =
-  'id, folio, sucursal, fecha_actualizada, paciente_nombre, autor_nombre, total, descuento, total_con_descuento, a_cuenta, resta';
+  'id, folio, sucursal, fecha_actualizada, paciente_nombre, paciente_id::text, autor_nombre, total, descuento, total_con_descuento, a_cuenta, resta';
 
 const ITEM_COLUMNS =
   'id, descripcion, diseno, linea, material, tecnologia, serie, texto, cantidad, precio, montura, montura_marca, montura_modelo, montura_color, montura_cantidad, montura_precio, montura_texto';
@@ -59,6 +62,7 @@ function toSale(row: SaleRow): Sale {
     branch: row.sucursal ?? '',
     date: row.fecha_actualizada ?? '',
     patientName: row.paciente_nombre ?? '',
+    patientId: row.paciente_id,
     sellerName: row.autor_nombre ?? '',
     total,
     discount,
@@ -99,11 +103,12 @@ function escapeLike(text: string): string {
 export class SupabaseSaleRepository extends SaleRepository {
   private readonly supabase = inject(SUPABASE);
 
-  async search({ query, branch, date, status, page, pageSize }: SaleSearch): Promise<Result<Page<Sale>, AppError>> {
+  async search({ query, branch, date, status, page, pageSize, patientId }: SaleSearch): Promise<Result<Page<Sale>, AppError>> {
     const from = (page - 1) * pageSize;
     const text = query.trim();
 
     let request = this.supabase.from('ventas').select(COLUMNS, { count: 'exact' });
+    if (patientId) request = request.eq('paciente_id', patientId);
     if (text) {
       const escaped = escapeLike(text);
       request = request.or(`paciente_nombre.ilike.%${escaped}%,folio.ilike.%${escaped}%`);

@@ -5,12 +5,13 @@ import { NewSaleItem, SaleItem } from '../core/models/sale-item';
 import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
 import { Result, err, ok } from '../core/result';
 
-export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`): Sale => ({
+export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`, patientId: string | null = null): Sale => ({
   id: String(id),
   folio: `F-${id}`,
   branch: 'OFTALVISION',
   date: '2026-10-01',
   patientName,
+  patientId,
   sellerName: 'Vendedor Prueba',
   total: 100,
   discount: 0,
@@ -35,9 +36,10 @@ export class FakeSaleRepository extends SaleRepository {
   createFailWith: AppError | null = null;
   private nextId = 9000;
 
-  private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date'>): Sale[] {
+  private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'patientId'>): Sale[] {
     const text = params.query.trim().toLowerCase();
     return this.sales.filter((s) => {
+      if (params.patientId && s.patientId !== params.patientId) return false;
       if (text && !s.patientName.toLowerCase().includes(text) && !s.folio.toLowerCase().includes(text)) return false;
       if (params.branch && s.branch !== params.branch) return false;
       if (params.date && s.date !== params.date) return false;
@@ -96,6 +98,7 @@ export class FakeSaleRepository extends SaleRepository {
       branch: sale.branch,
       date: sale.date,
       patientName: sale.patientName,
+      patientId: sale.patientId,
       sellerName: sale.sellerName,
       total: sale.total,
       discount: sale.discount,

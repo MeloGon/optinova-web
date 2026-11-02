@@ -1,5 +1,6 @@
 import { AppError } from '../core/errors/app-error';
 import { Payment } from '../core/models/payment';
+import { Sale } from '../core/models/sale';
 import { NewPayment, PaymentRepository } from '../core/repositories/payment.repository';
 import { Result, err, ok } from '../core/result';
 
@@ -14,8 +15,12 @@ export const fakePayment = (id: number, saleId: string, amount = 50): Payment =>
   type: 'abono_saldo',
 });
 
-/** PaymentRepository en memoria para tests. */
+/** PaymentRepository en memoria para tests. `saleRepo` es opcional: solo lo necesita `listByPatient`. */
 export class FakePaymentRepository extends PaymentRepository {
+  constructor(private readonly saleRepo?: { sales: Sale[] }) {
+    super();
+  }
+
   payments: Payment[] = [];
 
   created: { payment: NewPayment; registeredById: string }[] = [];
@@ -24,6 +29,11 @@ export class FakePaymentRepository extends PaymentRepository {
 
   async listBySale(saleId: string): Promise<Result<Payment[], AppError>> {
     return ok(this.payments.filter((p) => p.saleId === saleId));
+  }
+
+  async listByPatient(patientId: string): Promise<Result<Payment[], AppError>> {
+    const saleIds = (this.saleRepo?.sales ?? []).filter((s) => s.patientId === patientId).map((s) => s.id);
+    return ok(this.payments.filter((p) => saleIds.includes(p.saleId)));
   }
 
   async create(payment: NewPayment, registeredById: string): Promise<Result<Payment, AppError>> {

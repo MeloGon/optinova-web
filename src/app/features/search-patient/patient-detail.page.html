@@ -1,0 +1,220 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <a
+    routerLink="/dashboard/search-patient"
+    class="inline-flex w-fit items-center gap-1.5 text-body-sm font-medium text-muted-foreground hover:text-foreground"
+  >
+    <svg [lucideIcon]="icons.back" [size]="15"></svg>
+    Buscar paciente
+  </a>
+
+  @if (store.patientError(); as message) {
+    <div role="alert" class="flex items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+      <span class="flex-1">{{ message }}</span>
+    </div>
+  } @else if (store.patientLoaded() && !store.patient()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state [icon]="icons.notFound" title="Paciente no encontrado" text="Puede que ya no exista o que el enlace esté mal." />
+    </div>
+  } @else if (!store.patientLoaded()) {
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center gap-3">
+        <onv-skeleton class="size-14 shrink-0 rounded-full" />
+        <div class="flex flex-col gap-2">
+          <onv-skeleton class="h-4 w-48" />
+          <onv-skeleton class="h-3 w-32" />
+        </div>
+      </div>
+    </div>
+  } @else if (store.patient(); as patient) {
+    <!-- Encabezado -->
+    <div class="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 elev-sm md:flex-row md:items-center md:justify-between">
+      <div class="flex items-center gap-3">
+        <onv-avatar [name]="patient.name" size="lg" [decorative]="true" />
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-heading">{{ patient.name }}</h1>
+            @if (patient.branch) {
+              <onv-badge tone="outline" [icon]="icons.branch">{{ patient.branch }}</onv-badge>
+            }
+            @if (patient.archivedOn) {
+              <onv-badge tone="warning">Archivado</onv-badge>
+            }
+          </div>
+          <p class="mt-1 flex flex-wrap items-center gap-3 text-body-sm text-muted-foreground">
+            @if (patient.phone) {
+              <span class="inline-flex items-center gap-1"><svg [lucideIcon]="icons.phone" [size]="14"></svg>{{ patient.phone }}</span>
+            }
+            <span>Registrado el {{ patient.registeredOn | date: 'dd/MM/yyyy' }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 flex-wrap gap-2">
+        <a
+          routerLink="/dashboard/sell"
+          class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+        >
+          <svg [lucideIcon]="icons.sell" [size]="15"></svg>
+          Ir a vender
+        </a>
+        <button
+          type="button"
+          (click)="edit()"
+          class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+        >
+          <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+          Editar
+        </button>
+        @if (patient.archivedOn) {
+          @if (canRestore) {
+            <button
+              type="button"
+              (click)="restorePatient()"
+              class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+            >
+              <svg [lucideIcon]="icons.restore" [size]="15"></svg>
+              Restaurar
+            </button>
+          }
+        } @else {
+          <button
+            type="button"
+            (click)="askDelete()"
+            class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium text-danger-subtle-foreground hover:bg-danger-subtle"
+          >
+            <svg [lucideIcon]="icons.trash" [size]="15"></svg>
+            Eliminar…
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Pestañas -->
+    <onv-tabs [tabs]="tabs()" [active]="activeTab()" (activeChange)="setTab($event)" />
+
+    @if (activeTab() === 'reviews') {
+      <div class="flex flex-col gap-3">
+        <button
+          type="button"
+          (click)="addMeasure()"
+          class="inline-flex h-8 w-fit items-center gap-2 rounded-md border border-border-strong px-3 text-[13px] font-medium hover:bg-muted"
+        >
+          <svg [lucideIcon]="icons.addMeasure" [size]="14"></svg>
+          Agregar medida
+        </button>
+
+        @if (!store.reviewsLoaded()) {
+          <onv-skeleton class="h-24 w-full rounded-lg" />
+        } @else {
+          <app-reviews-list
+            [reviews]="store.reviews()"
+            [save]="saveReview"
+            [remove]="removeReview"
+            [reload]="reloadReviews"
+          />
+        }
+      </div>
+    }
+
+    @if (activeTab() === 'sales') {
+      @if (!store.salesLoaded()) {
+        <onv-skeleton class="h-40 w-full rounded-lg" />
+      } @else if (store.sales().length === 0) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.sell" title="Sin ventas" text="Este paciente no tiene ventas registradas." />
+        </div>
+      } @else {
+        <onv-table-card>
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Folio</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Sucursal</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="text-right">Total</th>
+                <th scope="col" class="text-right">Saldo</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sale of store.sales(); track sale.id) {
+                <tr>
+                  <td class="font-mono">{{ sale.folio || '—' }}</td>
+                  <td class="tabular-nums">{{ sale.date | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ sale.branch || '—' }}</td>
+                  <td>
+                    @let st = saleStatus(sale);
+                    <onv-badge [tone]="st.tone" [icon]="st.icon">{{ st.label }}</onv-badge>
+                  </td>
+                  <td class="text-right tabular-nums">{{ sale.totalWithDiscount | money }}</td>
+                  <td class="text-right tabular-nums" [class.font-semibold]="sale.rest > 0" [class.text-warning-subtle-foreground]="sale.rest > 0">
+                    {{ sale.rest | money }}
+                  </td>
+                  <td class="w-20 text-right">
+                    <div class="flex items-center justify-end gap-0.5">
+                      <button
+                        type="button"
+                        (click)="viewSaleDetails(sale)"
+                        [attr.aria-label]="'Ver venta ' + (sale.folio || sale.id)"
+                        class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                      >
+                        <svg [lucideIcon]="icons.view" [size]="16"></svg>
+                      </button>
+                      @if (sale.rest > 0) {
+                        <button
+                          type="button"
+                          (click)="registerPayment(sale)"
+                          [attr.aria-label]="'Registrar pago de ' + (sale.folio || sale.id)"
+                          class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                        >
+                          <svg [lucideIcon]="icons.pay" [size]="16"></svg>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <onv-paginator footer class="border-t border-border" [page]="salesPage()" [pageSize]="10" [total]="store.salesTotal()" (pageChange)="goToSalesPage($event)" />
+        </onv-table-card>
+      }
+    }
+
+    @if (activeTab() === 'payments') {
+      @if (!store.paymentsLoaded()) {
+        <onv-skeleton class="h-24 w-full rounded-lg" />
+      } @else if (store.payments().length === 0) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.pay" title="Sin pagos" text="Este paciente no tiene abonos registrados." />
+        </div>
+      } @else {
+        <onv-table-card>
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Método</th>
+                <th scope="col">Registrado por</th>
+                <th scope="col" class="text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (payment of store.payments(); track payment.id) {
+                <tr>
+                  <td class="tabular-nums">{{ payment.date | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ payment.type === 'nueva_venta' ? 'Pago inicial' : 'Abono' }}</td>
+                  <td class="capitalize">{{ payment.paymentMethod || '—' }}</td>
+                  <td>{{ payment.registeredBy || '—' }}</td>
+                  <td class="text-right tabular-nums">{{ payment.amount | money }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </onv-table-card>
+      }
+    }
+  }
+</div>

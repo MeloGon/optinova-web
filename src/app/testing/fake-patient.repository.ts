@@ -44,6 +44,11 @@ export class FakePatientRepository extends PatientRepository {
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
   }
 
+  async getById(id: string): Promise<Result<Patient | null, AppError>> {
+    if (this.failWith) return err(this.failWith);
+    return ok(this.patients.find((p) => p.id === id) ?? null);
+  }
+
   /** Pacientes creados con create, en orden. */
   created: NewPatient[] = [];
   /** Si se asigna, el próximo create falla con este error. */

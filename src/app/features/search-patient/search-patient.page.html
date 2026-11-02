@@ -157,10 +157,10 @@
             @for (patient of store.items(); track patient.id) {
               <tr>
                 <td class="font-medium">
-                  <div class="flex items-center gap-2.5">
+                  <a [routerLink]="['/dashboard/search-patient', patient.id]" class="flex items-center gap-2.5 hover:underline">
                     <onv-avatar [name]="patient.name" size="sm" [decorative]="true" />
                     {{ patient.name }}
-                  </div>
+                  </a>
                 </td>
                 <td>
                   @if (patient.branch) {
@@ -191,21 +191,15 @@
                       >
                         <svg [lucideIcon]="icons.edit" [size]="15"></svg>
                       </button>
-                      @if (loadingMeasuresFor() === patient.id) {
-                        <span class="grid size-8 place-items-center" [attr.aria-label]="'Cargando medidas de ' + patient.name" aria-live="polite">
-                          <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
-                        </span>
-                      } @else {
-                        <button
-                          type="button"
-                          [cdkMenuTriggerFor]="rowMenu"
-                          [cdkMenuTriggerData]="{ $implicit: patient }"
-                          [attr.aria-label]="'Más acciones para ' + patient.name"
-                          class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
-                        >
-                          <svg [lucideIcon]="icons.more" [size]="16"></svg>
-                        </button>
-                      }
+                      <button
+                        type="button"
+                        [cdkMenuTriggerFor]="rowMenu"
+                        [cdkMenuTriggerData]="{ $implicit: patient }"
+                        [attr.aria-label]="'Más acciones para ' + patient.name"
+                        class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                      >
+                        <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                      </button>
                     </div>
                   }
                 </td>
@@ -236,14 +230,13 @@
     cdkMenu
     class="z-(--z-popover) mt-1 min-w-52 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
   >
-    <button
+    <a
       cdkMenuItem
-      type="button"
-      (cdkMenuItemTriggered)="viewMeasures(patient)"
+      [routerLink]="['/dashboard/search-patient', patient.id]"
       class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
     >
       Ver medidas
-    </button>
+    </a>
     <button
       cdkMenuItem
       type="button"

@@ -16,6 +16,8 @@ export interface SaleSearch {
   /** Empieza en 1. */
   page: number;
   pageSize: number;
+  /** Si viene, acota a las ventas de ese paciente por `paciente_id` (= la ficha, S-03). */
+  patientId?: string;
 }
 
 export interface SaleStatusCounts {

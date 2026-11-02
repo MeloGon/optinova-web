@@ -21,6 +21,9 @@ export abstract class PatientRepository {
   /** Pacientes por nombre, del registro más reciente al más antiguo. */
   abstract search(params: PatientSearch): Promise<Result<Page<Patient>, AppError>>;
 
+  /** Un paciente por su ID (= la ficha, S-03); `null` si no existe (archivado o no, da igual). */
+  abstract getById(id: string): Promise<Result<Patient | null, AppError>>;
+
   /** Crea el paciente y lo devuelve con el ID y la fecha de registro que le dio la DB. */
   abstract create(patient: NewPatient): Promise<Result<Patient, AppError>>;
 
