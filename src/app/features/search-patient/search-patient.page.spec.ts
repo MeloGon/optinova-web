@@ -4,10 +4,12 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { SessionStore } from '../../core/auth/session.store';
 import { Role } from '../../core/models/role';
+import { PatientLifecycleRepository } from '../../core/repositories/patient-lifecycle.repository';
 import { AuthRepository } from '../../core/repositories/auth.repository';
 import { PatientRepository } from '../../core/repositories/patient.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
 import { FakeAuthRepository, fakeProfile } from '../../testing/fake-auth.repository';
+import { FAKE_SUPERVISOR, FakePatientLifecycleRepository } from '../../testing/fake-patient-lifecycle.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
 import { FakeReviewRepository, fakeReview } from '../../testing/fake-review.repository';
 import { ToastService } from '../../shared/ui/toast/toast.service';
@@ -16,6 +18,7 @@ import { SearchPatientPage } from './search-patient.page';
 describe('SearchPatientPage', () => {
   let repo: FakePatientRepository;
   let reviewRepo: FakeReviewRepository;
+  let lifecycleRepo: FakePatientLifecycleRepository;
   let harness: RouterTestingHarness;
 
   /** `role` deja sesión iniciada (= AddPatientPage de Flutter con un usuario de ese rol); sin ella, el perfil queda null. */
@@ -27,6 +30,7 @@ describe('SearchPatientPage', () => {
         provideRouter([{ path: 'search-patient', component: SearchPatientPage }], withComponentInputBinding()),
         { provide: PatientRepository, useValue: repo },
         { provide: ReviewRepository, useValue: reviewRepo },
+        { provide: PatientLifecycleRepository, useValue: lifecycleRepo },
         { provide: AuthRepository, useValue: auth },
       ],
     });
@@ -54,6 +58,7 @@ describe('SearchPatientPage', () => {
       fakePatient(i + 1, i === 4 ? 'ANA TORRES' : `PACIENTE ${i + 1}`),
     );
     reviewRepo = new FakeReviewRepository();
+    lifecycleRepo = new FakePatientLifecycleRepository(repo);
   });
 
   it('muestra la primera página (25) y el total', async () => {
@@ -65,13 +70,13 @@ describe('SearchPatientPage', () => {
 
   it('lee la búsqueda, la página y el tamaño de la URL', async () => {
     await open('/search-patient?page=2&size=10');
-    expect(repo.calls.at(-1)).toEqual({ query: '', page: 2, pageSize: 10 });
+    expect(repo.calls.at(-1)).toEqual({ query: '', page: 2, pageSize: 10, archived: false });
     expect(rows().length).toBe(10);
   });
 
   it('un tamaño de página inválido vuelve al de 25', async () => {
     await open('/search-patient?size=7&page=abc');
-    expect(repo.calls.at(-1)).toEqual({ query: '', page: 1, pageSize: 25 });
+    expect(repo.calls.at(-1)).toEqual({ query: '', page: 1, pageSize: 25, archived: false });
   });
 
   it('buscar con Enter pone el texto en la URL y vuelve a la página 1', async () => {
@@ -83,7 +88,7 @@ describe('SearchPatientPage', () => {
     await settle();
 
     expect(router().url).toBe('/search-patient?size=10&q=ana');
-    expect(repo.calls.at(-1)).toEqual({ query: 'ana', page: 1, pageSize: 10 });
+    expect(repo.calls.at(-1)).toEqual({ query: 'ana', page: 1, pageSize: 10, archived: false });
     expect(rows().length).toBe(1);
   });
 
@@ -548,13 +553,13 @@ describe('SearchPatientPage', () => {
   describe('eliminar', () => {
     const openDeleteDialog = () => openMenuAction('Eliminar');
 
-    it('pide confirmación con el nombre del paciente y no borra aún', async () => {
+    it('sin medidas ni ventas: pide confirmación con el nombre del paciente y no borra aún', async () => {
       await open('/search-patient');
       await openDeleteDialog();
 
       const dialog = document.body.querySelector('[role=alertdialog]')!;
       expect(dialog.textContent).toContain('¿Eliminar a PACIENTE 1?');
-      expect(repo.deleted).toEqual([]);
+      expect(lifecycleRepo.deleted).toEqual([]);
     });
 
     it('cancelar no borra nada', async () => {
@@ -563,7 +568,7 @@ describe('SearchPatientPage', () => {
       byText(document.body, '[role=alertdialog] button', 'Cancelar').click();
       await settle();
 
-      expect(repo.deleted).toEqual([]);
+      expect(lifecycleRepo.deleted).toEqual([]);
       expect(document.body.querySelector('[role=alertdialog]')).toBeNull();
       expect(toasts()).toEqual([]);
     });
@@ -574,13 +579,13 @@ describe('SearchPatientPage', () => {
       byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
       await settle();
 
-      expect(repo.deleted).toEqual(['1']);
+      expect(lifecycleRepo.deleted).toEqual(['1']);
       expect(text()).toContain('29 pacientes');
       expect(toasts().map((t) => t.title)).toEqual(['Paciente eliminado']);
     });
 
     it('si falla, avisa del error y deja la lista como estaba', async () => {
-      repo.deleteFailWith = { kind: 'unauthorized', message: 'Sin permiso.' };
+      lifecycleRepo.applyFailWith = { kind: 'unauthorized', message: 'Sin permiso.' };
       await open('/search-patient');
       await openDeleteDialog();
       byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
@@ -589,6 +594,125 @@ describe('SearchPatientPage', () => {
       expect(toasts().map((t) => t.tone)).toEqual(['danger']);
       expect(toasts()[0].text).toBe('Sin permiso.');
       expect(text()).toContain('30 pacientes');
+    });
+
+    it('si no se puede revisar el historial, avisa y no abre ningún diálogo', async () => {
+      lifecycleRepo.resolveFailWith = { kind: 'network', message: 'Sin conexión.' };
+      await open('/search-patient');
+      await openDeleteDialog();
+
+      expect(document.body.querySelector('[role=alertdialog]')).toBeNull();
+      expect(toasts().map((t) => t.title)).toEqual(['No se pudo revisar el historial']);
+    });
+
+    it('con medidas y un supervisor+ que llama, borra paciente y medidas sin pedir más', async () => {
+      lifecycleRepo.statuses['1'] = { tier: 'reviews', reviewCount: 2, saleCount: 0 };
+      await open('/search-patient', 'supervisor');
+      await openDeleteDialog();
+
+      const dialog = document.body.querySelector('[role=alertdialog]')!;
+      expect(dialog.textContent).toContain('2 medidas');
+      byText(document.body, '[role=alertdialog] button', 'Eliminar paciente').click();
+      await settle();
+
+      expect(lifecycleRepo.applied).toEqual([{ patientId: '1', supervisor: undefined }]);
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente eliminado']);
+    });
+
+    it('con medidas y un vendedor que llama, pide correo y contraseña de un supervisor (P-04)', async () => {
+      lifecycleRepo.statuses['1'] = { tier: 'reviews', reviewCount: 1, saleCount: 0 };
+      await open('/search-patient', 'vendedor');
+      await openDeleteDialog();
+
+      expect(document.body.querySelector('[role=alertdialog]')).toBeNull();
+      const dialog = document.body.querySelector('[role=dialog]')!;
+      expect(dialog.textContent).toContain('PACIENTE 1');
+      expect(dialog.textContent).toContain('1 medida');
+
+      const email = document.body.querySelector<HTMLInputElement>('#supervisor-email')!;
+      const password = document.body.querySelector<HTMLInputElement>('#supervisor-password')!;
+      email.value = FAKE_SUPERVISOR.email;
+      email.dispatchEvent(new Event('input'));
+      password.value = 'mala';
+      password.dispatchEvent(new Event('input'));
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+
+      expect(document.body.querySelector('[role=dialog] [role=alert]')?.textContent).toContain(
+        'Correo o contraseña incorrectos.',
+      );
+
+      password.value = FAKE_SUPERVISOR.password;
+      password.dispatchEvent(new Event('input'));
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+
+      expect(document.body.querySelector('[role=dialog]')).toBeNull();
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente eliminado']);
+    });
+
+    it('con ventas y un admin que llama, archiva en vez de eliminar', async () => {
+      lifecycleRepo.statuses['1'] = { tier: 'sales', reviewCount: 0, saleCount: 3 };
+      await open('/search-patient', 'admin');
+      await openDeleteDialog();
+
+      const dialog = document.body.querySelector('[role=alertdialog]')!;
+      expect(dialog.textContent).toContain('¿Archivar a PACIENTE 1?');
+      byText(document.body, '[role=alertdialog] button', 'Archivar paciente').click();
+      await settle();
+
+      expect(lifecycleRepo.archived).toEqual(['1']);
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente archivado']);
+    });
+
+    it('con ventas y un vendedor o supervisor que llama, bloquea sin abrir ningún diálogo', async () => {
+      lifecycleRepo.statuses['1'] = { tier: 'sales', reviewCount: 0, saleCount: 1 };
+      await open('/search-patient', 'supervisor');
+      await openDeleteDialog();
+
+      expect(document.body.querySelector('[role=alertdialog]')).toBeNull();
+      expect(document.body.querySelector('[role=dialog]')).toBeNull();
+      expect(lifecycleRepo.applied).toEqual([]);
+      expect(toasts().map((t) => t.title)).toEqual(['No se puede eliminar']);
+    });
+  });
+
+  describe('ver archivados', () => {
+    beforeEach(() => {
+      repo.patients[0] = { ...repo.patients[0], archivedOn: '2026-10-20' };
+    });
+
+    it('el botón no aparece para un vendedor', async () => {
+      await open('/search-patient', 'vendedor');
+      expect(byText(el(), 'button', 'Ver archivados')).toBeUndefined();
+    });
+
+    it('el botón aparece para un admin', async () => {
+      await open('/search-patient', 'admin');
+      expect(byText(el(), 'button', 'Ver archivados')).not.toBeUndefined();
+    });
+
+    it('activa el filtro, muestra solo archivados y cambia las acciones por Restaurar', async () => {
+      await open('/search-patient', 'admin');
+      byText(el(), 'button', 'Ver archivados').click();
+      await settle();
+
+      expect(router().url).toContain('archived=1');
+      expect(repo.calls.at(-1)?.archived).toBe(true);
+      expect(rows().length).toBe(1);
+      expect(text()).toContain('PACIENTE 1');
+      expect(el().querySelector('[aria-label^="Editar"]')).toBeNull();
+    });
+
+    it('restaurar avisa y recarga la lista', async () => {
+      await open('/search-patient?archived=1', 'admin');
+      byText(el(), 'tbody button', 'Restaurar').click();
+      await settle();
+      byText(document.body, '[role=alertdialog] button', 'Restaurar paciente').click();
+      await settle();
+
+      expect(lifecycleRepo.restored).toEqual(['1']);
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente restaurado']);
     });
   });
 

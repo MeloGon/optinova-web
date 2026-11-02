@@ -41,14 +41,29 @@
       Buscar
     </button>
 
-    <button
-      type="button"
-      (click)="addPatient()"
-      class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
-    >
-      <svg [lucideIcon]="icons.userPlus" [size]="16"></svg>
-      Agregar paciente
-    </button>
+    @if (!viewingArchived()) {
+      <button
+        type="button"
+        (click)="addPatient()"
+        class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        <svg [lucideIcon]="icons.userPlus" [size]="16"></svg>
+        Agregar paciente
+      </button>
+    }
+
+    @if (canSeeArchived) {
+      <button
+        type="button"
+        (click)="toggleArchived()"
+        [attr.aria-pressed]="viewingArchived()"
+        class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md border px-4 text-[14px] font-medium"
+        [class]="viewingArchived() ? 'border-primary bg-primary-subtle text-primary-subtle-foreground' : 'border-border-strong hover:bg-muted'"
+      >
+        <svg [lucideIcon]="icons.archive" [size]="16"></svg>
+        {{ viewingArchived() ? 'Viendo archivados' : 'Ver archivados' }}
+      </button>
+    }
 
     @if (store.loaded()) {
       <span class="ml-auto self-center text-[13px] font-semibold tabular-nums" aria-live="polite">
@@ -91,6 +106,8 @@
             Limpiar búsqueda
           </button>
         </onv-empty-state>
+      } @else if (viewingArchived()) {
+        <onv-empty-state [icon]="icons.archive" title="Sin pacientes archivados" text="Los que se archiven por tener ventas aparecerán aquí." />
       } @else {
         <onv-empty-state
           [icon]="icons.users"
@@ -155,31 +172,42 @@
                 <td class="tabular-nums">{{ patient.phone || '—' }}</td>
                 <td class="tabular-nums">{{ patient.registeredOn | date: 'dd/MM/yyyy' }}</td>
                 <td class="w-20 text-right">
-                  <div class="flex items-center justify-end gap-0.5">
+                  @if (viewingArchived()) {
                     <button
                       type="button"
-                      (click)="edit(patient)"
-                      [attr.aria-label]="'Editar ' + patient.name"
-                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                      (click)="restorePatient(patient)"
+                      class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-strong px-2.5 text-[13px] font-medium hover:bg-muted"
                     >
-                      <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+                      <svg [lucideIcon]="icons.restore" [size]="14"></svg>
+                      Restaurar
                     </button>
-                    @if (loadingMeasuresFor() === patient.id) {
-                      <span class="grid size-8 place-items-center" [attr.aria-label]="'Cargando medidas de ' + patient.name" aria-live="polite">
-                        <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
-                      </span>
-                    } @else {
+                  } @else {
+                    <div class="flex items-center justify-end gap-0.5">
                       <button
                         type="button"
-                        [cdkMenuTriggerFor]="rowMenu"
-                        [cdkMenuTriggerData]="{ $implicit: patient }"
-                        [attr.aria-label]="'Más acciones para ' + patient.name"
-                        class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                        (click)="edit(patient)"
+                        [attr.aria-label]="'Editar ' + patient.name"
+                        class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
                       >
-                        <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                        <svg [lucideIcon]="icons.edit" [size]="15"></svg>
                       </button>
-                    }
-                  </div>
+                      @if (loadingMeasuresFor() === patient.id) {
+                        <span class="grid size-8 place-items-center" [attr.aria-label]="'Cargando medidas de ' + patient.name" aria-live="polite">
+                          <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
+                        </span>
+                      } @else {
+                        <button
+                          type="button"
+                          [cdkMenuTriggerFor]="rowMenu"
+                          [cdkMenuTriggerData]="{ $implicit: patient }"
+                          [attr.aria-label]="'Más acciones para ' + patient.name"
+                          class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                        >
+                          <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                        </button>
+                      }
+                    </div>
+                  }
                 </td>
               </tr>
             }

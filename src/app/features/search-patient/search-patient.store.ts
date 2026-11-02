@@ -2,6 +2,12 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { AppError } from '../../core/errors/app-error';
 import { Patient } from '../../core/models/patient';
 import { Review } from '../../core/models/review';
+import {
+  PatientLifecycleRepository,
+  PatientLifecycleResult,
+  PatientLifecycleStatus,
+  SupervisorCredentials,
+} from '../../core/repositories/patient-lifecycle.repository';
 import { PatientRepository, PatientSearch } from '../../core/repositories/patient.repository';
 import { NewReview, ReviewRepository } from '../../core/repositories/review.repository';
 import { Result } from '../../core/result';
@@ -26,6 +32,7 @@ interface SearchState {
 export class SearchPatientStore {
   private readonly repo = inject(PatientRepository);
   private readonly reviewRepo = inject(ReviewRepository);
+  private readonly lifecycleRepo = inject(PatientLifecycleRepository);
 
   private readonly state = signal<SearchState>({
     items: [],
@@ -74,12 +81,25 @@ export class SearchPatientStore {
     return this.refreshAfter(await this.repo.update(patient));
   }
 
-  /** Elimina al paciente y, si salió bien, vuelve a pedir la lista. El error lo muestra quien llama. */
-  async remove(patient: Patient): Promise<Result<void, AppError>> {
-    return this.refreshAfter(await this.repo.delete(patient.id));
+  /** Solo lectura: en qué nivel está el paciente, para elegir el diálogo correcto (= PatientTier). */
+  async resolveLifecycle(patientId: string): Promise<Result<PatientLifecycleStatus, AppError>> {
+    return this.lifecycleRepo.resolve(patientId);
   }
 
-  private async refreshAfter(result: Result<void, AppError>): Promise<Result<void, AppError>> {
+  /** Borra o archiva según el nivel (lo decide el servidor) y, si salió bien, recarga la lista. */
+  async applyLifecycle(
+    patientId: string,
+    supervisor?: SupervisorCredentials,
+  ): Promise<Result<PatientLifecycleResult, AppError>> {
+    return this.refreshAfter(await this.lifecycleRepo.apply(patientId, supervisor));
+  }
+
+  /** Admin+: quita el archivado y, si salió bien, recarga la lista (archivados o activos, la que esté abierta). */
+  async restore(patientId: string): Promise<Result<void, AppError>> {
+    return this.refreshAfter(await this.lifecycleRepo.restore(patientId));
+  }
+
+  private async refreshAfter<T>(result: Result<T, AppError>): Promise<Result<T, AppError>> {
     if (result.ok && this.lastSearch) await this.load(this.lastSearch);
     return result;
   }

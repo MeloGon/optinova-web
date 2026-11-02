@@ -18,11 +18,12 @@ interface PatientRow {
   observaciones: string | null;
   fecha_registro: string;
   fecha_nacimiento: string | null;
+  archivado_en: string | null;
 }
 
 // El ID se pide como texto: un bigint grande llegaría como número JSON y perdería dígitos.
 const COLUMNS =
-  'id::text, nombre, sucursal, telefono, telefono_secundario, genero, observaciones, fecha_registro, fecha_nacimiento';
+  'id::text, nombre, sucursal, telefono, telefono_secundario, genero, observaciones, fecha_registro, fecha_nacimiento, archivado_en';
 
 /** Lo que el usuario puede cambiar de un paciente (las mismas columnas al crear y al editar). */
 function toColumns(patient: NewPatient) {
@@ -42,10 +43,11 @@ function toColumns(patient: NewPatient) {
 export class SupabasePatientRepository extends PatientRepository {
   private readonly supabase = inject(SUPABASE);
 
-  async search({ query, page, pageSize }: PatientSearch): Promise<Result<Page<Patient>, AppError>> {
+  async search({ query, page, pageSize, archived }: PatientSearch): Promise<Result<Page<Patient>, AppError>> {
     const from = (page - 1) * pageSize;
 
     let request = this.supabase.from('pacientes').select(COLUMNS, { count: 'exact' });
+    request = archived ? request.not('archivado_en', 'is', null) : request.is('archivado_en', null);
     // Cada palabra debe aparecer en el nombre, en cualquier orden: "garcia juan" encuentra "JUAN GARCIA".
     for (const word of query.split(/\s+/).filter(Boolean)) {
       request = request.ilike('nombre', `%${escapeLike(word)}%`);
@@ -101,17 +103,6 @@ export class SupabasePatientRepository extends PatientRepository {
     }
     return ok(undefined);
   }
-
-  async delete(id: string): Promise<Result<void, AppError>> {
-    // .select() devuelve las filas borradas: si RLS impide borrar no hay error, solo 0 filas.
-    const { data, error } = await this.supabase.from('pacientes').delete().eq('id', id).select('id');
-
-    if (error) return err(toAppError(error));
-    if (data.length === 0) {
-      return err(appError('notFound', 'El paciente ya no existe o no tienes permiso para eliminarlo.'));
-    }
-    return ok(undefined);
-  }
 }
 
 /**
@@ -133,5 +124,6 @@ function toPatient(row: PatientRow): Patient {
     observations: row.observaciones ?? '',
     registeredOn: row.fecha_registro,
     birthDate: row.fecha_nacimiento,
+    archivedOn: row.archivado_en,
   };
 }

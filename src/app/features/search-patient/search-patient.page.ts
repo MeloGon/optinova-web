@@ -6,6 +6,8 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
+  LucideArchive,
+  LucideArchiveRestore,
   LucideDynamicIcon,
   LucideEdit,
   LucideEllipsis,
@@ -19,8 +21,12 @@ import {
   LucideUsers,
   LucideX,
 } from '@lucide/angular';
+import { SessionStore } from '../../core/auth/session.store';
+import { AppError } from '../../core/errors/app-error';
 import { Patient } from '../../core/models/patient';
+import { PatientLifecycleResult } from '../../core/repositories/patient-lifecycle.repository';
 import { PatientSearch } from '../../core/repositories/patient.repository';
+import { Result } from '../../core/result';
 import { Avatar } from '../../shared/ui/avatar/avatar';
 import { Badge } from '../../shared/ui/badge/badge';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
@@ -36,6 +42,11 @@ import {
   EditPatientDialog,
   EditPatientDialogData,
 } from './components/edit-patient-dialog';
+import {
+  SUPERVISOR_AUTH_TITLE_ID,
+  SupervisorAuthDialog,
+  SupervisorAuthDialogData,
+} from './components/supervisor-auth-dialog';
 import { VIEW_MEASURES_TITLE_ID, ViewMeasuresDialog, ViewMeasuresDialogData } from './components/view-measures-dialog';
 import { SearchPatientStore } from './search-patient.store';
 
@@ -82,18 +93,25 @@ export class SearchPatientPage {
   readonly q = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();
+  readonly archived = input<string>();
 
   protected readonly store = inject(SearchPatientStore);
+  private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(Dialog);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
+  /** Ver y restaurar archivados es cosa de admin+ (igual que archivar). */
+  protected readonly canSeeArchived = this.session.can('admin');
+  protected readonly viewingArchived = computed(() => this.canSeeArchived && this.archived() === '1');
+
   protected readonly search = computed<PatientSearch>(() => ({
     query: (this.q() ?? '').trim(),
     page: toPage(this.page()),
     pageSize: toPageSize(this.size()),
+    archived: this.viewingArchived(),
   }));
 
   /** Lo que el usuario está escribiendo; no busca hasta Enter o "Buscar". */
@@ -113,6 +131,8 @@ export class SearchPatientPage {
     alert: LucideTriangleAlert,
     retry: LucideRefreshCw,
     trash: LucideTrash2,
+    archive: LucideArchive,
+    restore: LucideArchiveRestore,
   };
 
   /** Id del paciente cuyas medidas se están pidiendo (ver `viewMeasures`): la fila muestra un spinner. */
@@ -245,19 +265,104 @@ export class SearchPatientPage {
     }
   }
 
+  /**
+   * Eliminar según el historial (decisión del dueño, 2026-10-26; sin equivalente en Flutter):
+   * sin revisiones ni ventas, se borra con una confirmación; con revisiones, también se borran,
+   * pero un vendedor necesita que un supervisor+ autorice (P-04); con ventas, no se borra, se
+   * archiva, y solo admin+ puede hacerlo. El nivel lo decide siempre el servidor (`resolveLifecycle`).
+   */
   protected async askDelete(patient: Patient): Promise<void> {
+    const resolved = await this.store.resolveLifecycle(patient.id);
+    if (!resolved.ok) {
+      this.toast.show({ tone: 'danger', title: 'No se pudo revisar el historial', text: resolved.error.message });
+      return;
+    }
+    const { tier, reviewCount, saleCount } = resolved.value;
+
+    if (tier === 'sales') {
+      if (!this.session.can('admin')) {
+        this.toast.show({
+          tone: 'danger',
+          title: 'No se puede eliminar',
+          text: 'Tiene ventas registradas: solo un administrador o superior puede archivarlo.',
+        });
+        return;
+      }
+      const confirmed = await this.confirm.confirm({
+        title: `¿Archivar a ${patient.name}?`,
+        text: `Tiene ${saleCount} ${saleCount === 1 ? 'venta' : 'ventas'} registrada${saleCount === 1 ? '' : 's'}: no se puede eliminar, pero sí archivar. Deja de aparecer en búsquedas y en Vender; se puede restaurar después.`,
+        confirmLabel: 'Archivar paciente',
+        tone: 'primary',
+      });
+      if (!confirmed) return;
+      await this.finishLifecycle(patient, () => this.store.applyLifecycle(patient.id));
+      return;
+    }
+
+    if (tier === 'reviews' && !this.session.can('supervisor')) {
+      const data: SupervisorAuthDialogData = {
+        patientName: patient.name,
+        reviewCount,
+        authorize: (email, password) => this.store.applyLifecycle(patient.id, { email, password }),
+      };
+      const ref = this.dialog.open<boolean>(SupervisorAuthDialog, {
+        data,
+        role: 'dialog',
+        ariaLabelledBy: SUPERVISOR_AUTH_TITLE_ID,
+        disableClose: true,
+        backdropClass: ['bg-overlay'],
+      });
+      if (await firstValueFrom(ref.closed, { defaultValue: false })) {
+        this.toast.show({ tone: 'success', title: 'Paciente eliminado', text: patient.name });
+      }
+      return;
+    }
+
+    const text =
+      tier === 'reviews'
+        ? `Tiene ${reviewCount} ${reviewCount === 1 ? 'medida' : 'medidas'} registrada${reviewCount === 1 ? '' : 's'}: se borrarán junto con el paciente. No se puede deshacer.`
+        : 'Se borra el registro del paciente y no se puede deshacer. Sus ventas no se eliminan.';
     const confirmed = await this.confirm.confirm({
       title: `¿Eliminar a ${patient.name}?`,
-      text: 'Se borra el registro del paciente y no se puede deshacer. Sus revisiones y ventas no se eliminan.',
+      text,
       confirmLabel: 'Eliminar paciente',
     });
     if (!confirmed) return;
+    await this.finishLifecycle(patient, () => this.store.applyLifecycle(patient.id));
+  }
 
-    const result = await this.store.remove(patient);
+  private async finishLifecycle(
+    patient: Patient,
+    run: () => Promise<Result<PatientLifecycleResult, AppError>>,
+  ): Promise<void> {
+    const result = await run();
     if (result.ok) {
-      this.toast.show({ tone: 'success', title: 'Paciente eliminado', text: patient.name });
+      const title = result.value.result === 'archived' ? 'Paciente archivado' : 'Paciente eliminado';
+      this.toast.show({ tone: 'success', title, text: patient.name });
     } else {
-      this.toast.show({ tone: 'danger', title: 'No se pudo eliminar', text: result.error.message });
+      this.toast.show({ tone: 'danger', title: 'No se pudo completar', text: result.error.message });
+    }
+  }
+
+  /** Toggle del filtro "Ver archivados" (solo admin+); cambia la URL, igual que `q`/`page`/`size`. */
+  protected toggleArchived(): void {
+    void this.navigate({ archived: this.viewingArchived() ? null : '1', page: null });
+  }
+
+  protected async restorePatient(patient: Patient): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: `¿Restaurar a ${patient.name}?`,
+      text: 'Vuelve a aparecer en búsquedas y en Vender.',
+      confirmLabel: 'Restaurar paciente',
+      tone: 'primary',
+    });
+    if (!confirmed) return;
+
+    const result = await this.store.restore(patient.id);
+    if (result.ok) {
+      this.toast.show({ tone: 'success', title: 'Paciente restaurado', text: patient.name });
+    } else {
+      this.toast.show({ tone: 'danger', title: 'No se pudo restaurar', text: result.error.message });
     }
   }
 

@@ -11,6 +11,7 @@ import { SessionStore } from './core/auth/session.store';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
 import { SupabaseExpenseRepository } from './core/data/supabase-expense.repository';
 import { SupabaseMountRepository } from './core/data/supabase-mount.repository';
+import { SupabasePatientLifecycleRepository } from './core/data/supabase-patient-lifecycle.repository';
 import { SupabasePatientRepository } from './core/data/supabase-patient.repository';
 import { SupabasePaymentRepository } from './core/data/supabase-payment.repository';
 import { SupabaseResinRepository } from './core/data/supabase-resin.repository';
@@ -20,6 +21,7 @@ import { SupabaseSellerRepository } from './core/data/supabase-seller.repository
 import { AuthRepository } from './core/repositories/auth.repository';
 import { ExpenseRepository } from './core/repositories/expense.repository';
 import { MountRepository } from './core/repositories/mount.repository';
+import { PatientLifecycleRepository } from './core/repositories/patient-lifecycle.repository';
 import { PatientRepository } from './core/repositories/patient.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
 import { ResinRepository } from './core/repositories/resin.repository';
@@ -38,6 +40,7 @@ export const appConfig: ApplicationConfig = {
     // Repositorio abstracto → implementación (= Provider<AuthRepository>((ref) => AuthRepositoryImpl())).
     { provide: AuthRepository, useClass: SupabaseAuthRepository },
     { provide: PatientRepository, useClass: SupabasePatientRepository },
+    { provide: PatientLifecycleRepository, useClass: SupabasePatientLifecycleRepository },
     { provide: ReviewRepository, useClass: SupabaseReviewRepository },
     { provide: ExpenseRepository, useClass: SupabaseExpenseRepository },
     { provide: SaleRepository, useClass: SupabaseSaleRepository },

@@ -9,10 +9,12 @@ export interface PatientSearch {
   /** Empieza en 1. */
   page: number;
   pageSize: number;
+  /** `false`/sin poner = solo activos (lo de siempre); `true` = solo archivados. */
+  archived?: boolean;
 }
 
-/** Lo que se escribe al crear un paciente: el ID, la fecha de registro y created_at los pone la DB. */
-export type NewPatient = Omit<Patient, 'id' | 'registeredOn'>;
+/** Lo que se escribe al crear un paciente: el ID, la fecha de registro, created_at y el archivado los pone la DB. */
+export type NewPatient = Omit<Patient, 'id' | 'registeredOn' | 'archivedOn'>;
 
 /** Contrato de pacientes (= PatientRepository abstracto de Flutter). */
 export abstract class PatientRepository {
@@ -30,7 +32,4 @@ export abstract class PatientRepository {
 
   /** Guarda los datos editables del paciente (nombre, teléfono, género, nacimiento, sucursal, observaciones). */
   abstract update(patient: Patient): Promise<Result<void, AppError>>;
-
-  /** Elimina al paciente. Las revisiones y ventas enlazadas por nombre no se tocan (igual que en Flutter). */
-  abstract delete(id: string): Promise<Result<void, AppError>>;
 }

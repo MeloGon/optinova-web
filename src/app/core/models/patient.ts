@@ -21,4 +21,6 @@ export interface Patient {
   registeredOn: string;
   /** Puede faltar: la mayoría de los pacientes históricos no la tiene. */
   birthDate: string | null;
+  /** Cuándo se archivó (null = activo). Solo lo pone `PatientLifecycleRepository`, nunca `update()`. */
+  archivedOn: string | null;
 }

@@ -4,7 +4,7 @@ import { Patient } from '../core/models/patient';
 import { NewPatient, PatientRepository, PatientSearch } from '../core/repositories/patient.repository';
 import { Result, err, ok } from '../core/result';
 
-export const fakePatient = (id: number | string, name = `PACIENTE ${id}`): Patient => ({
+export const fakePatient = (id: number | string, name = `PACIENTE ${id}`, archivedOn: string | null = null): Patient => ({
   id: String(id),
   name,
   branch: 'OFTALVISION',
@@ -14,6 +14,7 @@ export const fakePatient = (id: number | string, name = `PACIENTE ${id}`): Patie
   observations: '',
   registeredOn: '2026-10-01',
   birthDate: null,
+  archivedOn,
 });
 
 /** PatientRepository en memoria para tests (= un mock de mocktail). */
@@ -27,10 +28,6 @@ export class FakePatientRepository extends PatientRepository {
   updated: Patient[] = [];
   /** Si se asigna, el próximo update falla con este error. */
   updateFailWith: AppError | null = null;
-  /** Ids que se pidió eliminar, en orden. */
-  deleted: string[] = [];
-  /** Si se asigna, el próximo delete falla con este error. */
-  deleteFailWith: AppError | null = null;
   /** Si se asigna, cada búsqueda espera a que se llame a la función devuelta (para probar carreras). */
   gate: (() => Promise<void>) | null = null;
 
@@ -40,7 +37,9 @@ export class FakePatientRepository extends PatientRepository {
     if (this.failWith) return err(this.failWith);
 
     const words = params.query.toLowerCase().split(/\s+/).filter(Boolean);
-    const matches = this.patients.filter((p) => words.every((w) => p.name.toLowerCase().includes(w)));
+    const matches = this.patients.filter(
+      (p) => words.every((w) => p.name.toLowerCase().includes(w)) && Boolean(p.archivedOn) === Boolean(params.archived),
+    );
     const from = (params.page - 1) * params.pageSize;
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
   }
@@ -55,7 +54,7 @@ export class FakePatientRepository extends PatientRepository {
     if (this.createFailWith) return err(this.createFailWith);
     this.created.push(patient);
     // Como la DB: ID nuevo y fecha de registro de hoy; el más reciente va primero en la lista.
-    const saved: Patient = { ...patient, id: String(this.nextId++), registeredOn: '2026-10-26' };
+    const saved: Patient = { ...patient, id: String(this.nextId++), registeredOn: '2026-10-26', archivedOn: null };
     this.patients = [saved, ...this.patients];
     return ok(saved);
   }
@@ -69,13 +68,6 @@ export class FakePatientRepository extends PatientRepository {
     if (this.updateFailWith) return err(this.updateFailWith);
     this.updated.push(patient);
     this.patients = this.patients.map((p) => (p.id === patient.id ? patient : p));
-    return ok(undefined);
-  }
-
-  async delete(id: string): Promise<Result<void, AppError>> {
-    if (this.deleteFailWith) return err(this.deleteFailWith);
-    this.deleted.push(id);
-    this.patients = this.patients.filter((p) => p.id !== id);
     return ok(undefined);
   }
 }
