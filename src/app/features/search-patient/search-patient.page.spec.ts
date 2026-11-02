@@ -2,8 +2,12 @@ import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { SessionStore } from '../../core/auth/session.store';
+import { Role } from '../../core/models/role';
+import { AuthRepository } from '../../core/repositories/auth.repository';
 import { PatientRepository } from '../../core/repositories/patient.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
+import { FakeAuthRepository, fakeProfile } from '../../testing/fake-auth.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
 import { FakeReviewRepository, fakeReview } from '../../testing/fake-review.repository';
 import { ToastService } from '../../shared/ui/toast/toast.service';
@@ -14,14 +18,19 @@ describe('SearchPatientPage', () => {
   let reviewRepo: FakeReviewRepository;
   let harness: RouterTestingHarness;
 
-  async function open(url: string): Promise<void> {
+  /** `role` deja sesión iniciada (= AddPatientPage de Flutter con un usuario de ese rol); sin ella, el perfil queda null. */
+  async function open(url: string, role?: Role): Promise<void> {
+    const auth = new FakeAuthRepository();
+    if (role) auth.session = fakeProfile(role);
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'search-patient', component: SearchPatientPage }], withComponentInputBinding()),
         { provide: PatientRepository, useValue: repo },
         { provide: ReviewRepository, useValue: reviewRepo },
+        { provide: AuthRepository, useValue: auth },
       ],
     });
+    if (role) await TestBed.inject(SessionStore).restore();
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url);
     await settle();
@@ -229,6 +238,171 @@ describe('SearchPatientPage', () => {
 
       expect(field('patient-branch').value).toBe('OFTALMIC CENTER');
       expect(document.body.textContent).toContain('OFTALMIC CENTER (cerrada)');
+    });
+  });
+
+  describe('agregar paciente', () => {
+    const dialog = () => document.body.querySelector('[role=dialog]');
+    const field = (id: string) => document.body.querySelector<HTMLInputElement>(`#${id}`)!;
+    const type = (id: string, value: string) => {
+      field(id).value = value;
+      field(id).dispatchEvent(new Event('input'));
+      field(id).dispatchEvent(new Event('blur'));
+    };
+    const save = async () => {
+      document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
+      await settle();
+    };
+    const openAddPatient = async () => {
+      byText(el(), 'form button', 'Agregar paciente').click();
+      await settle();
+    };
+
+    it('abre vacío, con la sucursal del usuario fija (= AddPatientPage de Flutter, antes una página propia)', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+
+      expect(dialog()).not.toBeNull();
+      expect(field('new-patient-name').value).toBe('');
+      expect(field('new-patient-branch').value).toBe('OFTALVISION');
+      expect(field('new-patient-branch').disabled).toBe(true);
+    });
+
+    it('un admin sí puede cambiar la sucursal', async () => {
+      await open('/search-patient', 'admin');
+      await openAddPatient();
+
+      expect(field('new-patient-branch').disabled).toBe(false);
+    });
+
+    it('sin datos muestra los errores y no crea nada', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      await save();
+
+      expect(document.body.textContent).toContain('Escribe el nombre del paciente.');
+      expect(document.body.textContent).toContain('Escribe un teléfono.');
+      expect(repo.created).toEqual([]);
+    });
+
+    it('rechaza teléfonos con letras o muy cortos', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ANA');
+      type('new-patient-phone', 'abc123');
+      await save();
+
+      expect(document.body.textContent).toContain('Escribe un teléfono válido');
+      expect(repo.created).toEqual([]);
+    });
+
+    it('el teléfono secundario es opcional, pero si se escribe debe ser válido', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ANA');
+      type('new-patient-phone', '999111222');
+      type('new-patient-phone-2', 'xx');
+      await save();
+
+      expect(document.body.textContent).toContain('Escribe un teléfono válido');
+      expect(repo.created).toEqual([]);
+    });
+
+    it('rechaza una fecha de nacimiento futura', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ANA');
+      type('new-patient-phone', '999111222');
+      type('new-patient-birth', '01/01/2999');
+      await save();
+
+      expect(document.body.textContent).toContain('No puede ser una fecha futura.');
+      expect(repo.created).toEqual([]);
+    });
+
+    it('guarda con nombre y notas en mayúsculas, espacios limpios y sin nacimiento', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ana  maría lópez');
+      type('new-patient-phone', '999 111 222');
+      type('new-patient-notes', ' usa lentes ');
+      await save();
+
+      expect(repo.created).toEqual([
+        {
+          name: 'ANA MARÍA LÓPEZ',
+          phone: '999 111 222',
+          secondaryPhone: '',
+          gender: '',
+          birthDate: null,
+          branch: 'OFTALVISION',
+          observations: 'USA LENTES',
+        },
+      ]);
+    });
+
+    it('cierra, refresca la lista y avisa', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ana lopez');
+      type('new-patient-phone', '999111222');
+      await save();
+
+      expect(dialog()).toBeNull();
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente creado']);
+      expect(text()).toContain('ANA LOPEZ');
+    });
+
+    it('con un nombre repetido pide confirmar, y cancelar no crea', async () => {
+      await open('/search-patient', 'vendedor'); // repo.patients[4] = 'ANA TORRES'
+      await openAddPatient();
+      type('new-patient-name', 'ana torres');
+      type('new-patient-phone', '999111222');
+      await save();
+
+      const confirmDialog = document.body.querySelector('[role=alertdialog]')!;
+      expect(confirmDialog.textContent).toContain('Ya existe un paciente llamado ANA TORRES');
+      byText(document.body, '[role=alertdialog] button', 'Cancelar').click();
+      await settle();
+
+      expect(repo.created).toEqual([]);
+      expect(dialog()).not.toBeNull();
+    });
+
+    it('con un nombre repetido, confirmar sí crea', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ana torres');
+      type('new-patient-phone', '999111222');
+      await save();
+      byText(document.body, '[role=alertdialog] button', 'Crear de todos modos').click();
+      await settle();
+
+      expect(repo.created.map((p) => p.name)).toEqual(['ANA TORRES']);
+      expect(toasts().map((t) => t.title)).toEqual(['Paciente creado']);
+    });
+
+    it('si el servidor falla, el diálogo sigue abierto con el error y sin aviso de éxito', async () => {
+      repo.createFailWith = { kind: 'server', message: 'No se pudo guardar.' };
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      type('new-patient-name', 'ana lopez');
+      type('new-patient-phone', '999111222');
+      await save();
+
+      expect(dialog()!.querySelector('[role=alert]')?.textContent).toContain('No se pudo guardar.');
+      expect(toasts()).toEqual([]);
+    });
+
+    it('cancelar cierra sin crear', async () => {
+      await open('/search-patient', 'vendedor');
+      await openAddPatient();
+      byText(document.body, '[role=dialog] button', 'Cancelar').click();
+      await settle();
+
+      expect(dialog()).toBeNull();
+      expect(repo.created).toEqual([]);
+      expect(toasts()).toEqual([]);
     });
   });
 

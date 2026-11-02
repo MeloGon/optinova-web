@@ -9,7 +9,6 @@ import {
   LucideShieldCheck,
   LucideShoppingCart,
   LucideSlidersHorizontal,
-  LucideUserPlus,
   LucideUsers,
   LucideWallet,
 } from '@lucide/angular';
@@ -35,7 +34,6 @@ export const DASHBOARD_NAV: DashboardNavSection[] = [
     items: [
       { label: 'Dashboard', icon: LucideLayoutDashboard, path: '/dashboard', exact: true, minRole: 'vendedor' },
       { label: 'Buscar paciente', icon: LucideSearch, path: '/dashboard/search-patient', minRole: 'vendedor' },
-      { label: 'Agregar paciente', icon: LucideUserPlus, path: '/dashboard/add-patient', minRole: 'vendedor' },
       { label: 'Nueva venta', icon: LucideShoppingCart, path: '/dashboard/sell', minRole: 'vendedor' },
       { label: 'Historial de ventas', icon: LucideReceipt, path: '/dashboard/sales-history', minRole: 'vendedor' },
       { label: 'Egresos', icon: LucideWallet, path: '/dashboard/expenses', minRole: 'vendedor' },

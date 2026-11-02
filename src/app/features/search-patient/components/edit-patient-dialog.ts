@@ -1,6 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LucideDynamicIcon, LucideTriangleAlert } from '@lucide/angular';
 import { ConfigService } from '../../../core/config/config.service';
 import { AppError } from '../../../core/errors/app-error';
@@ -9,6 +9,7 @@ import { Result } from '../../../core/result';
 import { DatePicker } from '../../../shared/ui/date-picker/date-picker';
 import { Field } from '../../../shared/ui/field/field';
 import { OnvInput } from '../../../shared/ui/field/input';
+import { notBlank, notFuture, today } from './patient-validators';
 
 export interface EditPatientDialogData {
   patient: Patient;
@@ -19,17 +20,6 @@ export interface EditPatientDialogData {
 export const EDIT_PATIENT_TITLE_ID = 'edit-patient-title';
 
 export const GENDERS = ['Masculino', 'Femenino', 'Otro'] as const;
-
-/** Hoy como `yyyy-MM-dd` en hora local (formato del `<input type="date">`). */
-function today(): string {
-  return new Date().toLocaleDateString('en-CA');
-}
-
-const notBlank = (control: AbstractControl<string>): ValidationErrors | null =>
-  control.value.trim() ? null : { required: true };
-
-const notFuture = (control: AbstractControl<string>): ValidationErrors | null =>
-  control.value && control.value > today() ? { future: true } : null;
 
 /**
  * Editar paciente (C-12 con formulario). = EditPatientDialog de Flutter.

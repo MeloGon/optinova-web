@@ -41,6 +41,15 @@
       Buscar
     </button>
 
+    <button
+      type="button"
+      (click)="addPatient()"
+      class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      <svg [lucideIcon]="icons.userPlus" [size]="16"></svg>
+      Agregar paciente
+    </button>
+
     @if (store.loaded()) {
       <span class="ml-auto self-center text-[13px] font-semibold tabular-nums" aria-live="polite">
         {{ store.total() }} {{ store.total() === 1 ? 'paciente' : 'pacientes' }}
@@ -88,13 +97,14 @@
           title="Aún no hay pacientes"
           text="Los pacientes que registres aparecerán aquí."
         >
-          <a
-            routerLink="/dashboard/add-patient"
+          <button
+            type="button"
+            (click)="addPatient()"
             class="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground hover:bg-primary-hover"
           >
             <svg [lucideIcon]="icons.userPlus" [size]="14"></svg>
             Agregar paciente
-          </a>
+          </button>
         </onv-empty-state>
       }
     </div>

@@ -3,7 +3,7 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   LucideDynamicIcon,
@@ -29,6 +29,7 @@ import { Paginator } from '../../shared/ui/paginator/paginator';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { ADD_PATIENT_TITLE_ID, AddPatientDialog } from './components/add-patient-dialog';
 import { ADD_REVIEW_TITLE_ID, AddReviewDialog, AddReviewDialogData } from './components/add-review-dialog';
 import {
   EDIT_PATIENT_TITLE_ID,
@@ -61,7 +62,6 @@ function toPageSize(value: string | undefined): number {
   imports: [
     ReactiveFormsModule,
     DatePipe,
-    RouterLink,
     LucideDynamicIcon,
     CdkMenu,
     CdkMenuItem,
@@ -166,6 +166,20 @@ export class SearchPatientPage {
 
   protected retry(): void {
     void this.store.load(this.search());
+  }
+
+  protected async addPatient(): Promise<void> {
+    const ref = this.dialog.open<Patient | false>(AddPatientDialog, {
+      role: 'dialog',
+      ariaLabelledBy: ADD_PATIENT_TITLE_ID,
+      disableClose: true,
+      backdropClass: ['bg-overlay'],
+    });
+    const result = await firstValueFrom(ref.closed, { defaultValue: false as const });
+    if (result) {
+      this.toast.show({ tone: 'success', title: 'Paciente creado', text: result.name });
+      void this.store.load(this.search());
+    }
   }
 
   protected async edit(patient: Patient): Promise<void> {

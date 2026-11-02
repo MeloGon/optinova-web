@@ -1,0 +1,95 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">Agregar paciente</h2>
+    <p class="text-body-sm text-muted-foreground">Los campos con * son obligatorios.</p>
+  </div>
+
+  <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
+    <onv-field label="Apellidos y nombres" inputId="new-patient-name" [required]="true" [errors]="{ required: 'Escribe el nombre del paciente.' }">
+      <input id="new-patient-name" onvInput formControlName="name" autocomplete="off" placeholder="Ej. María Alejandra González" />
+    </onv-field>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <onv-field
+        label="Teléfono"
+        inputId="new-patient-phone"
+        [required]="true"
+        [errors]="{ required: 'Escribe un teléfono.', phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
+      >
+        <input id="new-patient-phone" onvInput formControlName="phone" inputmode="tel" autocomplete="off" placeholder="999 123 456" />
+      </onv-field>
+      <onv-field
+        label="Teléfono secundario"
+        inputId="new-patient-phone-2"
+        [errors]="{ phone: 'Escribe un teléfono válido (de 6 a 15 dígitos).' }"
+      >
+        <input id="new-patient-phone-2" onvInput formControlName="secondaryPhone" inputmode="tel" autocomplete="off" />
+      </onv-field>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      <onv-field label="Género" inputId="new-patient-gender">
+        <!-- Select nativo con estilo provisional: se reemplaza por C-03 cuando se necesite buscar. -->
+        <select id="new-patient-gender" onvInput formControlName="gender">
+          <option value="">Sin especificar</option>
+          @for (gender of genders; track gender) {
+            <option [value]="gender">{{ gender }}</option>
+          }
+        </select>
+      </onv-field>
+
+      <onv-date-picker
+        label="Fecha de nacimiento"
+        inputId="new-patient-birth"
+        formControlName="birthDate"
+        minDate="1900-01-01"
+        [maxDate]="today"
+        [errors]="{ future: 'No puede ser una fecha futura.' }"
+      />
+
+      <onv-field label="Sucursal" inputId="new-patient-branch" [required]="true" [errors]="{ required: 'Elige una sucursal.' }">
+        <select id="new-patient-branch" onvInput formControlName="branch">
+          @if (!form.controls.branch.value) {
+            <option value="" disabled>Seleccione</option>
+          }
+          @for (branch of branches(); track branch.value) {
+            <option [value]="branch.value">{{ branch.label }}</option>
+          }
+        </select>
+      </onv-field>
+    </div>
+
+    <onv-field label="Observaciones" inputId="new-patient-notes">
+      <textarea id="new-patient-notes" onvInput formControlName="observations" rows="3"></textarea>
+    </onv-field>
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        Guardar paciente
+      }
+    </button>
+  </div>
+</form>
