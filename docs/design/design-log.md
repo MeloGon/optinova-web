@@ -45,7 +45,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-19 | Avatar | implementado v1 (2026-10-27, iniciales en Buscar paciente) | D-001 |
 | C-20 | Sidebar de navegación | implementado v1 | D-001 |
 | C-21 | Navbar / Topbar | implementado v1 | D-001 |
-| C-22 | Stepper | v1 | D-001 |
+| C-22 | Stepper | implementado v1 (2026-11-01, `shared/ui/stepper`, `59fa465`) | D-001 |
 | C-23 | Gráficas (barras, dona) | v1 | D-001 |
 | C-24 | Selector de color primario | v1 | D-001 |
 
@@ -65,7 +65,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | S-01 | Login | v1 | D-001 |
 | S-02 | Dashboard | v1 | D-001 |
 | S-03 | Buscar paciente + ficha con revisiones | v1 | D-001 |
-| S-04 | Nueva venta (3 pasos) | v1 | D-001 |
+| S-04 | Nueva venta (3 pasos) | implementado en `59fa465` (recibo PDF y P-04 completo pendientes) | D-001 |
 | S-05 | Historial de ventas + registrar pago | v1 | D-001 |
 | S-06 | Configuración / Apariencia | v1 | D-001 |
 

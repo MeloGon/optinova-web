@@ -260,3 +260,58 @@ Lectura: [revisiones y medidas](lessons/08-revisiones-medidas.md). Estado docume
 Las medidas siguen almacenándose como texto. Formatear para leer no escribe en la DB; normalizar al capturar sí cambia el valor del control que se guardará. ADD y DIP siguen fuera de P-05 como valores únicos de la revisión; el atajo no está conectado a ADD. El PDF sustituye el menos tipográfico por un guion, según el generador del proyecto.
 
 La FK está implementada en dev; los enlaces históricos ambiguos se revisan manualmente. En `2cbea08`, Claude corrigió los hallazgos iniciales: Agregar/Editar bloquean el envío con `measures.invalid`, EJE exige entero entre 0 y 180 y el detalle incluye LC, AV sin/con RX, CV e historia clínica. `RxTable` conecta `control.events` con un signal contador para actualizar errores en zoneless y cancela las suscripciones con `takeUntilDestroyed`, comparable a cancelar una escucha en `dispose`. S-03 con pestañas y el borrado/archivo del paciente con autorización siguen pendientes.
+
+## L09: Vender, carrito y confirmación en tres pasos
+
+Lectura: [Vender](lessons/09-vender.md). Angular `59fa465`, revisado el 2026-11-01 frente a Flutter `7d3fa5f`.
+
+| Flutter / Riverpod | Angular actual |
+|---|---|
+| `Sell` Notifier con `keepAlive: true` | `SellStore` provisto en la página: borrador compartido con los tres pasos, destruido al salir |
+| Secciones `StepCard` en `SellView` | `currentStep` y `@switch`, C-22 `Stepper` con input de pasos y output de regreso |
+| Controllers de importe, descuento, cuenta y resto | Carrito y montos en estado; `computed` para total, total con descuento y saldo |
+| `dynamic` y cast de producto | Unión discriminada `NewSaleItem` por `kind: 'mount'` o `'resin'` |
+| Agregar un producto al modelo de detalle | Una `CartLine` por unidad con ID local; dos unidades son dos líneas |
+| Búsqueda de catálogo sin rango en los métodos usados por Vender | Buscar explícito y `Page<Mount/Resin>` de 10 en 10; resinas por descripción o texto |
+| Stock resta 1 por llamada y el Notifier recorre líneas | Agrupación por ID de armazón y cantidad explícita, después de guardar venta y detalles |
+| Detalles insertados antes del encabezado | Encabezado primero por `venta_items.venta_id` y su FK real |
+| IDs/folio generados aleatoriamente | Defaults por secuencia (#10), valores devueltos por la DB |
+| Descuento sin autorización de supervisor en el flujo activo | Campo disponible a supervisor o superior; P-04 completo y autorización del servidor pendientes |
+| Capturar datos antes de reiniciar el Notifier | `SellSnapshot` conserva venta e ítems después de limpiar el store |
+| Recibo con `ReceiptPdfService` | Vista previa HTML y confirmación visual; ticket PDF aún pendiente como entregable separado |
+
+El selector de revisión es visual: `NewSale` no persiste todavía un `reviewId`. Tampoco hay reserva de stock ni transacción que reúna venta, líneas, inventario y pago; la lección explica los fallos parciales sin atribuir al flujo garantías que no tiene.
+
+## L10: Egresos y categorías
+
+Lectura: [Egresos](lessons/10-egresos.md). E2.4 `e0034f0` y mejoras compartidas hasta `59fa465`.
+
+| Flutter / Riverpod | Angular actual |
+|---|---|
+| `Expenses` keepAlive con offset y filtros | `ExpensesStore` de página; filtros/página en la URL |
+| `fold` sobre egresos cargados | `computed pageTotal` con `reduce`; suma de la página, distinta del conteo total |
+| `ExpenseModel?` del diálogo | `expense: Expense \| null`; un componente para Nuevo/Editar |
+| Controllers y `initState` | FormGroup precargado y `NewExpense` sin campos asignados fuera del formulario |
+| Perfil de almacenamiento local para registrar | Nombre de `SessionStore` pasado al insert; no es el ID del registrador de pagos |
+| Diálogo que observa el provider de categorías | `CategoryDialog` recibe el signal de categorías y callbacks |
+| Mensaje que promete dejar egresos sin categoría | Error `23503` explicado: la FK en uso impide borrar la categoría |
+| Selector de fecha | C-04 con valor ISO, presentación local y error `invalidFormat` propagado al grupo |
+
+Sin migración nueva para E2.4; se usan las tablas del baseline. El filtro por registrador de Flutter no se incorporó en esta versión.
+
+## L11: Historial y abonos posteriores
+
+Lectura: [Historial de ventas](lessons/11-historial-ventas.md). E2.5 `130d034`, ajustes `c5080e8` y `59fa465`.
+
+| Flutter / Riverpod | Angular actual |
+|---|---|
+| Selector de campo de búsqueda | Un texto para paciente/folio; fecha y sucursal aparte |
+| Toggle de pendientes | Segmented con conteos Todas/Con saldo/Pagadas; las filas distinguen Pagado/Con saldo/Pendiente |
+| Resultado paginado con `hasMore` | Conteo exacto y `range`; sumas de importe/saldo solo de la página |
+| Detalle por folio y pagos por ID | Se conservan esas dos consultas; no se supone que el detalle ya filtre por FK |
+| Controller para monto del pago | FormControl con mínimo y rechazo explícito si supera el saldo |
+| Actualizar UI al escuchar un controller | `control.events` → signal contador → `computed` de textos del abono |
+| Insertar pago y luego actualizar venta | `PaymentRepository.create` y `SaleRepository.applyPayment`, sin transacción automática |
+| Abono a una venta existente | `type: 'abono_saldo'`; el pago inicial de Vender es `nueva_venta` |
+
+La fecha del filtro usa `fecha_actualizada`, que cambia al aplicar un abono. Los conteos del segmented abarcan el filtro completo; los totales monetarios abarcan solo las filas visibles. Recibo, edición/anulación y transacción de pagos no se dan por implementados.

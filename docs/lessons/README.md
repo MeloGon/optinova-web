@@ -13,6 +13,9 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 06 | [Agregar paciente](06-agregar-paciente.md) | E2.3a |
 | 07 | [Base de datos: IDs, fechas y columnas](07-base-de-datos-ids-fechas-columnas.md) | Cambios #3–#6 |
 | 08 | [Revisiones, medidas y P-05 Graduación](08-revisiones-medidas.md) | E2.3b y cambio #7 |
+| 09 | [Vender en tres pasos](09-vender.md) | E2.6 y cambios #9/#10 |
+| 10 | [Egresos, formularios y categorías](10-egresos.md) | E2.4 |
+| 11 | [Historial de ventas y registro de abonos](11-historial-ventas.md) | E2.5 y cambio #8 |
 
 ## Fundamentos desde Flutter y Dart
 
@@ -31,10 +34,12 @@ Las lecciones nuevas son teoría con ejemplos comparados, sin ejercicios. 00–0
 
 L08 documenta el estado de revisiones del 2026-10-27, incluidas las correcciones tras la prueba manual del dueño. Continúa L05–L07 y actualiza sus referencias a la futura FK de revisiones.
 
+L09–L11 se prepararon el 2026-11-01 comparando Angular `59fa465` con Flutter `7d3fa5f`. L09 atiende Vender; L10 y L11 completan las lecciones pendientes de Egresos e Historial. La numeración refleja el orden de entrega documental. No se modifican las lecciones previas para actualizar sus referencias históricas a componentes o features que llegaron después.
+
 ## PDF y entrega para Drive
 
 Una lección: `npm run pdf -- docs/lessons/05-buscar-paciente.md`.
 
-Entrega completa: `node scripts/docs/build-delivery.mjs`. El script descubre las lecciones numeradas y de fundamentos, invoca el comando npm de PDF y agrega el informe y un índice. La entrega original del 2026-10-26 tenía trece lecciones; una nueva ejecución también recogerá L08. Prepara `docs/informes/entrega/` y el ZIP con la fecha configurada en el script. Esta tarea genera solo el PDF individual de L08 con `npm run pdf -- docs/lessons/08-revisiones-medidas.md`; no regenera aquella entrega ni su informe histórico. En Windows puede usarse `npm.cmd` al ejecutar manualmente los comandos si PowerShell bloquea `npm.ps1`.
+Entrega actual (2026-11-01): [guía de archivos para Drive](../entregas/2026-11-01-drive.md) e [informe de avance](../avance/2026-11-01-informe-de-avance.md). Carpeta `docs/informes/drive-2026-11-01/` y ZIP `docs/informes/optinova-drive-2026-11-01.zip`: 17 lecciones, 3 informes e índice, 21 PDF/110 páginas. Incluye todas las clases 00–11 y F00–F03/F07. Los PDF y el ZIP están ignorados por git; hay que transferirlos o regenerarlos en otra computadora. En Windows puede usarse `npm.cmd` si PowerShell bloquea `npm.ps1`.
 
-Se usa un script directo porque el alcance de esta entrega solo permite modificar `docs/` y `scripts/docs/`; no se cambia `package.json` para registrar `pdf:all`. El contenido del ZIP es únicamente la carpeta `entrega/`, sin repositorios de referencia ni temporales de revisión.
+Entrega histórica: `node scripts/docs/build-delivery.mjs` descubre las lecciones e invoca el comando npm de PDF, pero conserva la fecha y el informe del 2026-10-26 y limpia archivos generados. La biblioteca actual se preparó por separado para conservar también el informe histórico del 14 de octubre. El ZIP actual contiene solo los PDF organizados bajo `Optinova-2026-11-01/`, sin repositorios de referencia ni temporales de revisión.
