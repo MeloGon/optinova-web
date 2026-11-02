@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
@@ -10,6 +10,7 @@ import {
   LucideEllipsis,
   LucideEye,
   LucideHandCoins,
+  LucidePrinter,
   LucideReceipt,
   LucideRefreshCw,
   LucideSearch,
@@ -28,6 +29,7 @@ import { Segmented, SegmentedOption } from '../../shared/ui/segmented/segmented'
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { ReceiptPdfService, saleItemToReceiptLine } from '../../shared/services/receipt-pdf.service';
 import { Badge } from '../../shared/ui/badge/badge';
 import { RegisterPaymentDialog, RegisterPaymentDialogData, REGISTER_PAYMENT_TITLE_ID } from './components/register-payment-dialog';
 import {
@@ -97,6 +99,8 @@ export class SalesHistoryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(Dialog);
   private readonly toast = inject(ToastService);
+  private readonly receiptPdf = inject(ReceiptPdfService);
+  protected readonly printingReceiptFor = signal<string | null>(null);
 
   protected readonly branches = computed(() => this.config().branches);
   protected readonly saleStatus = saleStatus;
@@ -136,6 +140,7 @@ export class SalesHistoryPage {
     view: LucideEye,
     more: LucideEllipsis,
     pay: LucideHandCoins,
+    print: LucidePrinter,
   };
 
   constructor() {
@@ -237,6 +242,22 @@ export class SalesHistoryPage {
     ref.closed.subscribe((result) => {
       if (result === 'pay') this.registerPayment(sale);
     });
+  }
+
+  /** = "Imprimir recibo" del menú ⋯ de Flutter: recarga el detalle y genera el mismo ticket 80mm. */
+  protected async printReceipt(sale: Sale): Promise<void> {
+    this.printingReceiptFor.set(sale.id);
+    const itemsResult = await this.store.loadItems(sale.folio);
+    if (!itemsResult.ok) {
+      this.printingReceiptFor.set(null);
+      this.toast.show({ tone: 'danger', title: 'No se pudo generar el recibo', text: itemsResult.error.message });
+      return;
+    }
+    try {
+      await this.receiptPdf.print(sale, itemsResult.value.map(saleItemToReceiptLine));
+    } finally {
+      this.printingReceiptFor.set(null);
+    }
   }
 
   protected registerPayment(sale: Sale): void {

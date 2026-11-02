@@ -33,6 +33,15 @@
   </button>
   <button
     type="button"
+    (click)="printReceipt()"
+    [disabled]="printing()"
+    class="inline-flex h-(--onv-control-h) items-center gap-1.5 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted disabled:opacity-60"
+  >
+    <svg [lucideIcon]="printIcon" [size]="16"></svg>
+    {{ printing() ? 'Generando…' : 'Imprimir recibo' }}
+  </button>
+  <button
+    type="button"
     (click)="viewSale()"
     class="inline-flex h-(--onv-control-h) items-center rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
   >

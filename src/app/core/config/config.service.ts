@@ -23,6 +23,14 @@ export interface Branch extends Option {
    * pero no se ofrece al crear registros nuevos.
    */
   active: boolean;
+  /** Para el recibo (encabezado). Sin dato real todavía: queda `undefined` hasta Fase 4b. */
+  phone?: string;
+  /**
+   * URL o data URL del logo para el recibo. Sin dato real todavía (no hay carga de imágenes ni
+   * tabla de sucursales por empresa): queda `undefined` hasta Fase 4b, y el recibo cae a mostrar
+   * el nombre de la sucursal en texto.
+   */
+  logoUrl?: string;
 }
 
 export interface CompanyConfig {

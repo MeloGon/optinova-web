@@ -32,6 +32,7 @@
     "@angular/build": "^22.2.2",
     "@angular/cli": "^22.2.2",
     "@angular/compiler-cli": "^22.2.0",
+    "@types/pdfmake": "^0.3.3",
     "geist": "^1.8.2",
     "jsdom": "^30.0.0",
     "marked": "^18.1.1",

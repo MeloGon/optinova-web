@@ -119,7 +119,7 @@ export class SellPage {
 
   private onSaleCreated(snapshot: SellSnapshot): void {
     this.currentStep.set(1);
-    const data: SaleCreatedDialogData = { sale: snapshot.sale };
+    const data: SaleCreatedDialogData = { sale: snapshot.sale, items: snapshot.items };
     const ref = this.dialog.open<SaleCreatedResult>(SaleCreatedDialog, {
       data,
       role: 'dialog',

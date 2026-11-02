@@ -209,6 +209,16 @@
       <svg [lucideIcon]="icons.view" [size]="16"></svg>
       Ver detalle
     </button>
+    <button
+      cdkMenuItem
+      type="button"
+      [disabled]="printingReceiptFor() === sale.id"
+      (cdkMenuItemTriggered)="printReceipt(sale)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted disabled:opacity-60"
+    >
+      <svg [lucideIcon]="icons.print" [size]="16"></svg>
+      {{ printingReceiptFor() === sale.id ? 'Generando…' : 'Imprimir recibo' }}
+    </button>
     @if (sale.rest > 0) {
       <button
         cdkMenuItem
