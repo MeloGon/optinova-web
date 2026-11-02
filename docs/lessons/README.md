@@ -39,7 +39,7 @@ L09–L11 se prepararon el 2026-11-01 comparando Angular `59fa465` con Flutter `
 
 ## PDF y entrega para Drive
 
-L12 se preparó el 2026-11-02 sobre el commit local `e6d7a6c`. Explica una mejora nueva sin pantalla equivalente en Flutter: ficha con Revisiones/Ventas/Pagos, ruta `:id`, C-14 y reutilización de acciones/diálogos. PDF individual en `docs/informes/12-ficha-paciente.pdf`; se entrega aparte del paquete histórico del 2026-11-01. Las lecciones 00–11 conservan el contexto de su fecha.
+L12 se preparó el 2026-11-02 sobre `e6d7a6c`, actualizada con las correcciones de pagos/teclado de `e019946`. Explica una mejora nueva sin pantalla equivalente en Flutter: ficha con Revisiones/Ventas/Pagos, ruta `:id`, C-14 y reutilización de acciones/diálogos. PDF individual en `docs/informes/12-ficha-paciente.pdf`; se entrega aparte del paquete histórico del 2026-11-01. Las lecciones 00–11 conservan el contexto de su fecha.
 
 Una lección: `npm run pdf -- docs/lessons/05-buscar-paciente.md`.
 

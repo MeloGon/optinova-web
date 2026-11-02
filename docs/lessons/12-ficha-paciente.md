@@ -2,7 +2,7 @@
 
 **Idea central:** el ID de una persona en la URL permite reunir sus datos, revisiones, ventas y pagos en una ficha. La página organiza la navegación; el store coordina los repositorios; los componentes compartidos conservan las acciones que ya existían.
 
-Solo teoría y ejemplos comparados con Flutter/Riverpod/go_router, sin ejercicios. Revisión del 2026-11-02 sobre Angular `e6d7a6c373c6dd39b91a29048ef93a63b8a79114`, commit local en `development`, sin publicación remota comprobada en esta entrega. Referencia Flutter `7d3fa5f240ba705c312d9ab2c5a054f815aab80c`, leída en un clon temporal fuera del proyecto. Esta lección continúa L11.
+Solo teoría y ejemplos comparados con Flutter/Riverpod/go_router, sin ejercicios. Revisión del 2026-11-02 sobre Angular: ficha `e6d7a6c` y correcciones de pagos/teclado `e019946`, en `development`. Referencia Flutter `7d3fa5f240ba705c312d9ab2c5a054f815aab80c`, leída en un clon temporal fuera del proyecto. Esta lección continúa L11.
 
 ## 1. Qué había en Flutter y por qué aparece esta ficha
 
@@ -68,7 +68,7 @@ Hay un límite deliberado del alcance documentado: `salesPage` sí es un signal 
 
 Desde Flutter se parece a separar una `TabBar` de la selección que observa el padre. No lleva un `TabBarView` propio ni un controlador interno que cargue pacientes. Tampoco implementa `ControlValueAccessor`, a diferencia de controles que escriben un valor de formulario: aquí se navega entre secciones.
 
-El host declara `role="tablist"`; cada botón usa `role="tab"`, `aria-selected`, `aria-controls` y `tabIndex` 0 para el activo y -1 para los demás. Estas propiedades describen la intención accesible, pero esta primera versión no implementa flechas/Home/End ni declara los paneles correspondientes con `role="tabpanel"` e IDs enlazados. No debe enseñarse como un patrón de tabs completamente resuelto para teclado y lectores de pantalla.
+El host declara `role="tablist"`; cada botón usa `role="tab"`, `aria-selected`, `aria-controls` y `tabIndex` 0 para el activo y -1 para los demás. En `e019946` se completó el teclado: flechas izquierda/derecha eligen la pestaña vecina de forma cíclica; Home/End van a la primera/última. `viewChildren` permite mover el foco al botón elegido. La ficha monta el contenido con `role="tabpanel"`, ID correspondiente y `aria-labelledby` enlazado a su pestaña. Los helpers `tabId`/`tabPanelId` mantienen esos nombres coordinados.
 
 Los contadores son `computed` de la página. Revisiones usa la longitud de su lista; Ventas usa el total exacto de la consulta paginada, no las diez filas visibles; Pagos usa la longitud de la lista devuelta. Reflejan los datos recibidos, no conteos independientes de todas las tablas.
 
@@ -98,16 +98,16 @@ Las ventas antiguas sin enlace mantienen `patientId: null` y no se incluyen auto
 
 `listBySale(saleId)` ya obtenía pagos de una venta. Pagos de la ficha necesita reunir los de todas las ventas del paciente, incluyendo las que no están en la página visible de Ventas. Por eso se agregó `PaymentRepository.listByPatient(patientId)` y su implementación en Supabase.
 
-| Paso real del repositorio | Propósito |
+| Parte de la consulta actual | Propósito |
 |---|---|
-| Consulta `ventas.id` donde `paciente_id = patientId` | Identificar las ventas de esa persona |
-| Si no hay ventas, devuelve `ok([])` | Resolver el vacío sin una segunda consulta |
-| Consulta pagos con `.in('id_remision', ids)` | Reunir cobros de esas ventas |
+| Parte de `pagos` y selecciona `ventas!inner(paciente_id)` | Unir cada cobro con su venta mediante la FK |
+| Filtra `.eq('ventas.paciente_id', patientId)` | Conservar solo cobros de esa persona |
+| Devuelve `ok([])` si no hay coincidencias | Resolver el vacío en la misma consulta |
 | Ordena por fecha e ID descendentes | Mostrar los últimos primero |
 
 `pagos.id_remision` contiene el ID de la venta, no su folio visible ni el ID del paciente. La consulta incluye `perfiles(nombre)` para el registrador. Si RLS no permite leer el perfil de otra persona, su nombre puede quedar vacío aunque el pago exista.
 
-Hay una precisión necesaria frente al comentario del código: el baseline declara `pagos_id_remision_fkey`, y `docs/db-changes.md` #8 indica que la FK sigue la tabla/columna renombrada por OID. Eso describe una FK que conserva su referencia interna, no ausencia de FK. La implementación utiliza dos consultas, pero las fuentes versionadas no demuestran que un embed sea imposible. Supabase documenta la detección de relaciones mediante claves foráneas en [Joins y tablas anidadas](https://supabase.com/docs/guides/database/joins-and-nesting). Se deja la discrepancia para Claude, sin modificar SQL ni atribuir al servidor una limitación no verificada.
+La primera versión (`e6d7a6c`) consultaba IDs de ventas y luego pagos en dos solicitudes. Su comentario decía que faltaba una FK, pero el baseline declara `pagos_id_remision_fkey` y #8 documenta que conserva la referencia interna tras renombrar. Claude verificó la relación en dev y corrigió el método en `e019946`: ahora utiliza una sola consulta con embed. `!inner` hace que el filtro por paciente excluya los pagos de otras ventas; no se limita a adjuntar datos relacionados. Es la relación por FK que explica Supabase en [Joins y tablas anidadas](https://supabase.com/docs/guides/database/joins-and-nesting). No hizo falta una migración nueva.
 
 ## 8. ReviewsList: extraer contenido de un diálogo
 
@@ -143,17 +143,17 @@ Ir a vender es un enlace a `/dashboard/sell`. No preselecciona el paciente de la
 
 ## 11. Evidencia de cierre y límites de esta versión
 
-Claude registró 208 tests al construir la ficha y 210 tras los dos arreglos de Antigravity, con build limpio. Antigravity informó aprobación funcional al 100% usando los cuatro roles y pacientes sin relaciones, con medidas, con ventas y archivados; probó navegación, URL, contadores, edición, pagos y ciclo de vida. Sus dos observaciones iniciales fueron atendidas: Restaurar sustituye a Eliminar en archivados y el estado vacío de Revisiones usa el mismo patrón visual que las otras pestañas.
+Claude registró 208 tests al construir la ficha, 210 tras los dos arreglos de Antigravity y 216 al incorporar `e019946`, con build limpio. Probó el embed contra la API REST de dev. Antigravity informó aprobación funcional al 100% de la ficha inicial con los cuatro roles: navegación, URL, contadores, edición, pagos y ciclo de vida. Se atendieron sus dos observaciones: Restaurar sustituye a Eliminar en archivados y Revisiones usa el mismo patrón de estado vacío que las otras pestañas.
 
 Son resultados de esos agentes. Codex verifica código/documentación y genera el PDF, sin repetir sus pruebas manuales.
 
-Si falla la primera carga de Revisiones o Pagos, puede quedar un skeleton sin mensaje; Ventas puede mostrar un vacío tras un fallo inicial porque no expone su error. Tampoco hay cancelación ni protección frente a respuestas de un ID anterior. El manejo completo de errores, concurrencia y accesibilidad sigue pendiente.
+Si falla la primera carga de Revisiones o Pagos, puede quedar un skeleton sin mensaje; Ventas puede mostrar un vacío tras un fallo inicial porque no expone su error. Tampoco hay cancelación ni protección frente a respuestas de un ID anterior. Estos límites de errores y concurrencia permanecen; las carencias de teclado y paneles señaladas en la primera versión se corrigieron en `e019946`.
 
 ## 12. Fuentes y PDF
 
 Flutter fijado a `7d3fa5f`: [SearchPatientView](https://github.com/MeloGon/oftal_web/blob/7d3fa5f240ba705c312d9ab2c5a054f815aab80c/lib/features/search_patient/views/search_patient_view.dart), [PatientTile](https://github.com/MeloGon/oftal_web/blob/7d3fa5f240ba705c312d9ab2c5a054f815aab80c/lib/features/search_patient/views/widgets/patient_tile.dart), [ReviewDetailsDialog](https://github.com/MeloGon/oftal_web/blob/7d3fa5f240ba705c312d9ab2c5a054f815aab80c/lib/features/search_patient/views/widgets/review_details_dialog.dart) y [router](https://github.com/MeloGon/oftal_web/blob/7d3fa5f240ba705c312d9ab2c5a054f815aab80c/lib/router/app_router.dart).
 
-Fuentes Angular `e6d7a6c`: rutas/configuración, `patient-detail.page.*`, `patient-detail.store.ts`, `patient-lifecycle-actions.ts`, `components/reviews-list.*`, C-14 y contratos/implementaciones de paciente, venta y pago. Decisiones: `docs/status.md`; FK: baseline y `docs/db-changes.md` #8.
+Fuentes Angular `e6d7a6c` y `e019946`: rutas/configuración, `patient-detail.page.*`, `patient-detail.store.ts`, `patient-lifecycle-actions.ts`, `components/reviews-list.*`, C-14 y contratos/implementaciones de paciente, venta y pago. Decisiones: `docs/status.md`; FK: baseline y `docs/db-changes.md` #8.
 
 ```bash
 npm run pdf -- docs/lessons/12-ficha-paciente.md

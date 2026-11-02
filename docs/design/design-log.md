@@ -37,7 +37,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-11 | Badge / Pill de estado | v1 | D-001 |
 | C-12 | Dialog / Modal | v1 | D-001 |
 | C-13 | Toast | v1 | D-001 |
-| C-14 | Tabs | implementado v1 (2026-11-02, `shared/ui/tabs/`, `e6d7a6c`; teclado/paneles ARIA completos pendientes) | D-001 |
+| C-14 | Tabs | implementado v1 (2026-11-02, `shared/ui/tabs/`, `e6d7a6c` + `e019946`; flechas/Home/End y paneles enlazados) | D-001 |
 | C-15 | Dropdown menu | v1 | D-001 |
 | C-16 | Tooltip | v1 | D-001 |
 | C-17 | Spinner / Skeleton | v1 | D-001 |
@@ -77,7 +77,7 @@ Al cierre de E2.3b (2026-10-27), S-03 se difirió hasta que existieran Ventas/Pa
 
 ## Implementación de S-03 y C-14 (2026-11-02)
 
-`e6d7a6c`, commit local en `development`: ficha en `/dashboard/search-patient/:id`, encabezado y pestañas Revisiones/Ventas/Pagos con contadores. Decisión del dueño: página propia en lugar de panel partido; sección en `?tab=`. C-14 recibe selección y emite cambios; la página monta el contenido. Se reutilizan P-05, diálogos de revisión y venta/abono, y acciones de ciclo de vida extraídas. Los dos arreglos tras Antigravity están incluidos: Restaurar sustituye a Eliminar para archivados (admin+; Editar permanece) y Revisiones usa el mismo empty-state con tarjeta que Ventas/Pagos. Primera versión de Tabs con roles/selección ARIA; teclado y vínculo completo de paneles pendientes. Lectura y límites: [L12](../lessons/12-ficha-paciente.md). Sin equivalente de pantalla en Flutter `7d3fa5f`.
+`e6d7a6c`, commit local en `development`: ficha en `/dashboard/search-patient/:id`, encabezado y pestañas Revisiones/Ventas/Pagos con contadores. Decisión del dueño: página propia en lugar de panel partido; sección en `?tab=`. C-14 recibe selección y emite cambios; la página monta el contenido. Se reutilizan P-05, diálogos de revisión y venta/abono, y acciones de ciclo de vida extraídas. Los dos arreglos tras Antigravity están incluidos: Restaurar sustituye a Eliminar para archivados (admin+; Editar permanece) y Revisiones usa el mismo empty-state con tarjeta que Ventas/Pagos. `e019946` completa flechas cíclicas/Home/End, foco con `viewChildren` y vínculo de paneles mediante `tabId`/`tabPanelId`. También reemplaza la consulta de pagos en dos pasos por embed sobre la FK existente. Lectura y límites: [L12](../lessons/12-ficha-paciente.md). Sin equivalente de pantalla en Flutter `7d3fa5f`.
 
 ## Implementación de E2.5 y C-04 (2026-10-30)
 

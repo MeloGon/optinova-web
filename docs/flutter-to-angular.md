@@ -318,7 +318,7 @@ La fecha del filtro usa `fecha_actualizada`, que cambia al aplicar un abono. Los
 
 ## L12: Ficha de paciente, identidad y pestañas
 
-Lectura: [Ficha de paciente](lessons/12-ficha-paciente.md). S-03, commit local `e6d7a6c` del 2026-11-02. Flutter `7d3fa5f` conserva una lista con diálogos: estas son analogías para entender la mejora nueva, no una pantalla Flutter portada.
+Lectura: [Ficha de paciente](lessons/12-ficha-paciente.md). S-03 `e6d7a6c` y correcciones `e019946` del 2026-11-02. Flutter `7d3fa5f` conserva una lista con diálogos: estas son analogías para entender la mejora nueva, no una pantalla Flutter portada.
 
 | Concepto conocido desde Flutter / Dart | Angular en S-03 |
 |---|---|
@@ -327,11 +327,11 @@ Lectura: [Ficha de paciente](lessons/12-ficha-paciente.md). S-03, commit local `
 | Selección de `TabBar` y contenido del padre | C-14 recibe opciones/activo y emite `activeChange`; la página monta bloques `@if` |
 | Estado ligado a la vida de una pantalla, analogía `autoDispose` | `PatientDetailStore` en `providers` de la página; efecto de carga dependiente del ID |
 | Modelo que transporta la relación con otra entidad | `Sale.patientId: string \| null`, mapper con `paciente_id::text` y filtro `SaleSearch.patientId` |
-| Repositorio que reúne datos de varias ventas | `PaymentRepository.listByPatient`: IDs de ventas del paciente y después pagos con `.in('id_remision', ids)` |
+| Repositorio que reúne datos de varias ventas | `PaymentRepository.listByPatient`: embed `ventas!inner(paciente_id)` y filtro por paciente en una consulta |
 | Extraer un widget del `builder` de un diálogo | `ReviewsList` embebido, con datos y callbacks; reemplaza `ViewMeasuresDialog` |
 | Servicio dependiente de una interfaz pequeña | `PatientLifecycleActions` recibe `PatientLifecyclePort` y callback `onDone` |
 | Recargar datos tras `showDialog` exitoso | Tras un abono se refrescan la página de Ventas y el historial de Pagos |
 
-La FK de paciente ya existía desde #8 y `NewSale.patientId` ya se enviaba al crear; faltaba exponerla en la lectura de `Sale` y en el filtro del repositorio. Pagos se resuelve en dos consultas sin que ello pruebe ausencia de FK: el baseline y #8 registran la relación de `pagos.id_remision` conservada tras el rename. L12 distingue el comentario del código de la evidencia del esquema.
+La FK de paciente ya existía desde #8 y `NewSale.patientId` ya se enviaba al crear; faltaba exponerla en la lectura de `Sale` y en el filtro del repositorio. Pagos se resolvía en dos consultas; `e019946` usa la FK existente de `pagos.id_remision` para un embed con `!inner` y filtro por paciente. El baseline y #8 conservaban esa relación tras el rename; no hizo falta otra migración.
 
-En un paciente archivado, Eliminar se sustituye por Restaurar para admin+; Editar permanece en la plantilla. Restaurar recarga la ficha, mientras borrar/archivar vuelve a la lista. Ir a vender aún no preselecciona al paciente. C-14 tiene semántica ARIA básica, con teclado/paneles completos pendientes; el estado de página de Ventas es local, no parte de la URL.
+En un paciente archivado, Eliminar se sustituye por Restaurar para admin+; Editar permanece en la plantilla. Restaurar recarga la ficha, mientras borrar/archivar vuelve a la lista. Ir a vender aún no preselecciona al paciente. C-14 incorpora flechas cíclicas, Home/End y paneles enlazados mediante helpers de IDs desde `e019946`; el estado de página de Ventas es local, no parte de la URL.
