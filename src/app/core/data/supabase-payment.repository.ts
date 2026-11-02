@@ -50,22 +50,16 @@ export class SupabasePaymentRepository extends PaymentRepository {
   }
 
   /**
-   * `pagos.id_remision` no tiene una FK declarada a `ventas` (apunta a la tabla/columna por OID,
-   * ver db-changes.md #8): PostgREST no puede hacer un embed automático. Se resuelve en dos
-   * pasos: primero los `id` de las ventas del paciente, después los pagos de esos ids.
+   * `pagos.id_remision` sí tiene FK real a `ventas.id` (`pagos_id_remision_fkey`): se puede
+   * filtrar por el `paciente_id` de la venta embebiendo la relación, mismo truco que ya usa
+   * `perfiles(nombre)` arriba. `!inner` hace falta para que el filtro de la tabla embebida
+   * (`.eq('ventas.paciente_id', ...)`) de verdad filtre en vez de solo adjuntar el dato.
    */
   async listByPatient(patientId: string): Promise<Result<Payment[], AppError>> {
-    const { data: sales, error: salesError } = await this.supabase
-      .from('ventas')
-      .select('id')
-      .eq('paciente_id', patientId);
-    if (salesError) return err(toAppError(salesError));
-    if (sales.length === 0) return ok([]);
-
     const { data, error } = await this.supabase
       .from('pagos')
-      .select(COLUMNS)
-      .in('id_remision', sales.map((s) => s.id))
+      .select(`${COLUMNS}, ventas!inner(paciente_id)`)
+      .eq('ventas.paciente_id', patientId)
       .order('fecha_pago', { ascending: false })
       .order('id', { ascending: false })
       .overrideTypes<PaymentRow[], { merge: false }>();

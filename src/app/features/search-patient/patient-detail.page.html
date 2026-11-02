@@ -93,7 +93,7 @@
     <onv-tabs [tabs]="tabs()" [active]="activeTab()" (activeChange)="setTab($event)" />
 
     @if (activeTab() === 'reviews') {
-      <div class="flex flex-col gap-3">
+      <div [id]="tabPanelId('reviews')" role="tabpanel" [attr.aria-labelledby]="tabId('reviews')" tabindex="0" class="flex flex-col gap-3">
         <button
           type="button"
           (click)="addMeasure()"
@@ -117,6 +117,7 @@
     }
 
     @if (activeTab() === 'sales') {
+      <div [id]="tabPanelId('sales')" role="tabpanel" [attr.aria-labelledby]="tabId('sales')" tabindex="0" class="flex flex-col gap-4">
       @if (!store.salesLoaded()) {
         <onv-skeleton class="h-40 w-full rounded-lg" />
       } @else if (store.sales().length === 0) {
@@ -180,9 +181,11 @@
           <onv-paginator footer class="border-t border-border" [page]="salesPage()" [pageSize]="10" [total]="store.salesTotal()" (pageChange)="goToSalesPage($event)" />
         </onv-table-card>
       }
+      </div>
     }
 
     @if (activeTab() === 'payments') {
+      <div [id]="tabPanelId('payments')" role="tabpanel" [attr.aria-labelledby]="tabId('payments')" tabindex="0" class="flex flex-col gap-4">
       @if (!store.paymentsLoaded()) {
         <onv-skeleton class="h-24 w-full rounded-lg" />
       } @else if (store.payments().length === 0) {
@@ -215,6 +218,7 @@
           </table>
         </onv-table-card>
       }
+      </div>
     }
   }
 </div>

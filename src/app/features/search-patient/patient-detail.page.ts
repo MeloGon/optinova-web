@@ -28,7 +28,7 @@ import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { Paginator } from '../../shared/ui/paginator/paginator';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
-import { Tabs, TabOption } from '../../shared/ui/tabs/tabs';
+import { Tabs, TabOption, tabId, tabPanelId } from '../../shared/ui/tabs/tabs';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import {
   RegisterPaymentDialog,
@@ -89,6 +89,8 @@ export class PatientDetailPage {
 
   protected readonly saleStatus = saleStatus;
   protected readonly salesPage = signal(1);
+  protected readonly tabId = tabId;
+  protected readonly tabPanelId = tabPanelId;
   /** Restaurar es cosa de admin+ (igual que archivar) — ver "Ver archivados" en Buscar paciente. */
   protected readonly canRestore = this.session.can('admin');
 
