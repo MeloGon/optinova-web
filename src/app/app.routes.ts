@@ -97,6 +97,16 @@ export const routes: Routes = [
         } satisfies PageData,
         loadComponent: () => import('./features/sell/sell.page').then((m) => m.SellPage),
       },
+      {
+        path: 'settings/appearance',
+        title: 'Apariencia · Optinova',
+        data: {
+          title: 'Apariencia',
+          description: 'Color primario, tema y densidad de la interfaz.',
+        } satisfies PageData,
+        loadComponent: () =>
+          import('./features/appearance/appearance.page').then((m) => m.AppearancePage),
+      },
       pending('settings/resins', {
         minRole: 'admin',
         title: 'Resinas',

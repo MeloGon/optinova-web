@@ -3,6 +3,7 @@ import {
   LucideGlasses,
   LucideHandCoins,
   LucideLayoutDashboard,
+  LucidePalette,
   LucideReceipt,
   LucideScanEye,
   LucideSearch,
@@ -37,6 +38,7 @@ export const DASHBOARD_NAV: DashboardNavSection[] = [
       { label: 'Nueva venta', icon: LucideShoppingCart, path: '/dashboard/sell', minRole: 'vendedor' },
       { label: 'Historial de ventas', icon: LucideReceipt, path: '/dashboard/sales-history', minRole: 'vendedor' },
       { label: 'Egresos', icon: LucideWallet, path: '/dashboard/expenses', minRole: 'vendedor' },
+      { label: 'Apariencia', icon: LucidePalette, path: '/dashboard/settings/appearance', minRole: 'vendedor' },
     ],
   },
   {

@@ -5,7 +5,9 @@ import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
 import { Role } from './core/models/role';
 import { AuthRepository } from './core/repositories/auth.repository';
+import { DashboardRepository } from './core/repositories/dashboard.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
+import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
 
 describe('Rutas y guards', () => {
   let repo: FakeAuthRepository;
@@ -18,6 +20,8 @@ describe('Rutas y guards', () => {
       providers: [
         provideRouter(routes, withComponentInputBinding()),
         { provide: AuthRepository, useValue: repo },
+        // Las redirecciones aterrizan en el dashboard, que pide su resumen al crearse.
+        { provide: DashboardRepository, useValue: new FakeDashboardRepository() },
       ],
     });
     await TestBed.inject(SessionStore).restore();
@@ -47,6 +51,13 @@ describe('Rutas y guards', () => {
     await h.navigateByUrl('/dashboard/settings/resins');
     expect(text(h)).toContain('Resinas');
     expect(text(h)).toContain('E2.8');
+  });
+
+  it('Apariencia (donde vive el selector de tema) está abierta a todos los roles', async () => {
+    const h = await start('vendedor');
+    await h.navigateByUrl('/dashboard/settings/appearance');
+    expect(url()).toBe('/dashboard/settings/appearance');
+    expect(text(h)).toContain('Color primario');
   });
 
   it('un vendedor no entra a páginas de admin', async () => {

@@ -9,6 +9,7 @@ import { provideLucideConfig } from '@lucide/angular';
 import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
+import { SupabaseDashboardRepository } from './core/data/supabase-dashboard.repository';
 import { SupabaseExpenseRepository } from './core/data/supabase-expense.repository';
 import { SupabaseMountRepository } from './core/data/supabase-mount.repository';
 import { SupabasePatientLifecycleRepository } from './core/data/supabase-patient-lifecycle.repository';
@@ -19,6 +20,7 @@ import { SupabaseReviewRepository } from './core/data/supabase-review.repository
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
 import { SupabaseSellerRepository } from './core/data/supabase-seller.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
+import { DashboardRepository } from './core/repositories/dashboard.repository';
 import { ExpenseRepository } from './core/repositories/expense.repository';
 import { MountRepository } from './core/repositories/mount.repository';
 import { PatientLifecycleRepository } from './core/repositories/patient-lifecycle.repository';
@@ -48,6 +50,7 @@ export const appConfig: ApplicationConfig = {
     { provide: MountRepository, useClass: SupabaseMountRepository },
     { provide: ResinRepository, useClass: SupabaseResinRepository },
     { provide: SellerRepository, useClass: SupabaseSellerRepository },
+    { provide: DashboardRepository, useClass: SupabaseDashboardRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.
     provideAppInitializer(() => {
       inject(ThemeService);

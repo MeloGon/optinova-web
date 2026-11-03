@@ -1,134 +1,283 @@
-<!-- Provisional: vista previa del sistema de diseño (D-001).
-     El dashboard real (S-02: KPIs, gráficas, ventas recientes) se construye en E2.7. -->
-<div class="p-6">
-  <div class="mx-auto flex max-w-3xl flex-col gap-6">
-    <header>
-      <h2 class="text-heading">Vista previa del sistema de diseño</h2>
-      <p class="text-body-sm text-muted-foreground">El dashboard real llega en E2.7. Mientras tanto, prueba los tokens.</p>
-      <p class="text-caption text-muted-foreground">
-        Supabase: <span class="font-mono">{{ env.supabaseUrl || '(sin configurar)' }}</span>
-        · {{ env.production ? 'producción' : 'desarrollo' }}
-      </p>
-    </header>
-
-    <section class="flex flex-col gap-4 rounded-lg border border-border bg-card p-(--onv-card-p) text-card-foreground elev-sm">
-      <h2 class="text-heading">Apariencia</h2>
-
-      <div class="flex flex-col gap-2">
-        <span class="text-label">Color primario</span>
-        <div class="flex flex-wrap gap-2">
-          @for (p of presets; track p.id) {
-            <button
-              type="button"
-              class="size-8 rounded-full border-2 transition-transform duration-(--duration-fast) ease-standard hover:scale-110"
-              [class.border-foreground]="theme.primary() === p.hex"
-              [class.border-transparent]="theme.primary() !== p.hex"
-              [style.background-color]="p.hex"
-              [attr.aria-label]="p.name"
-              [attr.aria-pressed]="theme.primary() === p.hex"
-              (click)="theme.setPrimary(p.hex)"
-            ></button>
-          }
-        </div>
-      </div>
-
-      <div class="flex flex-wrap gap-6">
-        <div class="flex flex-col gap-2">
-          <span class="text-label">Tema</span>
-          <div class="flex gap-1 rounded-md bg-muted p-1">
-            @for (m of modes; track m.value) {
-              <button
-                type="button"
-                class="rounded-sm px-3 py-1 text-label"
-                [class.bg-card]="theme.mode() === m.value"
-                [class.elev-xs]="theme.mode() === m.value"
-                [class.text-muted-foreground]="theme.mode() !== m.value"
-                [attr.aria-pressed]="theme.mode() === m.value"
-                (click)="theme.setMode(m.value)"
-              >
-                {{ m.label }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <span class="text-label">Densidad</span>
-          <div class="flex gap-1 rounded-md bg-muted p-1">
-            @for (d of densities; track d.value) {
-              <button
-                type="button"
-                class="rounded-sm px-3 py-1 text-label"
-                [class.bg-card]="theme.density() === d.value"
-                [class.elev-xs]="theme.density() === d.value"
-                [class.text-muted-foreground]="theme.density() !== d.value"
-                [attr.aria-pressed]="theme.density() === d.value"
-                (click)="theme.setDensity(d.value)"
-              >
-                {{ d.label }}
-              </button>
-            }
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="flex flex-col gap-4 rounded-lg border border-border bg-card p-(--onv-card-p) text-card-foreground elev-sm">
-      <h2 class="text-heading">Muestras</h2>
-
-      <div class="flex flex-wrap gap-2">
-        <button type="button" class="h-(--onv-control-h) rounded-md bg-primary px-4 text-label text-primary-foreground hover:bg-primary-hover active:bg-primary-active">
-          Registrar venta
-        </button>
-        <button type="button" class="h-(--onv-control-h) rounded-md bg-secondary px-4 text-label text-secondary-foreground hover:bg-secondary-hover">
-          Cancelar
-        </button>
-        <input
-          type="text"
-          placeholder="Busca por nombre o DNI"
-          class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body placeholder:text-muted-foreground"
-        />
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <span class="rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-subtle-foreground">Pagado</span>
-        <span class="rounded-full bg-warning-subtle px-2 py-0.5 text-caption text-warning-subtle-foreground">Con saldo</span>
-        <span class="rounded-full bg-info-subtle px-2 py-0.5 text-caption text-info-subtle-foreground">Pendiente</span>
-        <span class="rounded-full bg-danger-subtle px-2 py-0.5 text-caption text-danger-subtle-foreground">Anulado</span>
-        <span class="rounded-full bg-primary-subtle px-2 py-0.5 text-caption text-primary-subtle-foreground">Seleccionado</span>
-      </div>
-
-      <div class="flex items-baseline gap-6">
-        <span class="text-kpi tabular-nums">{{ 4870.5 | money }}</span>
-        <span class="text-amount tabular-nums text-danger-subtle-foreground">{{ -124 | money }}</span>
-        <span class="font-mono text-rx">−1.25 &nbsp;+0.50 &nbsp;180°</span>
-      </div>
-
-      <div class="overflow-hidden rounded-md border border-border">
-        @for (row of ['V-000851', 'V-000852', 'V-000853']; track row) {
-          <div class="flex h-(--onv-row-h) items-center justify-between border-b border-border px-(--onv-cell-x) text-(length:--onv-cell-fs) last:border-b-0">
-            <span class="font-mono text-code">{{ row }}</span>
-            <span class="tabular-nums">{{ 1250 | money }}</span>
-          </div>
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Saludo -->
+  <header class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="text-heading">{{ greeting() }}</h2>
+      <p class="text-body-sm text-muted-foreground">
+        @if (scope(); as s) {
+          {{ s }}
+        } @else {
+          Cargando tu resumen…
         }
+      </p>
+    </div>
+
+    <!-- Filtro de sucursal: solo admin o superior (el servidor ignora el valor para los demás roles). -->
+    @if (isAdmin()) {
+      <div class="flex w-52 flex-col gap-1.5">
+        <label for="dashboard-branch" class="text-label">Sucursal</label>
+        <select
+          id="dashboard-branch"
+          #branchSelect
+          (change)="onBranch(branchSelect.value)"
+          class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <option value="">Todas</option>
+          @for (b of branches(); track b.value) {
+            <option [value]="b.value">{{ b.label }}{{ b.active ? '' : ' (cerrada)' }}</option>
+          }
+        </select>
+      </div>
+    }
+  </header>
+
+  @if (store.error(); as message) {
+    <div role="alert" class="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-subtle p-4 text-danger-subtle-foreground">
+      <svg [lucideIcon]="icons.warning" [size]="18" class="shrink-0"></svg>
+      <p class="min-w-0 flex-1 text-body-sm">{{ message }}</p>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-danger px-3 text-label hover:bg-card"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  <!-- KPIs (C-10) -->
+  @if (store.summary(); as s) {
+    <!-- auto-fit: con 3 tarjetas (vendedor) o 4 (supervisor+) llenan la fila sin dejar huecos. -->
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-body-sm font-medium text-muted-foreground">Mis ventas hoy</span>
+          <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
+            <svg [lucideIcon]="icons.cart" [size]="16"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.mySalesTodayTotal | money }}</p>
+        <p class="text-caption text-muted-foreground">
+          {{ s.kpis.mySalesTodayCount }} {{ s.kpis.mySalesTodayCount === 1 ? 'venta' : 'ventas' }} a tu nombre
+        </p>
       </div>
 
-      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-body-sm">
-        <dt class="text-muted-foreground">Sucursales</dt>
-        <dd>
-          @for (b of config().branches; track b.value) {
-            <span [class.text-muted-foreground]="!b.active">
-              {{ b.label }}{{ b.active ? '' : ' (cerrada)' }}{{ $last ? '' : ' · ' }}
+      @if (s.kpis.incomeToday !== null) {
+        <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-body-sm font-medium text-muted-foreground">Ingresos hoy</span>
+            <span class="grid size-8 place-items-center rounded-md bg-success-subtle text-success-subtle-foreground">
+              <svg [lucideIcon]="icons.income" [size]="16"></svg>
             </span>
+          </div>
+          <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.incomeToday | money }}</p>
+          <p class="text-caption text-muted-foreground">Pagos cobrados hoy</p>
+        </div>
+      }
+
+      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-body-sm font-medium text-muted-foreground">Saldo por cobrar</span>
+          <span class="grid size-8 place-items-center rounded-md bg-warning-subtle text-warning-subtle-foreground">
+            <svg [lucideIcon]="icons.receivable" [size]="16"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.receivable | money }}</p>
+        <p class="text-caption text-muted-foreground">En las ventas que ves aquí</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-body-sm font-medium text-muted-foreground">Pacientes</span>
+          <span class="grid size-8 place-items-center rounded-md bg-info-subtle text-info-subtle-foreground">
+            <svg [lucideIcon]="icons.patients" [size]="16"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.patients }}</p>
+        <p class="text-caption text-muted-foreground">{{ s.scope === 'all' && !s.branch ? 'En todas las sucursales' : 'En la sucursal' }}</p>
+      </div>
+    </div>
+
+    <!-- Ventas de 7 días + métodos de pago de hoy (este último solo si el rol lo ve) -->
+    <div class="grid gap-4 lg:grid-cols-5">
+      <section
+        aria-labelledby="week-title"
+        class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+        [class.lg:col-span-5]="s.paymentMethodsToday === null"
+        [class.lg:col-span-3]="s.paymentMethodsToday !== null"
+      >
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h3 id="week-title" class="text-heading">Ventas de los últimos 7 días</h3>
+          <p class="text-body-sm text-muted-foreground">
+            {{ weekCount() }} {{ weekCount() === 1 ? 'venta' : 'ventas' }} · {{ weekTotal() | money }}
+          </p>
+        </div>
+        <onv-bar-chart [data]="weekBars()" ariaLabel="Ventas de los últimos 7 días" [format]="fmtMoney" />
+      </section>
+
+      @if (s.paymentMethodsToday !== null) {
+        <section
+          aria-labelledby="methods-title"
+          class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm lg:col-span-2"
+        >
+          <h3 id="methods-title" class="mb-3 text-heading">Métodos de pago de hoy</h3>
+          @if (paymentSlices().length) {
+            <onv-donut-chart [slices]="paymentSlices()" ariaLabel="Pagos de hoy por método" [format]="fmtMoney" />
+          } @else {
+            <onv-empty-state [icon]="icons.income" title="Sin pagos hoy" text="Aquí verás cómo te pagan cuando se cobre." />
           }
-        </dd>
-        <dt class="text-muted-foreground">Métodos de pago</dt>
-        <dd>
-          @for (p of config().paymentMethods; track p.value) {
-            <span>{{ p.label }}{{ $last ? '' : ' · ' }}</span>
+        </section>
+      }
+    </div>
+
+    <!-- Ventas recientes + accesos rápidos -->
+    <div class="grid gap-4 lg:grid-cols-5">
+      <section
+        aria-labelledby="recent-title"
+        class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm lg:col-span-3"
+      >
+        <div class="mb-3 flex items-baseline justify-between gap-2">
+          <h3 id="recent-title" class="text-heading">Ventas recientes</h3>
+          <a routerLink="/dashboard/sales-history" class="text-body-sm font-medium text-primary hover:underline">Ver todas →</a>
+        </div>
+        @if (s.recentSales.length) {
+          <ul class="divide-y divide-border">
+            @for (sale of s.recentSales; track sale.id) {
+              <li>
+                <a
+                  routerLink="/dashboard/sales-history"
+                  [queryParams]="{ q: sale.folio }"
+                  class="flex items-center gap-3 rounded-md px-1 py-2.5 hover:bg-muted"
+                >
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-body font-medium">{{ sale.patient || 'Sin paciente' }}</p>
+                    <p class="truncate text-caption text-muted-foreground">
+                      <span class="font-mono">{{ sale.folio }}</span>
+                      @if (sale.date) {
+                        · {{ sale.date | date: 'dd/MM/yyyy' }}
+                      }
+                      @if (sale.seller) {
+                        · {{ sale.seller }}
+                      }
+                    </p>
+                  </div>
+                  <div class="flex flex-col items-end gap-1">
+                    <span class="tabular-nums font-medium">{{ sale.total | money }}</span>
+                    @if (sale.rest > 0) {
+                      <onv-badge tone="warning">Saldo {{ sale.rest | money }}</onv-badge>
+                    } @else {
+                      <onv-badge tone="success">Pagado</onv-badge>
+                    }
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <onv-empty-state [icon]="icons.receivable" title="Aún no hay ventas" text="Cuando registres una venta aparecerá aquí.">
+            <a
+              routerLink="/dashboard/sell"
+              class="inline-flex h-(--onv-control-h) items-center rounded-md bg-primary px-4 text-label text-primary-foreground hover:bg-primary-hover"
+            >
+              Nueva venta
+            </a>
+          </onv-empty-state>
+        }
+      </section>
+
+      <section
+        aria-labelledby="quick-title"
+        class="flex flex-col gap-2 rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm lg:col-span-2"
+      >
+        <h3 id="quick-title" class="mb-1 text-heading">Accesos rápidos</h3>
+        <a
+          routerLink="/dashboard/sell"
+          class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-label text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+        >
+          <svg [lucideIcon]="icons.cart" [size]="16"></svg>
+          Nueva venta
+        </a>
+        <a
+          routerLink="/dashboard/search-patient"
+          class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-label hover:bg-muted"
+        >
+          <svg [lucideIcon]="icons.search" [size]="16"></svg>
+          Buscar paciente
+        </a>
+        <a
+          routerLink="/dashboard/sales-history"
+          class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-label hover:bg-muted"
+        >
+          <svg [lucideIcon]="icons.receivable" [size]="16"></svg>
+          Historial de ventas
+        </a>
+      </section>
+    </div>
+
+    <!-- Egresos del mes (solo roles con acceso a ingresos y egresos) -->
+    @if (s.expensesMonth !== null) {
+      <section
+        aria-labelledby="expenses-title"
+        class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+      >
+        <h3 id="expenses-title" class="mb-3 text-heading">Egresos del mes por categoría</h3>
+        @if (expenseSlices().length) {
+          <onv-donut-chart [slices]="expenseSlices()" ariaLabel="Egresos del mes por categoría" [format]="fmtMoney" />
+        } @else {
+          <onv-empty-state [icon]="icons.expenses" title="Sin egresos este mes" text="Los gastos que registres en Egresos aparecen aquí." />
+        }
+      </section>
+    }
+  } @else if (!store.error()) {
+    <!-- Cargando: mismo esqueleto que las tarjetas reales -->
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3" aria-busy="true" aria-label="Cargando resumen">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+          <onv-skeleton class="h-3 w-28" />
+          <onv-skeleton class="mt-4 h-7 w-36" />
+          <onv-skeleton class="mt-2 h-3 w-24" />
+        </div>
+      }
+    </div>
+    <div class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm">
+      <onv-skeleton class="h-4 w-56" />
+      <onv-skeleton class="mt-4 h-44 w-full" />
+    </div>
+  }
+
+  <!-- Actividad reciente: solo admin o superior -->
+  @if (isAdmin()) {
+    <section
+      aria-labelledby="activity-title"
+      class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+    >
+      <div class="mb-3 flex items-center gap-2">
+        <svg [lucideIcon]="icons.activity" [size]="16" class="text-muted-foreground"></svg>
+        <h3 id="activity-title" class="text-heading">Actividad reciente</h3>
+      </div>
+      @if (store.activityError(); as message) {
+        <p role="alert" class="text-body-sm text-danger-subtle-foreground">{{ message }}</p>
+      } @else if (!store.activityLoaded()) {
+        <div class="flex flex-col gap-3" aria-busy="true">
+          @for (i of [1, 2, 3]; track i) {
+            <onv-skeleton class="h-4 w-full" />
           }
-        </dd>
-      </dl>
+        </div>
+      } @else if (activityLines().length) {
+        <ul class="divide-y divide-border">
+          @for (line of activityLines(); track line.createdAt + line.text) {
+            <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2 text-body-sm">
+              <span class="min-w-0 flex-1">{{ line.text }}</span>
+              <time class="text-caption text-muted-foreground" [attr.datetime]="line.createdAt">
+                {{ line.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+              </time>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="text-body-sm text-muted-foreground">Todavía no hay actividad registrada.</p>
+      }
     </section>
-  </div>
+  }
 </div>
