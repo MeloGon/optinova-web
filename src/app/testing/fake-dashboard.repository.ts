@@ -1,5 +1,5 @@
 import { AppError } from '../core/errors/app-error';
-import { ActivityEntry, DashboardSummary } from '../core/models/dashboard';
+import { ActivityEntry, DashboardPeriod, DashboardSummary, SeriesPoint } from '../core/models/dashboard';
 import { DashboardRepository } from '../core/repositories/dashboard.repository';
 import { Result, err, ok } from '../core/result';
 
@@ -13,15 +13,25 @@ export const emptyWeek = (today = '2026-11-02') => {
   });
 };
 
+/** Serie de 7 puntos con los totales dados (rellena con 0 si faltan). */
+export const fakeSeries = (...totals: number[]): SeriesPoint[] =>
+  emptyWeek().map((d, i) => ({ date: d.date, total: totals[i] ?? 0 }));
+
 /** Resumen como lo recibe un vendedor: sin ingresos, métodos de pago ni egresos. */
 export const fakeSellerSummary = (): DashboardSummary => ({
   role: 'vendedor',
   scope: 'mine',
   branch: 'MEDILENT',
   today: '2026-11-02',
-  kpis: { mySalesTodayCount: 1, mySalesTodayTotal: 500, receivable: 120, patients: 36, incomeToday: null },
+  period: 'today',
+  kpis: {
+    mySales: { count: 1, total: 500, previousTotal: 400, series: fakeSeries(0, 0, 0, 0, 0, 400, 500) },
+    income: null,
+    receivable: 120,
+    patients: 36,
+  },
   salesByDay: emptyWeek(),
-  paymentMethodsToday: null,
+  paymentMethods: null,
   expensesMonth: null,
   recentSales: [
     { id: '1', folio: '100058', date: '2026-11-02', patient: 'ANA PRUEBA', seller: 'Vendedor Prueba', total: 500, rest: 120 },
@@ -34,9 +44,15 @@ export const fakeAdminSummary = (): DashboardSummary => ({
   scope: 'all',
   branch: null,
   today: '2026-11-02',
-  kpis: { mySalesTodayCount: 0, mySalesTodayTotal: 0, receivable: 118259, patients: 62, incomeToday: 3200 },
+  period: 'today',
+  kpis: {
+    mySales: { count: 0, total: 0, previousTotal: 0, series: fakeSeries() },
+    income: { total: 3200, previousTotal: 2000, series: fakeSeries(0, 100, 0, 0, 500, 2000, 3200) },
+    receivable: 118259,
+    patients: 62,
+  },
   salesByDay: emptyWeek().map((d, i) => ({ ...d, count: i, total: i * 100 })),
-  paymentMethodsToday: [
+  paymentMethods: [
     { method: 'efectivo', total: 2800 },
     { method: 'tarjeta', total: 400 },
   ],
@@ -58,11 +74,12 @@ export class FakeDashboardRepository extends DashboardRepository {
   summaryResult: Result<DashboardSummary, AppError> = ok(fakeSellerSummary());
   activityResult: Result<ActivityEntry[], AppError> = ok([]);
 
-  summaryCalls: (string | null)[] = [];
+  /** Cada llamada a `summary`, con la sucursal y el periodo pedidos. */
+  summaryCalls: { branch: string | null; period: DashboardPeriod }[] = [];
   activityCalls = 0;
 
-  async summary(branch: string | null): Promise<Result<DashboardSummary, AppError>> {
-    this.summaryCalls.push(branch);
+  async summary(branch: string | null, period: DashboardPeriod): Promise<Result<DashboardSummary, AppError>> {
+    this.summaryCalls.push({ branch, period });
     return this.summaryResult;
   }
 

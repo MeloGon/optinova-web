@@ -1,4 +1,9 @@
-<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+<!-- Al cambiar de periodo o sucursal el resumen anterior se atenúa hasta que llega el nuevo. -->
+<div
+  class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 transition-opacity duration-(--duration-fast) md:p-6"
+  [class.opacity-60]="store.loading() && store.loaded()"
+  [attr.aria-busy]="store.loading()"
+>
   <!-- Saludo -->
   <header class="flex flex-wrap items-end justify-between gap-3">
     <div>
@@ -12,23 +17,28 @@
       </p>
     </div>
 
-    <!-- Filtro de sucursal: solo admin o superior (el servidor ignora el valor para los demás roles). -->
-    @if (isAdmin()) {
-      <div class="flex w-52 flex-col gap-1.5">
-        <label for="dashboard-branch" class="text-label">Sucursal</label>
-        <select
-          id="dashboard-branch"
-          #branchSelect
-          (change)="onBranch(branchSelect.value)"
-          class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <option value="">Todas</option>
-          @for (b of branches(); track b.value) {
-            <option [value]="b.value">{{ b.label }}{{ b.active ? '' : ' (cerrada)' }}</option>
-          }
-        </select>
-      </div>
-    }
+    <div class="flex flex-wrap items-end gap-3">
+      <!-- Periodo (C-06): hoy, 7 días o mes. Cambia KPIs, gráficas y contra qué se compara. -->
+      <onv-segmented [formControl]="period" label="Periodo del resumen" [options]="periodOptions" />
+
+      <!-- Filtro de sucursal: solo admin o superior (el servidor ignora el valor para los demás roles). -->
+      @if (isAdmin()) {
+        <div class="flex w-52 flex-col gap-1.5">
+          <label for="dashboard-branch" class="text-label">Sucursal</label>
+          <select
+            id="dashboard-branch"
+            #branchSelect
+            (change)="onBranch(branchSelect.value)"
+            class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <option value="">Todas</option>
+            @for (b of branches(); track b.value) {
+              <option [value]="b.value">{{ b.label }}{{ b.active ? '' : ' (cerrada)' }}</option>
+            }
+          </select>
+        </div>
+      }
+    </div>
   </header>
 
   @if (store.error(); as message) {
@@ -50,82 +60,82 @@
   @if (store.summary(); as s) {
     <!-- auto-fit: con 3 tarjetas (vendedor) o 4 (supervisor+) llenan la fila sin dejar huecos. -->
     <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
-      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-body-sm font-medium text-muted-foreground">Mis ventas hoy</span>
-          <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
-            <svg [lucideIcon]="icons.cart" [size]="16"></svg>
-          </span>
-        </div>
-        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.mySalesTodayTotal | money }}</p>
-        <p class="text-caption text-muted-foreground">
-          {{ s.kpis.mySalesTodayCount }} {{ s.kpis.mySalesTodayCount === 1 ? 'venta' : 'ventas' }} a tu nombre
-        </p>
-      </div>
+      <!-- Con variación frente al periodo anterior y tendencia: dependen del periodo elegido. -->
+      <onv-stat-card
+        label="Mis ventas"
+        [value]="s.kpis.mySales.total | money"
+        [icon]="icons.cart"
+        tone="primary"
+        [caption]="sales(s.kpis.mySales.count) + ' a tu nombre ' + periodNoun()"
+        [variation]="mySalesVariation()"
+        [compareLabel]="compareLabel()"
+        [series]="mySalesSeries()"
+        seriesLabel="Tendencia de tus ventas"
+      />
 
-      @if (s.kpis.incomeToday !== null) {
-        <div class="rounded-lg border border-border bg-card p-5 elev-sm">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-body-sm font-medium text-muted-foreground">Ingresos hoy</span>
-            <span class="grid size-8 place-items-center rounded-md bg-success-subtle text-success-subtle-foreground">
-              <svg [lucideIcon]="icons.income" [size]="16"></svg>
-            </span>
-          </div>
-          <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.incomeToday | money }}</p>
-          <p class="text-caption text-muted-foreground">Pagos cobrados hoy</p>
-        </div>
+      @if (s.kpis.income) {
+        <onv-stat-card
+          label="Ingresos"
+          [value]="s.kpis.income.total | money"
+          [icon]="icons.income"
+          tone="success"
+          [caption]="'Pagos cobrados ' + periodNoun()"
+          [variation]="incomeVariation()"
+          [compareLabel]="compareLabel()"
+          [series]="incomeSeries()"
+          seriesLabel="Tendencia de los ingresos"
+        />
       }
 
-      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-body-sm font-medium text-muted-foreground">Saldo por cobrar</span>
-          <span class="grid size-8 place-items-center rounded-md bg-warning-subtle text-warning-subtle-foreground">
-            <svg [lucideIcon]="icons.receivable" [size]="16"></svg>
-          </span>
-        </div>
-        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.receivable | money }}</p>
-        <p class="text-caption text-muted-foreground">En las ventas que ves aquí</p>
-      </div>
+      <!-- Fotos de hoy: no cambian con el periodo, así que no llevan variación. -->
+      <onv-stat-card
+        label="Saldo por cobrar"
+        [value]="s.kpis.receivable | money"
+        [icon]="icons.receivable"
+        tone="warning"
+        caption="En las ventas que ves aquí"
+      />
 
-      <div class="rounded-lg border border-border bg-card p-5 elev-sm">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-body-sm font-medium text-muted-foreground">Pacientes</span>
-          <span class="grid size-8 place-items-center rounded-md bg-info-subtle text-info-subtle-foreground">
-            <svg [lucideIcon]="icons.patients" [size]="16"></svg>
-          </span>
-        </div>
-        <p class="mt-3 text-[24px] font-bold tabular-nums">{{ s.kpis.patients }}</p>
-        <p class="text-caption text-muted-foreground">{{ s.scope === 'all' && !s.branch ? 'En todas las sucursales' : 'En la sucursal' }}</p>
-      </div>
+      <onv-stat-card
+        label="Pacientes"
+        [value]="'' + s.kpis.patients"
+        [icon]="icons.patients"
+        tone="info"
+        [caption]="s.scope === 'all' && !s.branch ? 'En todas las sucursales' : 'En la sucursal'"
+      />
     </div>
 
-    <!-- Ventas de 7 días + métodos de pago de hoy (este último solo si el rol lo ve) -->
+    <!-- Ventas por día + métodos de pago del periodo (este último solo si el rol lo ve) -->
     <div class="grid gap-4 lg:grid-cols-5">
       <section
         aria-labelledby="week-title"
         class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
-        [class.lg:col-span-5]="s.paymentMethodsToday === null"
-        [class.lg:col-span-3]="s.paymentMethodsToday !== null"
+        [class.lg:col-span-5]="s.paymentMethods === null"
+        [class.lg:col-span-3]="s.paymentMethods !== null"
       >
         <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h3 id="week-title" class="text-heading">Ventas de los últimos 7 días</h3>
+          <h3 id="week-title" class="text-heading">{{ chartTitle() }}</h3>
           <p class="text-body-sm text-muted-foreground">
-            {{ weekCount() }} {{ weekCount() === 1 ? 'venta' : 'ventas' }} · {{ weekTotal() | money }}
+            {{ sales(store.chartCount()) }} · {{ store.chartTotal() | money }}
           </p>
         </div>
-        <onv-bar-chart [data]="weekBars()" ariaLabel="Ventas de los últimos 7 días" [format]="fmtMoney" />
+        <onv-bar-chart [data]="chartBars()" [ariaLabel]="chartTitle()" [format]="fmtMoney" />
       </section>
 
-      @if (s.paymentMethodsToday !== null) {
+      @if (s.paymentMethods !== null) {
         <section
           aria-labelledby="methods-title"
           class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm lg:col-span-2"
         >
-          <h3 id="methods-title" class="mb-3 text-heading">Métodos de pago de hoy</h3>
+          <h3 id="methods-title" class="mb-3 text-heading">{{ methodsTitle() }}</h3>
           @if (paymentSlices().length) {
-            <onv-donut-chart [slices]="paymentSlices()" ariaLabel="Pagos de hoy por método" [format]="fmtMoney" />
+            <onv-donut-chart [slices]="paymentSlices()" [ariaLabel]="methodsTitle()" [format]="fmtMoney" />
           } @else {
-            <onv-empty-state [icon]="icons.income" title="Sin pagos hoy" text="Aquí verás cómo te pagan cuando se cobre." />
+            <onv-empty-state
+              [icon]="icons.income"
+              [title]="'Sin pagos ' + periodNoun()"
+              text="Aquí verás cómo te pagan cuando se cobre."
+            />
           }
         </section>
       }

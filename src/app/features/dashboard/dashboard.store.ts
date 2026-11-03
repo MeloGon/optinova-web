@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ActivityEntry, DashboardSummary } from '../../core/models/dashboard';
+import { ActivityEntry, DashboardPeriod, DashboardSummary } from '../../core/models/dashboard';
 import { DashboardRepository } from '../../core/repositories/dashboard.repository';
 
 interface DashboardState {
@@ -30,6 +30,14 @@ export class DashboardStore {
     activityError: null,
   });
 
+  private readonly periodState = signal<DashboardPeriod>('today');
+  private readonly branchState = signal<string | null>(null);
+
+  /** Periodo elegido; empieza en "hoy" (lo primero que mira quien abre el dashboard). */
+  readonly period = this.periodState.asReadonly();
+  /** Sucursal elegida (solo admin o superior; `null` = todas). */
+  readonly branch = this.branchState.asReadonly();
+
   readonly summary = computed(() => this.state().summary);
   readonly loading = computed(() => this.state().loading);
   readonly error = computed(() => this.state().error);
@@ -40,20 +48,23 @@ export class DashboardStore {
   /** Falso hasta que llega la primera respuesta: distingue "cargando" de "error". */
   readonly loaded = computed(() => this.state().summary !== null || this.state().error !== null);
 
-  /** Total vendido en los 7 días (para el título accesible y el encabezado de la gráfica). */
-  readonly weekTotal = computed(
+  /** Ventas y total de lo que muestra la gráfica de barras. */
+  readonly chartTotal = computed(
     () => this.state().summary?.salesByDay.reduce((sum, d) => sum + d.total, 0) ?? 0,
+  );
+  readonly chartCount = computed(
+    () => this.state().summary?.salesByDay.reduce((sum, d) => sum + d.count, 0) ?? 0,
   );
 
   /** Número de la última carga: una respuesta vieja no pisa a una más nueva. */
   private lastRequest = 0;
 
-  /** `branch` solo cambia el resultado para admin o superior; el servidor lo ignora para los demás. */
-  async loadSummary(branch: string | null = null): Promise<void> {
+  /** Pide el resumen con la sucursal y el periodo actuales. */
+  async load(): Promise<void> {
     const request = ++this.lastRequest;
     this.state.update((s) => ({ ...s, loading: true, error: null }));
 
-    const result = await this.repo.summary(branch);
+    const result = await this.repo.summary(this.branchState(), this.periodState());
     if (request !== this.lastRequest) return;
 
     if (result.ok) {
@@ -61,6 +72,19 @@ export class DashboardStore {
     } else {
       this.state.update((s) => ({ ...s, loading: false, error: result.error.message }));
     }
+  }
+
+  async setPeriod(period: DashboardPeriod): Promise<void> {
+    if (period === this.periodState()) return;
+    this.periodState.set(period);
+    await this.load();
+  }
+
+  /** Solo cambia el resultado para admin o superior; el servidor lo ignora para los demás. */
+  async setBranch(branch: string | null): Promise<void> {
+    if (branch === this.branchState()) return;
+    this.branchState.set(branch);
+    await this.load();
   }
 
   /** Solo se llama para admin o superior; el servidor la niega a los demás. */

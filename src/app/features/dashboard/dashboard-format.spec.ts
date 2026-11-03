@@ -1,7 +1,28 @@
 import { fakeActivity } from '../../testing/fake-dashboard.repository';
-import { describeActivity, firstName, greeting, scopeLabel } from './dashboard-format';
+import { describeActivity, firstName, greeting, scopeLabel, variation } from './dashboard-format';
 
 const money = (n: number) => `S/. ${n}`;
+
+describe('variation', () => {
+  it('calcula el cambio porcentual y su dirección', () => {
+    expect(variation(150, 100)).toEqual({ percent: 50, direction: 'up' });
+    expect(variation(75, 100)).toEqual({ percent: 25, direction: 'down' });
+    expect(variation(100, 100)).toEqual({ percent: 0, direction: 'flat' });
+  });
+
+  it('sin base de comparación (anterior en cero) no inventa un porcentaje', () => {
+    expect(variation(500, 0)).toBeNull();
+    expect(variation(0, 0)).toBeNull();
+  });
+
+  it('un cambio menor a medio punto cuenta como igual, no como subida', () => {
+    expect(variation(1002, 1000)).toEqual({ percent: 0, direction: 'flat' });
+  });
+
+  it('redondea al entero más cercano', () => {
+    expect(variation(1129, 1000)).toEqual({ percent: 13, direction: 'up' });
+  });
+});
 
 describe('greeting', () => {
   // 15:00 UTC = 10:00 en Lima (UTC−5)

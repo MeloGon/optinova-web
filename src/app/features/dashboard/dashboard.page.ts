@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   LucideDynamicIcon,
@@ -15,13 +17,27 @@ import {
 } from '@lucide/angular';
 import { SessionStore } from '../../core/auth/session.store';
 import { ConfigService } from '../../core/config/config.service';
+import { DashboardPeriod } from '../../core/models/dashboard';
 import { MoneyPipe, formatMoney } from '../../shared/pipes/money.pipe';
 import { Badge } from '../../shared/ui/badge/badge';
 import { BarChart, BarDatum } from '../../shared/ui/charts/bar-chart';
 import { DonutChart, DonutSlice } from '../../shared/ui/charts/donut-chart';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
+import { Segmented } from '../../shared/ui/segmented/segmented';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
-import { capitalize, describeActivity, firstName, greeting, scopeLabel } from './dashboard-format';
+import { StatCard } from '../../shared/ui/stat-card/stat-card';
+import {
+  COMPARE_LABEL,
+  PERIOD_NOUN,
+  PERIOD_OF,
+  PERIOD_OPTIONS,
+  capitalize,
+  describeActivity,
+  firstName,
+  greeting,
+  scopeLabel,
+  variation,
+} from './dashboard-format';
 import { DashboardStore } from './dashboard.store';
 
 const DAY_LABEL = new Intl.DateTimeFormat('es', { weekday: 'short', day: 'numeric' });
@@ -33,7 +49,20 @@ const DAY_LABEL = new Intl.DateTimeFormat('es', { weekday: 'short', day: 'numeri
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, RouterLink, LucideDynamicIcon, MoneyPipe, Badge, BarChart, DonutChart, EmptyState, Skeleton],
+  imports: [
+    DatePipe,
+    RouterLink,
+    ReactiveFormsModule,
+    LucideDynamicIcon,
+    MoneyPipe,
+    Badge,
+    BarChart,
+    DonutChart,
+    EmptyState,
+    Segmented,
+    Skeleton,
+    StatCard,
+  ],
   providers: [DashboardStore],
   templateUrl: './dashboard.page.html',
 })
@@ -54,6 +83,9 @@ export class DashboardPage {
     warning: LucideTriangleAlert,
   };
 
+  protected readonly periodOptions = PERIOD_OPTIONS;
+  protected readonly period = new FormControl<string>(this.store.period(), { nonNullable: true });
+
   /** Solo admin o superior ve la auditoría y puede filtrar por sucursal (el servidor lo vuelve a comprobar). */
   protected readonly isAdmin = computed(() => this.session.can('admin'));
 
@@ -73,22 +105,46 @@ export class DashboardPage {
 
   protected readonly fmtMoney = (n: number): string => formatMoney(n, this.config().currency);
 
-  protected readonly weekBars = computed<BarDatum[]>(() => {
+  /** Periodo de los datos que se ven (no el elegido): evita rotular mal mientras llega la respuesta. */
+  private readonly shown = computed<DashboardPeriod>(() => this.store.summary()?.period ?? this.store.period());
+
+  protected readonly compareLabel = computed(() => COMPARE_LABEL[this.shown()]);
+  protected readonly periodNoun = computed(() => PERIOD_NOUN[this.shown()]);
+  protected readonly methodsTitle = computed(() => `Métodos de pago ${PERIOD_OF[this.shown()]}`);
+  protected readonly chartTitle = computed(() =>
+    this.shown() === 'month' ? 'Ventas del mes' : 'Ventas de los últimos 7 días',
+  );
+
+  protected readonly mySales = computed(() => this.store.summary()?.kpis.mySales ?? null);
+  protected readonly income = computed(() => this.store.summary()?.kpis.income ?? null);
+
+  protected readonly mySalesVariation = computed(() => {
+    const k = this.mySales();
+    return k ? variation(k.total, k.previousTotal) : null;
+  });
+  protected readonly incomeVariation = computed(() => {
+    const k = this.income();
+    return k ? variation(k.total, k.previousTotal) : null;
+  });
+
+  protected readonly mySalesSeries = computed(() => this.mySales()?.series.map((p) => p.total) ?? []);
+  protected readonly incomeSeries = computed(() => this.income()?.series.map((p) => p.total) ?? []);
+
+  protected readonly chartBars = computed<BarDatum[]>(() => {
     const days = this.store.summary()?.salesByDay ?? [];
     return days.map((d, i) => ({
-      label: i === days.length - 1 ? 'Hoy' : DAY_LABEL.format(new Date(`${d.date}T00:00:00`)),
+      label:
+        i === days.length - 1
+          ? 'Hoy'
+          : days.length > 7
+            ? String(Number(d.date.slice(8)))
+            : DAY_LABEL.format(new Date(`${d.date}T00:00:00`)),
       value: d.total,
     }));
   });
 
-  protected readonly weekTotal = this.store.weekTotal;
-
-  protected readonly weekCount = computed(
-    () => this.store.summary()?.salesByDay.reduce((sum, d) => sum + d.count, 0) ?? 0,
-  );
-
   protected readonly paymentSlices = computed<DonutSlice[]>(() =>
-    (this.store.summary()?.paymentMethodsToday ?? []).map((m) => ({
+    (this.store.summary()?.paymentMethods ?? []).map((m) => ({
       label: this.methodLabel(m.method),
       value: m.total,
     })),
@@ -110,17 +166,25 @@ export class DashboardPage {
   );
 
   constructor() {
-    void this.store.loadSummary(null);
+    void this.store.load();
     if (this.isAdmin()) void this.store.loadActivity();
+
+    this.period.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((value) => void this.store.setPeriod(value as DashboardPeriod));
   }
 
   protected onBranch(value: string): void {
-    void this.store.loadSummary(value || null);
+    void this.store.setBranch(value || null);
   }
 
   protected retry(): void {
-    void this.store.loadSummary(null);
+    void this.store.load();
     if (this.isAdmin()) void this.store.loadActivity();
+  }
+
+  protected sales(count: number): string {
+    return `${count} ${count === 1 ? 'venta' : 'ventas'}`;
   }
 
   private methodLabel(method: string): string {

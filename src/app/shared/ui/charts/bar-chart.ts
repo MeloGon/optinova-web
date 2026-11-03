@@ -20,6 +20,8 @@ const PAD = { top: 12, right: 8, bottom: 28, left: 8 };
 /** Ancho de partida (antes de medir) y mínimo, para que las barras nunca queden ilegibles. */
 const DEFAULT_WIDTH = 560;
 const MIN_WIDTH = 280;
+/** Ancho mínimo que necesita una etiqueta ("vie 30") para no pisar a la vecina. */
+const LABEL_SLOT = 44;
 
 /**
  * Barras verticales dibujadas en SVG (sin librería). Hereda colores de los tokens del tema,
@@ -63,15 +65,17 @@ const MIN_WIDTH = 280;
             rx="4"
             [class]="b.last ? 'fill-chart-1' : 'fill-chart-1/55'"
           />
-          <text
-            [attr.x]="b.x + b.w / 2"
-            [attr.y]="height - 8"
-            text-anchor="middle"
-            class="fill-muted-foreground"
-            font-size="12"
-          >
-            {{ b.label }}
-          </text>
+          @if (b.showLabel) {
+            <text
+              [attr.x]="b.x + b.w / 2"
+              [attr.y]="height - 8"
+              text-anchor="middle"
+              class="fill-muted-foreground"
+              font-size="12"
+            >
+              {{ b.label }}
+            </text>
+          }
         </g>
       }
     </svg>
@@ -129,6 +133,9 @@ export class BarChart {
     const plotH = HEIGHT - PAD.top - PAD.bottom;
     const slot = plotW / Math.max(data.length, 1);
     const w = Math.min(slot * 0.56, 44);
+    // Con muchas barras (un mes) no caben todas las etiquetas: se muestra una de cada `step`,
+    // contando desde la última para que "Hoy" siempre aparezca.
+    const step = Math.max(1, Math.ceil(data.length / Math.max(1, Math.floor(plotW / LABEL_SLOT))));
     return data.map((d, index) => {
       // Una barra con valor > 0 mide al menos 3px para que no desaparezca frente a una enorme.
       const h = d.value > 0 ? Math.max((d.value / this.top()) * plotH, 3) : 0;
@@ -141,6 +148,7 @@ export class BarChart {
         w,
         h,
         last: index === data.length - 1,
+        showLabel: (data.length - 1 - index) % step === 0,
       };
     });
   });

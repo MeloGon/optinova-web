@@ -1,11 +1,24 @@
 import { Injectable, inject } from '@angular/core';
 import { ConfigService } from '../config/config.service';
 import { AppError, toAppError } from '../errors/app-error';
-import { ActivityEntry, DashboardScope, DashboardSummary } from '../models/dashboard';
+import { ActivityEntry, DashboardPeriod, DashboardScope, DashboardSummary, KpiTrend } from '../models/dashboard';
 import { Role } from '../models/role';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 import { Result, err, ok } from '../result';
 import { SUPABASE } from '../supabase/supabase.client';
+
+/** `{ total, previous_total, series }` de un indicador, tal como lo arma la función SQL. */
+interface TrendRow {
+  total: number;
+  previous_total: number;
+  series: { date: string; total: number }[] | null;
+}
+
+const toTrend = (row: TrendRow): KpiTrend => ({
+  total: Number(row.total),
+  previousTotal: Number(row.previous_total),
+  series: (row.series ?? []).map((p) => ({ date: p.date, total: Number(p.total) })),
+});
 
 /** JSON de `dashboard_summary()`, tal como lo arma la función SQL. */
 interface SummaryRow {
@@ -13,15 +26,15 @@ interface SummaryRow {
   scope: DashboardScope;
   branch: string | null;
   today: string;
+  period: DashboardPeriod;
   kpis: {
-    my_sales_today_count: number;
-    my_sales_today_total: number;
+    my_sales: TrendRow & { count: number };
+    income: TrendRow | null;
     receivable: number;
     patients: number;
-    income_today: number | null;
   };
   sales_by_day: { date: string; count: number; total: number }[] | null;
-  payment_methods_today: { method: string; total: number }[] | null;
+  payment_methods: { method: string; total: number }[] | null;
   expenses_month: { category: string; color: string; total: number }[] | null;
   recent_sales: {
     id: string;
@@ -49,19 +62,19 @@ function toSummary(row: SummaryRow): DashboardSummary {
     scope: row.scope,
     branch: row.branch,
     today: row.today,
+    period: row.period,
     kpis: {
-      mySalesTodayCount: Number(row.kpis.my_sales_today_count),
-      mySalesTodayTotal: Number(row.kpis.my_sales_today_total),
+      mySales: { ...toTrend(row.kpis.my_sales), count: Number(row.kpis.my_sales.count) },
+      income: row.kpis.income === null ? null : toTrend(row.kpis.income),
       receivable: Number(row.kpis.receivable),
       patients: Number(row.kpis.patients),
-      incomeToday: row.kpis.income_today === null ? null : Number(row.kpis.income_today),
     },
     salesByDay: (row.sales_by_day ?? []).map((d) => ({
       date: d.date,
       count: Number(d.count),
       total: Number(d.total),
     })),
-    paymentMethodsToday: row.payment_methods_today?.map((m) => ({
+    paymentMethods: row.payment_methods?.map((m) => ({
       method: m.method,
       total: Number(m.total),
     })) ?? null,
@@ -87,11 +100,12 @@ export class SupabaseDashboardRepository extends DashboardRepository {
   private readonly supabase = inject(SUPABASE);
   private readonly config = inject(ConfigService).config;
 
-  async summary(branch: string | null): Promise<Result<DashboardSummary, AppError>> {
-    // `p_tz`: "hoy" y los 7 días se cuentan en la hora de la empresa, no en UTC.
+  async summary(branch: string | null, period: DashboardPeriod): Promise<Result<DashboardSummary, AppError>> {
+    // `p_tz`: "hoy" y los periodos se cuentan en la hora de la empresa, no en UTC.
     const { data, error } = await this.supabase.rpc('dashboard_summary', {
       p_branch: branch,
       p_tz: this.config().timeZone,
+      p_period: period,
     });
     if (error) return err(toAppError(error));
     return ok(toSummary(data as SummaryRow));

@@ -3,6 +3,24 @@ import { Role } from './role';
 /** Alcance con el que el servidor armó el resumen: lo decide el rol, no el cliente. */
 export type DashboardScope = 'mine' | 'branch' | 'all';
 
+/** Ventana de tiempo del resumen: hoy, últimos 7 días o el mes en curso. */
+export type DashboardPeriod = 'today' | 'week' | 'month';
+
+export interface SeriesPoint {
+  /** `yyyy-MM-dd`. */
+  date: string;
+  total: number;
+}
+
+/** Un indicador del periodo con su comparación y su tendencia (mini gráfica). */
+export interface KpiTrend {
+  total: number;
+  /** Lo mismo en el periodo anterior de igual largo (ayer, 7 días previos, mes anterior). */
+  previousTotal: number;
+  /** Un punto por día, del más antiguo a hoy. */
+  series: SeriesPoint[];
+}
+
 export interface DashboardSale {
   id: string;
   folio: string;
@@ -45,17 +63,24 @@ export interface DashboardSummary {
   branch: string | null;
   /** Hoy según la zona horaria de la empresa, `yyyy-MM-dd`. */
   today: string;
+  /** Periodo con el que el servidor armó el resumen. */
+  period: DashboardPeriod;
   kpis: {
-    /** Ventas de hoy que quedaron a nombre del usuario (no cuenta las que salieron de su cuenta a nombre de otro). */
-    mySalesTodayCount: number;
-    mySalesTodayTotal: number;
+    /**
+     * Ventas del periodo que quedaron a nombre del usuario (no cuenta las que salieron de su
+     * cuenta a nombre de otro).
+     */
+    mySales: KpiTrend & { count: number };
+    /** Cobrado en el periodo; null para roles que no ven dinero de la empresa. */
+    income: KpiTrend | null;
+    /** Saldo pendiente de las ventas visibles: es una foto de hoy, no depende del periodo. */
     receivable: number;
     patients: number;
-    incomeToday: number | null;
   };
-  /** Siempre 7 días, del más antiguo a hoy. */
+  /** Un punto por día: los últimos 7 (periodos hoy y 7 días) o el mes en curso. */
   salesByDay: DashboardDay[];
-  paymentMethodsToday: DashboardPaymentMethod[] | null;
+  /** Métodos de pago del periodo; null para roles que no ven ingresos. */
+  paymentMethods: DashboardPaymentMethod[] | null;
   expensesMonth: DashboardExpenseCategory[] | null;
   recentSales: DashboardSale[];
 }

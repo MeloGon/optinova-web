@@ -1,4 +1,50 @@
-import { ActivityEntry, DashboardScope } from '../../core/models/dashboard';
+import { ActivityEntry, DashboardPeriod, DashboardScope } from '../../core/models/dashboard';
+
+export const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
+  { value: 'today', label: 'Hoy' },
+  { value: 'week', label: '7 días' },
+  { value: 'month', label: 'Mes' },
+];
+
+/** Contra qué se compara cada periodo (lo calcula el servidor con la misma regla). */
+export const COMPARE_LABEL: Record<DashboardPeriod, string> = {
+  today: 'vs ayer',
+  week: 'vs los 7 días previos',
+  month: 'vs el mes anterior',
+};
+
+/** Cómo se dice el periodo dentro de una frase ("ventas en 7 días"). */
+export const PERIOD_NOUN: Record<DashboardPeriod, string> = {
+  today: 'hoy',
+  week: 'en 7 días',
+  month: 'en el mes',
+};
+
+/** Cómo se dice el periodo detrás de "de" ("Métodos de pago de hoy"). */
+export const PERIOD_OF: Record<DashboardPeriod, string> = {
+  today: 'de hoy',
+  week: 'de los últimos 7 días',
+  month: 'del mes',
+};
+
+export interface Variation {
+  /** Porcentaje absoluto, redondeado. */
+  percent: number;
+  direction: 'up' | 'down' | 'flat';
+}
+
+/**
+ * Cambio porcentual de `current` frente a `previous`. Sin base de comparación (anterior en 0)
+ * devuelve null: "100% más que cero" no dice nada y se muestra como "sin comparación".
+ */
+export function variation(current: number, previous: number): Variation | null {
+  if (previous <= 0) return null;
+  const percent = Math.round(((current - previous) / previous) * 100);
+  return {
+    percent: Math.abs(percent),
+    direction: percent > 0 ? 'up' : percent < 0 ? 'down' : 'flat',
+  };
+}
 
 /**
  * "Buenos días" (5–11 h) / "Buenas tardes" (12–18 h) / "Buenas noches" (19–4 h), según la hora

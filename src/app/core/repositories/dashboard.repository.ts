@@ -1,5 +1,5 @@
 import { AppError } from '../errors/app-error';
-import { ActivityEntry, DashboardSummary } from '../models/dashboard';
+import { ActivityEntry, DashboardPeriod, DashboardSummary } from '../models/dashboard';
 import { Result } from '../result';
 
 /**
@@ -9,9 +9,9 @@ import { Result } from '../result';
 export abstract class DashboardRepository {
   /**
    * `branch` solo lo respeta el servidor para admin o superior (filtro opcional);
-   * para los demás roles se ignora.
+   * para los demás roles se ignora. `period` define la ventana y contra qué se compara.
    */
-  abstract summary(branch: string | null): Promise<Result<DashboardSummary, AppError>>;
+  abstract summary(branch: string | null, period: DashboardPeriod): Promise<Result<DashboardSummary, AppError>>;
 
   /** Auditoría reciente. El servidor la niega por debajo de admin. */
   abstract activity(limit: number): Promise<Result<ActivityEntry[], AppError>>;
