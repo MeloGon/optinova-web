@@ -1,7 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { ConfigService } from '../config/config.service';
 import { AppError, toAppError } from '../errors/app-error';
-import { ActivityEntry, DashboardPeriod, DashboardScope, DashboardSummary, KpiTrend } from '../models/dashboard';
+import {
+  ActivityEntry,
+  CollectionBucketKey,
+  DashboardDebt,
+  DashboardPeriod,
+  DashboardScope,
+  DashboardSummary,
+  KpiTrend,
+  RankedProduct,
+} from '../models/dashboard';
 import { Role } from '../models/role';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 import { Result, err, ok } from '../result';
@@ -20,6 +29,53 @@ const toTrend = (row: TrendRow): KpiTrend => ({
   series: (row.series ?? []).map((p) => ({ date: p.date, total: Number(p.total) })),
 });
 
+interface RankedRow {
+  name: string | null;
+  units: number;
+  total: number;
+}
+
+const toRanked = (row: RankedRow): RankedProduct => ({
+  name: row.name ?? '',
+  units: Number(row.units),
+  total: Number(row.total),
+});
+
+/** Una venta con saldo dentro de `collections.top`: las columnas de `Sale` más su antigüedad. */
+interface DebtRow {
+  id: string;
+  folio: string;
+  date: string | null;
+  branch: string | null;
+  patient_id: string | null;
+  patient: string | null;
+  seller: string | null;
+  total: number | null;
+  discount: number | null;
+  total_with_discount: number | null;
+  account: number | null;
+  rest: number | null;
+  age_days: number | null;
+}
+
+const toDebt = (row: DebtRow): DashboardDebt => ({
+  sale: {
+    id: row.id,
+    folio: row.folio,
+    branch: row.branch ?? '',
+    date: row.date ?? '',
+    patientName: row.patient ?? '',
+    patientId: row.patient_id,
+    sellerName: row.seller ?? '',
+    total: Number(row.total ?? 0),
+    discount: Number(row.discount ?? 0),
+    totalWithDiscount: Number(row.total_with_discount ?? 0),
+    account: Number(row.account ?? 0),
+    rest: Number(row.rest ?? 0),
+  },
+  days: row.age_days === null ? null : Number(row.age_days),
+});
+
 /** JSON de `dashboard_summary()`, tal como lo arma la función SQL. */
 interface SummaryRow {
   role: Role;
@@ -33,6 +89,29 @@ interface SummaryRow {
     receivable: number;
     patients: number;
   };
+  collections: {
+    total: number;
+    count: number;
+    buckets: { key: CollectionBucketKey; count: number; total: number }[];
+    top: DebtRow[];
+  };
+  low_stock: {
+    count: number;
+    out_count: number;
+    items: {
+      id: string;
+      brand: string | null;
+      model: string | null;
+      color: string | null;
+      description: string | null;
+      code: string | null;
+      branch: string | null;
+      stock: number;
+      price: number | null;
+    }[];
+  };
+  top_products: { brands: RankedRow[]; models: RankedRow[] };
+  seller_ranking: { name: string; count: number; total: number }[] | null;
   sales_by_day: { date: string; count: number; total: number }[] | null;
   payment_methods: { method: string; total: number }[] | null;
   expenses_month: { category: string; color: string; total: number }[] | null;
@@ -69,6 +148,33 @@ function toSummary(row: SummaryRow): DashboardSummary {
       receivable: Number(row.kpis.receivable),
       patients: Number(row.kpis.patients),
     },
+    collections: {
+      total: Number(row.collections.total),
+      count: Number(row.collections.count),
+      buckets: row.collections.buckets.map((b) => ({ key: b.key, count: Number(b.count), total: Number(b.total) })),
+      top: row.collections.top.map(toDebt),
+    },
+    lowStock: {
+      count: Number(row.low_stock.count),
+      outCount: Number(row.low_stock.out_count),
+      items: row.low_stock.items.map((m) => ({
+        id: m.id,
+        brand: m.brand ?? '',
+        model: m.model ?? '',
+        color: m.color ?? '',
+        description: m.description ?? '',
+        code: m.code ?? '',
+        branch: m.branch ?? '',
+        stock: Number(m.stock),
+        price: Number(m.price ?? 0),
+      })),
+    },
+    topProducts: {
+      brands: row.top_products.brands.map(toRanked),
+      models: row.top_products.models.map(toRanked),
+    },
+    sellerRanking:
+      row.seller_ranking?.map((s) => ({ name: s.name, count: Number(s.count), total: Number(s.total) })) ?? null,
     salesByDay: (row.sales_by_day ?? []).map((d) => ({
       date: d.date,
       count: Number(d.count),

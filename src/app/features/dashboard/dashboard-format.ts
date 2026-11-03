@@ -1,4 +1,47 @@
-import { ActivityEntry, DashboardPeriod, DashboardScope } from '../../core/models/dashboard';
+import {
+  ActivityEntry,
+  CollectionBucketKey,
+  DashboardPeriod,
+  DashboardScope,
+  LowStockItem,
+} from '../../core/models/dashboard';
+import { BadgeTone } from '../../shared/ui/badge/badge';
+
+/** "OAKLEY MOD-014"; sin marca ni modelo usa la descripción, y si tampoco hay, "Armazón sin nombre". */
+export function mountName(item: Pick<LowStockItem, 'brand' | 'model' | 'description'>): string {
+  const name = `${item.brand} ${item.model}`.trim();
+  return name || item.description.trim() || 'Armazón sin nombre';
+}
+
+/** "Queda 1" / "Quedan 2": cuántas unidades faltan por agotarse. */
+export function stockLabel(stock: number): string {
+  return stock === 1 ? 'Queda 1' : `Quedan ${stock}`;
+}
+
+/** La última unidad es lo más urgente (danger); con dos hay margen (warning). */
+export function stockTone(stock: number): BadgeTone {
+  return stock <= 1 ? 'danger' : 'warning';
+}
+
+/** Cómo se rotula y se colorea cada tramo de antigüedad de la cobranza. */
+export const BUCKET_META: Record<CollectionBucketKey, { label: string; tone: BadgeTone; bar: string }> = {
+  recent: { label: '0 a 7 días', tone: 'success', bar: 'bg-success' },
+  mid: { label: '8 a 30 días', tone: 'warning', bar: 'bg-warning' },
+  old: { label: 'Más de 30 días', tone: 'danger', bar: 'bg-danger' },
+};
+
+/** "Hoy", "1 día", "12 días"; una venta sin fecha no tiene antigüedad que decir. */
+export function ageLabel(days: number | null): string {
+  if (days === null) return 'Sin fecha';
+  if (days === 0) return 'Hoy';
+  return days === 1 ? '1 día' : `${days} días`;
+}
+
+/** Mismo corte que los tramos de la cobranza: hasta 7 días, hasta 30 y más. Sin fecha cuenta como la más antigua. */
+export function ageTone(days: number | null): BadgeTone {
+  if (days === null || days > 30) return BUCKET_META.old.tone;
+  return days > 7 ? BUCKET_META.mid.tone : BUCKET_META.recent.tone;
+}
 
 export const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
   { value: 'today', label: 'Hoy' },

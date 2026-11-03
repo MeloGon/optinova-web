@@ -6,8 +6,12 @@ import { SessionStore } from './core/auth/session.store';
 import { Role } from './core/models/role';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
+import { PaymentRepository } from './core/repositories/payment.repository';
+import { SaleRepository } from './core/repositories/sale.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
 import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
+import { FakePaymentRepository } from './testing/fake-payment.repository';
+import { FakeSaleRepository } from './testing/fake-sale.repository';
 
 describe('Rutas y guards', () => {
   let repo: FakeAuthRepository;
@@ -22,6 +26,9 @@ describe('Rutas y guards', () => {
         { provide: AuthRepository, useValue: repo },
         // Las redirecciones aterrizan en el dashboard, que pide su resumen al crearse.
         { provide: DashboardRepository, useValue: new FakeDashboardRepository() },
+        // El store del dashboard registra abonos con SalePaymentService, que pide estos dos.
+        { provide: PaymentRepository, useValue: new FakePaymentRepository() },
+        { provide: SaleRepository, useValue: new FakeSaleRepository() },
       ],
     });
     await TestBed.inject(SessionStore).restore();

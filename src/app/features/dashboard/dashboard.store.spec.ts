@@ -1,24 +1,73 @@
 import { TestBed } from '@angular/core/testing';
+import { appError } from '../../core/errors/app-error';
 import { DashboardRepository } from '../../core/repositories/dashboard.repository';
+import { PaymentRepository } from '../../core/repositories/payment.repository';
+import { SaleRepository } from '../../core/repositories/sale.repository';
 import {
   FakeDashboardRepository,
   failWith,
   fakeActivity,
   fakeAdminSummary,
+  fakeCollections,
 } from '../../testing/fake-dashboard.repository';
+import { FakePaymentRepository } from '../../testing/fake-payment.repository';
+import { FakeSaleRepository } from '../../testing/fake-sale.repository';
 import { ok } from '../../core/result';
 import { DashboardStore } from './dashboard.store';
 
 describe('DashboardStore', () => {
   let repo: FakeDashboardRepository;
+  let payments: FakePaymentRepository;
+  let sales: FakeSaleRepository;
   let store: DashboardStore;
 
   beforeEach(() => {
     repo = new FakeDashboardRepository();
+    payments = new FakePaymentRepository();
+    sales = new FakeSaleRepository();
     TestBed.configureTestingModule({
-      providers: [DashboardStore, { provide: DashboardRepository, useValue: repo }],
+      providers: [
+        DashboardStore,
+        { provide: DashboardRepository, useValue: repo },
+        { provide: PaymentRepository, useValue: payments },
+        { provide: SaleRepository, useValue: sales },
+      ],
     });
     store = TestBed.inject(DashboardStore);
+  });
+
+  describe('registrar abono desde la cobranza', () => {
+    const debt = () => fakeCollections().top[0].sale; // saldo 900
+    const draft = () => ({
+      saleId: debt().id,
+      amount: 900,
+      date: '2026-11-03',
+      paymentMethod: 'efectivo',
+      notes: '',
+      type: 'abono_saldo' as const,
+    });
+
+    it('registra el abono y vuelve a pedir el resumen, que ya trae la cobranza al día', async () => {
+      await store.load();
+      const before = repo.summaryCalls.length;
+
+      const result = await store.registerPayment(debt(), draft(), 'user-1');
+
+      expect(result.ok).toBe(true);
+      expect(sales.appliedPayments[0]).toMatchObject({ saleId: debt().id, newRest: 0 });
+      expect(repo.summaryCalls.length).toBe(before + 1);
+    });
+
+    it('si falla el abono no recarga el resumen y devuelve el error', async () => {
+      payments.createFailWith = appError('server', 'sin permisos');
+      await store.load();
+      const before = repo.summaryCalls.length;
+
+      const result = await store.registerPayment(debt(), draft(), 'user-1');
+
+      expect(result.ok).toBe(false);
+      expect(repo.summaryCalls.length).toBe(before);
+    });
   });
 
   it('empieza sin cargar, en "hoy" y sin sucursal', () => {

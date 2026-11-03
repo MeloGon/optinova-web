@@ -1,7 +1,51 @@
 import { fakeActivity } from '../../testing/fake-dashboard.repository';
-import { describeActivity, firstName, greeting, scopeLabel, variation } from './dashboard-format';
+import {
+  ageLabel,
+  ageTone,
+  describeActivity,
+  firstName,
+  greeting,
+  mountName,
+  scopeLabel,
+  stockLabel,
+  stockTone,
+  variation,
+} from './dashboard-format';
 
 const money = (n: number) => `S/. ${n}`;
+
+describe('stock bajo', () => {
+  it('mountName usa marca y modelo, luego la descripción, y no deja el nombre vacío', () => {
+    expect(mountName({ brand: 'OAKLEY', model: 'MOD-014', description: 'x' })).toBe('OAKLEY MOD-014');
+    expect(mountName({ brand: 'OAKLEY', model: '', description: '' })).toBe('OAKLEY');
+    expect(mountName({ brand: '', model: '', description: ' GENERICO ' })).toBe('GENERICO');
+    expect(mountName({ brand: '', model: '', description: '' })).toBe('Armazón sin nombre');
+  });
+
+  it('stockLabel y stockTone: la última unidad es lo más urgente', () => {
+    expect(stockLabel(1)).toBe('Queda 1');
+    expect(stockLabel(2)).toBe('Quedan 2');
+    expect(stockTone(1)).toBe('danger');
+    expect(stockTone(2)).toBe('warning');
+  });
+});
+
+describe('antigüedad de la cobranza', () => {
+  it('ageLabel dice hoy, singular y plural, y no inventa una edad sin fecha', () => {
+    expect(ageLabel(0)).toBe('Hoy');
+    expect(ageLabel(1)).toBe('1 día');
+    expect(ageLabel(45)).toBe('45 días');
+    expect(ageLabel(null)).toBe('Sin fecha');
+  });
+
+  it('ageTone usa los mismos cortes que los tramos (7 y 30 días) y trata la falta de fecha como lo más antiguo', () => {
+    expect(ageTone(7)).toBe('success');
+    expect(ageTone(8)).toBe('warning');
+    expect(ageTone(30)).toBe('warning');
+    expect(ageTone(31)).toBe('danger');
+    expect(ageTone(null)).toBe('danger');
+  });
+});
 
 describe('variation', () => {
   it('calcula el cambio porcentual y su dirección', () => {

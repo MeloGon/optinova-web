@@ -141,6 +141,94 @@
       }
     </div>
 
+    <!-- Cobranza: lo que falta cobrar, por antigüedad, y las ventas con mayor saldo. Foto de hoy. -->
+    <section
+      aria-labelledby="collections-title"
+      class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+    >
+      <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="collections-title" class="text-heading">Cobranza</h3>
+        @if (s.collections.count) {
+          <p class="text-body-sm text-muted-foreground">
+            {{ s.collections.total | money }} por cobrar en {{ sales(s.collections.count) }}
+          </p>
+        }
+      </div>
+
+      @if (s.collections.count) {
+        <div class="grid gap-6 lg:grid-cols-5">
+          <div class="flex flex-col gap-4 lg:col-span-2">
+            <!-- Barra apilada: qué parte del saldo es reciente y cuál es antigua -->
+            <div
+              class="flex h-2.5 overflow-hidden rounded-full bg-muted"
+              role="img"
+              aria-label="Saldo por cobrar según su antigüedad"
+            >
+              @for (b of collectionBuckets(); track b.key) {
+                <div [class]="b.bar" [style.width.%]="b.percent"></div>
+              }
+            </div>
+            <ul class="flex flex-col gap-3">
+              @for (b of collectionBuckets(); track b.key) {
+                <li class="flex items-center gap-3 text-body-sm">
+                  <span [class]="'size-2.5 shrink-0 rounded-full ' + b.bar" aria-hidden="true"></span>
+                  <span class="min-w-0 flex-1">
+                    {{ b.label }}
+                    <span class="text-muted-foreground">· {{ sales(b.count) }}</span>
+                  </span>
+                  <span class="tabular-nums text-muted-foreground">{{ b.percent }}%</span>
+                  <span class="w-24 text-right font-medium tabular-nums">{{ b.total | money }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="lg:col-span-3">
+            <p class="mb-1 text-label text-muted-foreground">Mayores saldos</p>
+            <ul class="divide-y divide-border">
+              @for (debt of s.collections.top; track debt.sale.id) {
+                <li class="flex items-center gap-3 py-2.5">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-body font-medium">{{ debt.sale.patientName || 'Sin paciente' }}</p>
+                    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted-foreground">
+                      <span class="font-mono">{{ debt.sale.folio }}</span>
+                      <onv-badge [tone]="ageTone(debt.days)">{{ ageLabel(debt.days) }}</onv-badge>
+                    </p>
+                  </div>
+                  <span class="font-medium tabular-nums">{{ debt.sale.rest | money }}</span>
+                  <button
+                    type="button"
+                    (click)="registerPayment(debt.sale)"
+                    [attr.aria-label]="'Cobrar a ' + debt.sale.patientName"
+                    class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border-strong px-3 text-label hover:bg-muted"
+                  >
+                    <svg [lucideIcon]="icons.income" [size]="14"></svg>
+                    Cobrar
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (s.collections.count > s.collections.top.length) {
+              <!-- Abre Historial ya filtrado por "Con saldo" y, si el admin eligió una sucursal, por esa sucursal. -->
+              <a
+                routerLink="/dashboard/sales-history"
+                [queryParams]="{ status: 'balance', branch: s.scope === 'all' ? s.branch : null }"
+                class="mt-2 inline-block text-body-sm font-medium text-primary hover:underline"
+              >
+                Ver las {{ s.collections.count }} ventas con saldo →
+              </a>
+            }
+          </div>
+        </div>
+      } @else {
+        <onv-empty-state
+          [icon]="icons.receivable"
+          title="Sin saldos por cobrar"
+          text="Todas las ventas que ves aquí están pagadas."
+        />
+      }
+    </section>
+
     <!-- Ventas recientes + accesos rápidos -->
     <div class="grid gap-4 lg:grid-cols-5">
       <section
@@ -196,9 +284,11 @@
         }
       </section>
 
+      <!-- Columna derecha: accesos rápidos y, debajo, el stock por reponer -->
+      <div class="flex flex-col gap-4 lg:col-span-2">
       <section
         aria-labelledby="quick-title"
-        class="flex flex-col gap-2 rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm lg:col-span-2"
+        class="flex flex-col gap-2 rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
       >
         <h3 id="quick-title" class="mb-1 text-heading">Accesos rápidos</h3>
         <a
@@ -223,6 +313,97 @@
           Historial de ventas
         </a>
       </section>
+
+      <!-- Stock bajo: armazones con 1 o 2 unidades; los agotados solo se cuentan. Inventario de tu sucursal. -->
+      <section
+        aria-labelledby="stock-title"
+        class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+      >
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h3 id="stock-title" class="text-heading">Stock bajo</h3>
+          @if (s.lowStock.outCount) {
+            <onv-badge tone="neutral">{{ s.lowStock.outCount }} {{ s.lowStock.outCount === 1 ? 'agotado' : 'agotados' }}</onv-badge>
+          }
+        </div>
+        @if (s.lowStock.items.length) {
+          <ul class="divide-y divide-border">
+            @for (item of s.lowStock.items; track item.id) {
+              <li class="flex items-center gap-3 py-2">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-body font-medium">{{ mountName(item) }}</p>
+                  <p class="truncate text-caption text-muted-foreground">
+                    @if (item.color) {
+                      {{ item.color }}
+                    }
+                    @if (item.code) {
+                      · <span class="font-mono">{{ item.code }}</span>
+                    }
+                    @if (s.scope === 'all' && item.branch) {
+                      · {{ item.branch }}
+                    }
+                  </p>
+                </div>
+                <onv-badge [tone]="stockTone(item.stock)">{{ stockLabel(item.stock) }}</onv-badge>
+              </li>
+            }
+          </ul>
+          @if (s.lowStock.count > s.lowStock.items.length) {
+            <p class="mt-2 text-caption text-muted-foreground">
+              y {{ s.lowStock.count - s.lowStock.items.length }} más con 1 o 2 unidades
+            </p>
+          }
+        } @else {
+          <onv-empty-state
+            [icon]="icons.stock"
+            title="Stock al día"
+            text="Ningún armazón tiene solo 1 o 2 unidades."
+          />
+        }
+      </section>
+      </div>
+    </div>
+
+    <!-- Más vendido del mes + ranking de vendedores (este último solo si el rol lo ve). Miran el mes en curso. -->
+    <div class="grid gap-4" [class.lg:grid-cols-2]="s.sellerRanking !== null">
+      <section
+        aria-labelledby="top-title"
+        class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+      >
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 id="top-title" class="text-heading">Más vendido de {{ monthName() }}</h3>
+          <onv-segmented [formControl]="topMode" label="Ver por armazón o por marca" [options]="topOptions" />
+        </div>
+        @if (topItems().length) {
+          <onv-rank-bars
+            [items]="topItems()"
+            [ariaLabel]="topMode.value === 'brands' ? 'Marcas más vendidas del mes' : 'Armazones más vendidos del mes'"
+          />
+        } @else {
+          <onv-empty-state
+            [icon]="icons.stock"
+            title="Aún no hay armazones vendidos"
+            text="Cuando se venda un armazón este mes, aparecerá aquí."
+          />
+        }
+      </section>
+
+      @if (s.sellerRanking !== null) {
+        <section
+          aria-labelledby="ranking-title"
+          class="rounded-lg border border-border bg-card p-(--onv-card-p) elev-sm"
+        >
+          <h3 id="ranking-title" class="mb-4 text-heading">Vendedores de {{ monthName() }}</h3>
+          @if (sellerItems().length) {
+            <onv-rank-bars [items]="sellerItems()" [avatars]="true" ariaLabel="Vendedores con más ventas del mes" />
+          } @else {
+            <onv-empty-state
+              [icon]="icons.cart"
+              title="Aún no hay ventas este mes"
+              text="El ranking aparece con la primera venta del mes."
+            />
+          }
+        </section>
+      }
     </div>
 
     <!-- Egresos del mes (solo roles con acceso a ingresos y egresos) -->

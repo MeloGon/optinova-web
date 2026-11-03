@@ -1,6 +1,7 @@
+import { Dialog } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -8,6 +9,7 @@ import {
   LucideHandCoins,
   LucideReceipt,
   LucideRefreshCw,
+  LucideScanEye,
   LucideSearch,
   LucideShieldCheck,
   LucideShoppingCart,
@@ -18,20 +20,34 @@ import {
 import { SessionStore } from '../../core/auth/session.store';
 import { ConfigService } from '../../core/config/config.service';
 import { DashboardPeriod } from '../../core/models/dashboard';
+import { Sale } from '../../core/models/sale';
 import { MoneyPipe, formatMoney } from '../../shared/pipes/money.pipe';
 import { Badge } from '../../shared/ui/badge/badge';
 import { BarChart, BarDatum } from '../../shared/ui/charts/bar-chart';
 import { DonutChart, DonutSlice } from '../../shared/ui/charts/donut-chart';
+import { RankBars, RankItem } from '../../shared/ui/charts/rank-bars';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { Segmented } from '../../shared/ui/segmented/segmented';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
 import { StatCard } from '../../shared/ui/stat-card/stat-card';
+import { ToastService } from '../../shared/ui/toast/toast.service';
 import {
+  RegisterPaymentDialog,
+  RegisterPaymentDialogData,
+  REGISTER_PAYMENT_TITLE_ID,
+} from '../sales-history/components/register-payment-dialog';
+import {
+  BUCKET_META,
   COMPARE_LABEL,
   PERIOD_NOUN,
   PERIOD_OF,
   PERIOD_OPTIONS,
+  ageLabel,
+  ageTone,
   capitalize,
+  mountName,
+  stockLabel,
+  stockTone,
   describeActivity,
   firstName,
   greeting,
@@ -58,6 +74,7 @@ const DAY_LABEL = new Intl.DateTimeFormat('es', { weekday: 'short', day: 'numeri
     Badge,
     BarChart,
     DonutChart,
+    RankBars,
     EmptyState,
     Segmented,
     Skeleton,
@@ -70,6 +87,14 @@ export class DashboardPage {
   protected readonly store = inject(DashboardStore);
   private readonly session = inject(SessionStore);
   private readonly config = inject(ConfigService).config;
+  private readonly dialog = inject(Dialog);
+  private readonly toast = inject(ToastService);
+
+  protected readonly ageLabel = ageLabel;
+  protected readonly ageTone = ageTone;
+  protected readonly mountName = mountName;
+  protected readonly stockLabel = stockLabel;
+  protected readonly stockTone = stockTone;
 
   protected readonly icons = {
     cart: LucideShoppingCart,
@@ -77,6 +102,7 @@ export class DashboardPage {
     patients: LucideUsers,
     receivable: LucideReceipt,
     expenses: LucideWallet,
+    stock: LucideScanEye,
     search: LucideSearch,
     activity: LucideShieldCheck,
     retry: LucideRefreshCw,
@@ -85,6 +111,14 @@ export class DashboardPage {
 
   protected readonly periodOptions = PERIOD_OPTIONS;
   protected readonly period = new FormControl<string>(this.store.period(), { nonNullable: true });
+
+  /** Qué lista del "más vendido" se ve: armazones (marca + modelo) o solo marcas. Solo cambia la vista. */
+  protected readonly topOptions = [
+    { value: 'models', label: 'Armazones' },
+    { value: 'brands', label: 'Marcas' },
+  ];
+  protected readonly topMode = new FormControl<string>('models', { nonNullable: true });
+  private readonly topModeValue = toSignal(this.topMode.valueChanges, { initialValue: this.topMode.value });
 
   /** Solo admin o superior ve la auditoría y puede filtrar por sucursal (el servidor lo vuelve a comprobar). */
   protected readonly isAdmin = computed(() => this.session.can('admin'));
@@ -143,6 +177,43 @@ export class DashboardPage {
     }));
   });
 
+  /** Los tres tramos de antigüedad con su rótulo, color y qué parte del saldo total son. */
+  protected readonly collectionBuckets = computed(() => {
+    const c = this.store.summary()?.collections;
+    if (!c) return [];
+    return c.buckets.map((b) => ({
+      ...b,
+      ...BUCKET_META[b.key],
+      percent: c.total > 0 ? Math.round((b.total / c.total) * 100) : 0,
+    }));
+  });
+
+  /** "noviembre": el top y el ranking miran el mes en curso, sea cual sea el periodo elegido. */
+  protected readonly monthName = computed(() => {
+    const today = this.store.summary()?.today;
+    return today ? new Intl.DateTimeFormat('es', { month: 'long' }).format(new Date(`${today}T00:00:00`)) : '';
+  });
+
+  protected readonly topItems = computed<RankItem[]>(() => {
+    const top = this.store.summary()?.topProducts;
+    const list = (this.topModeValue() === 'brands' ? top?.brands : top?.models) ?? [];
+    return list.map((p) => ({
+      label: p.name,
+      value: p.units,
+      valueLabel: `${p.units} ${p.units === 1 ? 'unidad' : 'unidades'}`,
+      hint: this.fmtMoney(p.total),
+    }));
+  });
+
+  protected readonly sellerItems = computed<RankItem[]>(() =>
+    (this.store.summary()?.sellerRanking ?? []).map((s) => ({
+      label: s.name,
+      value: s.total,
+      valueLabel: this.fmtMoney(s.total),
+      hint: this.sales(s.count),
+    })),
+  );
+
   protected readonly paymentSlices = computed<DonutSlice[]>(() =>
     (this.store.summary()?.paymentMethods ?? []).map((m) => ({
       label: this.methodLabel(m.method),
@@ -181,6 +252,24 @@ export class DashboardPage {
   protected retry(): void {
     void this.store.load();
     if (this.isAdmin()) void this.store.loadActivity();
+  }
+
+  /** "Cobrar" en la cobranza: abre el mismo diálogo de abono de Historial de ventas. */
+  protected registerPayment(sale: Sale): void {
+    const data: RegisterPaymentDialogData = {
+      sale,
+      save: (draft) => this.store.registerPayment(sale, draft, this.session.profile()?.id ?? ''),
+    };
+    const ref = this.dialog.open<boolean>(RegisterPaymentDialog, {
+      data,
+      role: 'dialog',
+      ariaLabelledBy: REGISTER_PAYMENT_TITLE_ID,
+      disableClose: true,
+      backdropClass: ['bg-overlay'],
+    });
+    ref.closed.subscribe((saved) => {
+      if (saved) this.toast.show({ tone: 'success', title: 'Abono registrado', text: sale.patientName });
+    });
   }
 
   protected sales(count: number): string {

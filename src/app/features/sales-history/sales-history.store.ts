@@ -6,6 +6,7 @@ import { SaleItem } from '../../core/models/sale-item';
 import { NewPayment, PaymentRepository } from '../../core/repositories/payment.repository';
 import { SaleRepository, SaleSearch, SaleStatusCounts } from '../../core/repositories/sale.repository';
 import { Result } from '../../core/result';
+import { SalePaymentService } from '../../core/services/sale-payment.service';
 
 const EMPTY_COUNTS: SaleStatusCounts = { all: 0, balance: 0, paid: 0 };
 
@@ -29,6 +30,7 @@ interface SalesHistoryState {
 export class SalesHistoryStore {
   private readonly saleRepo = inject(SaleRepository);
   private readonly paymentRepo = inject(PaymentRepository);
+  private readonly salePayments = inject(SalePaymentService);
 
   private readonly state = signal<SalesHistoryState>({
     items: [],
@@ -91,17 +93,11 @@ export class SalesHistoryStore {
   }
 
   /**
-   * Inserta el abono y actualiza el saldo de la venta (= registerPayment de Flutter: dos pasos,
-   * uno por repositorio). Si el segundo paso falla, el pago ya quedó insertado: igual que Flutter,
-   * no se revierte (es una cuenta por cobrar real, no conviene perder el registro del abono).
+   * Inserta el abono y actualiza el saldo de la venta (los dos pasos viven en `SalePaymentService`,
+   * compartido con la ficha del paciente y el Dashboard) y vuelve a pedir la lista.
    */
   async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
-    const inserted = await this.paymentRepo.create(payment, registeredById);
-    if (!inserted.ok) return inserted;
-
-    const newAccount = sale.account + payment.amount;
-    const newRest = Math.max(sale.totalWithDiscount - newAccount, 0);
-    const result = await this.saleRepo.applyPayment(sale.id, newAccount, newRest, payment.date);
+    const result = await this.salePayments.register(sale, payment, registeredById);
     if (result.ok && this.lastSearch) await this.load(this.lastSearch);
     return result;
   }

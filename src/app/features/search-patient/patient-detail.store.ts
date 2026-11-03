@@ -16,6 +16,7 @@ import { PatientRepository } from '../../core/repositories/patient.repository';
 import { NewReview, ReviewRepository } from '../../core/repositories/review.repository';
 import { SaleRepository } from '../../core/repositories/sale.repository';
 import { Result } from '../../core/result';
+import { SalePaymentService } from '../../core/services/sale-payment.service';
 
 interface PatientState {
   patient: Patient | null;
@@ -42,6 +43,7 @@ export class PatientDetailStore {
   private readonly reviewRepo = inject(ReviewRepository);
   private readonly saleRepo = inject(SaleRepository);
   private readonly paymentRepo = inject(PaymentRepository);
+  private readonly salePayments = inject(SalePaymentService);
   private readonly lifecycleRepo = inject(PatientLifecycleRepository);
 
   private readonly patientState = signal<PatientState>({
@@ -120,17 +122,12 @@ export class PatientDetailStore {
   }
 
   /**
-   * = `SalesHistoryStore.registerPayment`: dos pasos, no atómico (mismo criterio ya aceptado ahí).
+   * Delega en `SalePaymentService` (dos pasos, no atómico: criterio ya aceptado en Historial de ventas).
    * No refresca Ventas/Pagos por su cuenta: quien llama ya sabe con qué página/paciente hacerlo
    * (ver `PatientDetailPage.registerPayment`).
    */
   async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
-    const inserted = await this.paymentRepo.create(payment, registeredById);
-    if (!inserted.ok) return inserted;
-
-    const newAccount = sale.account + payment.amount;
-    const newRest = Math.max(sale.totalWithDiscount - newAccount, 0);
-    return this.saleRepo.applyPayment(sale.id, newAccount, newRest, payment.date);
+    return this.salePayments.register(sale, payment, registeredById);
   }
 
   async loadPayments(patientId: string): Promise<void> {

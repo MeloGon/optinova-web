@@ -1,6 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AppError } from '../../core/errors/app-error';
 import { ActivityEntry, DashboardPeriod, DashboardSummary } from '../../core/models/dashboard';
+import { Sale } from '../../core/models/sale';
 import { DashboardRepository } from '../../core/repositories/dashboard.repository';
+import { NewPayment } from '../../core/repositories/payment.repository';
+import { Result } from '../../core/result';
+import { SalePaymentService } from '../../core/services/sale-payment.service';
 
 interface DashboardState {
   summary: DashboardSummary | null;
@@ -20,6 +25,7 @@ interface DashboardState {
 @Injectable()
 export class DashboardStore {
   private readonly repo = inject(DashboardRepository);
+  private readonly salePayments = inject(SalePaymentService);
 
   private readonly state = signal<DashboardState>({
     summary: null,
@@ -85,6 +91,17 @@ export class DashboardStore {
     if (branch === this.branchState()) return;
     this.branchState.set(branch);
     await this.load();
+  }
+
+  /**
+   * Registra un abono sobre una venta con saldo (los dos pasos viven en `SalePaymentService`) y, si
+   * salió bien, vuelve a pedir el resumen: cambian la cobranza, el saldo por cobrar y los ingresos.
+   * El error lo muestra quien llama (el diálogo de abono).
+   */
+  async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
+    const result = await this.salePayments.register(sale, payment, registeredById);
+    if (result.ok) await this.load();
+    return result;
   }
 
   /** Solo se llama para admin o superior; el servidor la niega a los demás. */
