@@ -1,0 +1,78 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">{{ isEditing ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+  </div>
+
+  <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
+    <onv-field label="Nombre" inputId="user-name" [required]="true" [errors]="{ required: 'Ingresa el nombre.' }">
+      <input id="user-name" onvInput formControlName="name" placeholder="Ej. Ana Pérez" />
+    </onv-field>
+
+    @if (!isEditing) {
+      <onv-field
+        label="Correo"
+        inputId="user-email"
+        [required]="true"
+        [errors]="{ required: 'Ingresa el correo.', email: 'Correo inválido.' }"
+      >
+        <input id="user-email" type="email" onvInput formControlName="email" placeholder="correo@optinova.test" />
+      </onv-field>
+
+      <onv-field
+        label="Contraseña"
+        inputId="user-password"
+        [required]="true"
+        [errors]="{ required: 'Ingresa una contraseña.', minlength: 'Debe tener al menos 6 caracteres.' }"
+      >
+        <input id="user-password" type="password" onvInput formControlName="password" placeholder="••••••••" />
+      </onv-field>
+    }
+
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Sucursal" inputId="user-branch">
+        <select id="user-branch" onvInput formControlName="branch">
+          <option value="">Sin sucursal</option>
+          @for (branch of branches; track branch.value) {
+            <option [value]="branch.value">{{ branch.label }}</option>
+          }
+        </select>
+      </onv-field>
+      <onv-field label="Rol" inputId="user-role" [hint]="disableRoleChange ? 'No puedes cambiar tu propio rol.' : undefined">
+        <select id="user-role" onvInput formControlName="role">
+          @for (r of roles; track r.value) {
+            <option [value]="r.value">{{ r.label }}</option>
+          }
+        </select>
+      </onv-field>
+    </div>
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ isEditing ? 'Guardar cambios' : 'Crear usuario' }}
+      }
+    </button>
+  </div>
+</form>
