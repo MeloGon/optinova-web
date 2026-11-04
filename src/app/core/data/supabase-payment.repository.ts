@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AppError, toAppError } from '../errors/app-error';
 import { Payment } from '../models/payment';
-import { NewPayment, PaymentRepository } from '../repositories/payment.repository';
+import { NewPayment, PaymentDateRangeSearch, PaymentReportEntry, PaymentRepository } from '../repositories/payment.repository';
 import { Result, err, ok } from '../result';
 import { SUPABASE } from '../supabase/supabase.client';
 
@@ -17,7 +17,13 @@ interface PaymentRow {
   perfiles: { nombre: string } | null;
 }
 
+/** Fila con la venta embebida, para el reporte de ingresos y egresos. */
+interface PaymentReportRow extends PaymentRow {
+  ventas: { paciente_nombre: string | null; folio: string | null; sucursal: string | null; total_con_descuento: number | null; resta: number | null };
+}
+
 const COLUMNS = 'id, id_remision, monto, fecha_pago, metodo_pago, notas, tipo_pago, perfiles(nombre)';
+const REPORT_COLUMNS = `${COLUMNS}, ventas!inner(paciente_nombre, folio, sucursal, total_con_descuento, resta)`;
 
 function toPayment(row: PaymentRow): Payment {
   return {
@@ -29,6 +35,17 @@ function toPayment(row: PaymentRow): Payment {
     registeredBy: row.perfiles?.nombre ?? '',
     notes: row.notas ?? '',
     type: row.tipo_pago === 'nueva_venta' ? 'nueva_venta' : 'abono_saldo',
+  };
+}
+
+function toReportEntry(row: PaymentReportRow): PaymentReportEntry {
+  return {
+    ...toPayment(row),
+    patientName: row.ventas.paciente_nombre ?? '',
+    folio: row.ventas.folio ?? '',
+    branch: row.ventas.sucursal ?? '',
+    saleTotal: Number(row.ventas.total_con_descuento ?? 0),
+    saleRest: Number(row.ventas.resta ?? 0),
   };
 }
 
@@ -66,6 +83,17 @@ export class SupabasePaymentRepository extends PaymentRepository {
 
     if (error) return err(toAppError(error));
     return ok(data.map(toPayment));
+  }
+
+  async listByDateRange({ from, to, branch }: PaymentDateRangeSearch): Promise<Result<PaymentReportEntry[], AppError>> {
+    let request = this.supabase.from('pagos').select(REPORT_COLUMNS).gte('fecha_pago', from).lte('fecha_pago', to);
+    if (branch) request = request.eq('ventas.sucursal', branch);
+
+    const { data, error } = await request
+      .order('fecha_pago', { ascending: false })
+      .overrideTypes<PaymentReportRow[], { merge: false }>();
+    if (error) return err(toAppError(error));
+    return ok(data.map(toReportEntry));
   }
 
   async create(payment: NewPayment, registeredById: string): Promise<Result<Payment, AppError>> {

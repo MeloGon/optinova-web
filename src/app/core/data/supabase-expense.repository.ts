@@ -4,12 +4,14 @@ import { Expense } from '../models/expense';
 import { ExpenseCategory } from '../models/expense-category';
 import { Page } from '../models/page';
 import {
+  ExpenseDateRangeSearch,
   ExpenseRepository,
   ExpenseSearch,
   NewExpense,
   NewExpenseCategory,
 } from '../repositories/expense.repository';
 import { Result, err, ok } from '../result';
+import { escapeLike } from '../supabase/escape-like';
 import { SUPABASE } from '../supabase/supabase.client';
 
 /** Fila de `egresos` con su categoría unida, tal como viene de la DB. */
@@ -70,13 +72,6 @@ function toCategory(row: CategoryRow): ExpenseCategory {
   return { id: row.id, name: row.nombre, color: row.color };
 }
 
-/**
- * `%` y `_` son comodines de `ilike`: se escriben literales (= escapeLike de patient.repository).
- */
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, '\\\\$&');
-}
-
 @Injectable()
 export class SupabaseExpenseRepository extends ExpenseRepository {
   private readonly supabase = inject(SUPABASE);
@@ -101,6 +96,15 @@ export class SupabaseExpenseRepository extends ExpenseRepository {
 
     if (error) return err(toAppError(error));
     return ok({ items: data.map(toExpense), total: count ?? 0 });
+  }
+
+  async listByDateRange({ from, to, branch }: ExpenseDateRangeSearch): Promise<Result<Expense[], AppError>> {
+    let request = this.supabase.from('egresos').select(COLUMNS).gte('fecha', from).lte('fecha', to);
+    if (branch) request = request.eq('sucursal', branch);
+
+    const { data, error } = await request.order('fecha', { ascending: false }).overrideTypes<ExpenseRow[], { merge: false }>();
+    if (error) return err(toAppError(error));
+    return ok(data.map(toExpense));
   }
 
   async create(expense: NewExpense, registeredBy: string): Promise<Result<Expense, AppError>> {

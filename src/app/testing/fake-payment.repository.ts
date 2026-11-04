@@ -1,7 +1,7 @@
 import { AppError } from '../core/errors/app-error';
 import { Payment } from '../core/models/payment';
 import { Sale } from '../core/models/sale';
-import { NewPayment, PaymentRepository } from '../core/repositories/payment.repository';
+import { NewPayment, PaymentDateRangeSearch, PaymentReportEntry, PaymentRepository } from '../core/repositories/payment.repository';
 import { Result, err, ok } from '../core/result';
 
 export const fakePayment = (id: number, saleId: string, amount = 50): Payment => ({
@@ -25,6 +25,7 @@ export class FakePaymentRepository extends PaymentRepository {
 
   created: { payment: NewPayment; registeredById: string }[] = [];
   createFailWith: AppError | null = null;
+  listByDateRangeFailWith: AppError | null = null;
   private nextId = 1000;
 
   async listBySale(saleId: string): Promise<Result<Payment[], AppError>> {
@@ -34,6 +35,28 @@ export class FakePaymentRepository extends PaymentRepository {
   async listByPatient(patientId: string): Promise<Result<Payment[], AppError>> {
     const saleIds = (this.saleRepo?.sales ?? []).filter((s) => s.patientId === patientId).map((s) => s.id);
     return ok(this.payments.filter((p) => saleIds.includes(p.saleId)));
+  }
+
+  async listByDateRange({ from, to, branch }: PaymentDateRangeSearch): Promise<Result<PaymentReportEntry[], AppError>> {
+    if (this.listByDateRangeFailWith) return err(this.listByDateRangeFailWith);
+    const sales = this.saleRepo?.sales ?? [];
+    const entries = this.payments
+      .filter((p) => p.date >= from && p.date <= to)
+      .map((p): PaymentReportEntry | null => {
+        const sale = sales.find((s) => s.id === p.saleId);
+        if (!sale) return null;
+        if (branch && sale.branch !== branch) return null;
+        return {
+          ...p,
+          patientName: sale.patientName,
+          folio: sale.folio,
+          branch: sale.branch,
+          saleTotal: sale.totalWithDiscount,
+          saleRest: sale.rest,
+        };
+      })
+      .filter((e): e is PaymentReportEntry => e !== null);
+    return ok(entries);
   }
 
   async create(payment: NewPayment, registeredById: string): Promise<Result<Payment, AppError>> {

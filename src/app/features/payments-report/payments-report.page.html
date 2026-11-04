@@ -1,0 +1,295 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Filtros -->
+  <div class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 elev-sm">
+    <div class="flex flex-col gap-1.5">
+      <span class="text-label">Período</span>
+      <onv-segmented [options]="periodOptions" label="Período" [formControl]="periodControl" />
+    </div>
+
+    @switch (periodType()) {
+      @case ('day') {
+        <div class="w-44">
+          <onv-date-picker label="Día" inputId="report-day" [formControl]="dayControl" />
+        </div>
+      }
+      @case ('month') {
+        <div class="flex flex-col gap-1.5">
+          <label for="report-month" class="text-label">Mes</label>
+          <select
+            id="report-month"
+            class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+            (change)="setMonth($any($event.target).value)"
+          >
+            @for (m of monthOptions; track m.value) {
+              <option [value]="m.value" [selected]="m.value === selectedMonth()">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label for="report-year" class="text-label">Año</label>
+          <select
+            id="report-year"
+            class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+            (change)="setYear($any($event.target).value)"
+          >
+            @for (y of yearOptions; track y) {
+              <option [value]="y" [selected]="y === selectedYearNumber()">{{ y }}</option>
+            }
+          </select>
+        </div>
+      }
+      @case ('range') {
+        <div class="w-44">
+          <onv-date-picker label="Desde" inputId="report-range-start" [formControl]="rangeStartControl" />
+        </div>
+        <div class="w-44">
+          <onv-date-picker label="Hasta" inputId="report-range-end" [formControl]="rangeEndControl" [minDate]="rangeFrom()" />
+        </div>
+      }
+    }
+
+    <div class="flex w-56 flex-col gap-1.5">
+      <label for="report-branch" class="text-label">Sucursal</label>
+      @if (scopedBranch(); as branch) {
+        <div id="report-branch" class="flex h-(--onv-control-h) items-center rounded-md border border-input bg-muted px-3 text-body text-muted-foreground">
+          {{ branch }}
+        </div>
+      } @else {
+        <select
+          id="report-branch"
+          class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          (change)="setBranch($any($event.target).value)"
+        >
+          <option value="" [selected]="!search().branch">Todas las sucursales</option>
+          @for (b of branches(); track b.value) {
+            <option [value]="b.value" [selected]="b.value === search().branch">{{ b.label }}</option>
+          }
+        </select>
+      }
+    </div>
+  </div>
+
+  <!-- KPI del período -->
+  <div class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Ingresos</span>
+        <span class="grid size-8 place-items-center rounded-md bg-success-subtle text-success-subtle-foreground">
+          <svg [lucideIcon]="icons.income" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.totals().income | money }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Egresos</span>
+        <span class="grid size-8 place-items-center rounded-md bg-danger-subtle text-danger-subtle-foreground">
+          <svg [lucideIcon]="icons.expenses" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.totals().expenses | money }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Neto</span>
+        <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
+          <svg [lucideIcon]="icons.net" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums" [class.text-danger]="store.totals().net < 0">{{ store.totals().net | money }}</p>
+    </div>
+  </div>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (!store.loaded() && store.loading()) {
+    <div class="flex items-center justify-center rounded-lg border border-border bg-card p-10 elev-sm">
+      <span class="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" aria-hidden="true"></span>
+    </div>
+  } @else if (store.loaded()) {
+    <!-- Ingresos por nuevas ventas -->
+    <section class="flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-heading">Ingresos por nuevas ventas</h2>
+        <span class="text-[18px] font-bold tabular-nums text-success">{{ store.totals().newSales | money }}</span>
+      </div>
+      @if (store.newSalesByMethod().length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (m of store.newSalesByMethod(); track m.key) {
+            <onv-badge tone="success">{{ m.label }}: {{ m.amount | money }}</onv-badge>
+          }
+        </div>
+      }
+      @if (store.newSales().length === 0) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.receipt" title="Sin nuevas ventas" text="No hay ingresos por nuevas ventas en este período." />
+        </div>
+      } @else {
+        <onv-table-card>
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Paciente</th>
+                <th scope="col">Folio</th>
+                <th scope="col">Método</th>
+                <th scope="col" class="text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of pagedNewSales(); track p.id) {
+                <tr>
+                  <td class="tabular-nums">{{ p.date }}</td>
+                  <td>{{ p.patientName || '—' }}</td>
+                  <td class="font-mono text-caption">{{ p.folio || '—' }}</td>
+                  <td class="capitalize">{{ p.paymentMethod }}</td>
+                  <td class="text-right font-semibold tabular-nums">{{ p.amount | money }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <onv-paginator
+            footer
+            class="border-t border-border"
+            [page]="newSalesPage()"
+            [pageSize]="sectionPageSize"
+            [pageSizes]="[sectionPageSize]"
+            [total]="store.newSales().length"
+            (pageChange)="newSalesPage.set($event)"
+          />
+        </onv-table-card>
+      }
+    </section>
+
+    <!-- Ingresos por saldos pagados -->
+    <section class="flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-heading">Ingresos por saldos pagados</h2>
+        <span class="text-[18px] font-bold tabular-nums text-success">{{ store.totals().balancePayments | money }}</span>
+      </div>
+      @if (store.balancePaymentsByMethod().length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (m of store.balancePaymentsByMethod(); track m.key) {
+            <onv-badge tone="info">{{ m.label }}: {{ m.amount | money }}</onv-badge>
+          }
+        </div>
+      }
+      @if (store.balancePayments().length === 0) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.receipt" title="Sin saldos pagados" text="No hay abonos sobre ventas existentes en este período." />
+        </div>
+      } @else {
+        <onv-table-card>
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Paciente</th>
+                <th scope="col">Folio</th>
+                <th scope="col">Método</th>
+                <th scope="col" class="text-right">Monto</th>
+                <th scope="col" class="text-right">Saldo de la venta</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of pagedBalancePayments(); track p.id) {
+                <tr>
+                  <td class="tabular-nums">{{ p.date }}</td>
+                  <td>{{ p.patientName || '—' }}</td>
+                  <td class="font-mono text-caption">{{ p.folio || '—' }}</td>
+                  <td class="capitalize">{{ p.paymentMethod }}</td>
+                  <td class="text-right font-semibold tabular-nums">{{ p.amount | money }}</td>
+                  <td class="text-right tabular-nums" [class.text-danger]="p.saleRest > 0">{{ p.saleRest | money }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <onv-paginator
+            footer
+            class="border-t border-border"
+            [page]="balancePaymentsPage()"
+            [pageSize]="sectionPageSize"
+            [pageSizes]="[sectionPageSize]"
+            [total]="store.balancePayments().length"
+            (pageChange)="balancePaymentsPage.set($event)"
+          />
+        </onv-table-card>
+      }
+    </section>
+
+    <!-- Egresos -->
+    <section class="flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-heading">Egresos</h2>
+        <span class="text-[18px] font-bold tabular-nums text-danger">{{ store.totals().expenses | money }}</span>
+      </div>
+      @if (store.expensesByCategory().length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (c of store.expensesByCategory(); track c.key) {
+            <onv-badge tone="danger">{{ c.label }}: {{ c.amount | money }}</onv-badge>
+          }
+        </div>
+      }
+      @if (store.expenses().length === 0) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.banknote" title="Sin egresos" text="No hay egresos registrados en este período." />
+        </div>
+      } @else {
+        <onv-table-card>
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Descripción</th>
+                <th scope="col">Sucursal</th>
+                <th scope="col" class="text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of pagedExpenses(); track e.id) {
+                <tr>
+                  <td class="tabular-nums">{{ e.date }}</td>
+                  <td>
+                    @if (e.categoryColor) {
+                      <span aria-hidden="true" class="mr-1.5 inline-block size-2 rounded-full" [style.background-color]="e.categoryColor"></span>
+                    }
+                    {{ e.categoryName || 'Sin categoría' }}
+                  </td>
+                  <td>{{ e.description }}</td>
+                  <td>{{ e.branch || 'Global' }}</td>
+                  <td class="text-right font-semibold tabular-nums text-danger">{{ e.amount | money }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <onv-paginator
+            footer
+            class="border-t border-border"
+            [page]="expensesPage()"
+            [pageSize]="sectionPageSize"
+            [pageSizes]="[sectionPageSize]"
+            [total]="store.expenses().length"
+            (pageChange)="expensesPage.set($event)"
+          />
+        </onv-table-card>
+      }
+    </section>
+  }
+</div>
