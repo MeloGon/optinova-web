@@ -1,0 +1,118 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <a
+    [routerLink]="['/dashboard/settings/sales-by-seller']"
+    [queryParams]="{ month: search().month, branch: search().branch }"
+    class="inline-flex w-fit items-center gap-1.5 text-body-sm font-medium text-muted-foreground hover:text-foreground"
+  >
+    <svg [lucideIcon]="icons.back" [size]="15"></svg>
+    Ventas por vendedor
+  </a>
+
+  <!-- Encabezado -->
+  <div class="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 elev-sm md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-heading">{{ search().sellerName }}</h1>
+      <p class="text-body-sm text-muted-foreground">{{ monthLabel() }} · {{ store.total() }} venta{{ store.total() === 1 ? '' : 's' }}</p>
+    </div>
+    <div class="flex flex-wrap gap-4 text-right">
+      <div>
+        <p class="text-caption text-muted-foreground">Total vendido</p>
+        <p class="text-[20px] font-bold tabular-nums">{{ store.totals().total | money }}</p>
+      </div>
+      <div>
+        <p class="text-caption text-muted-foreground">A cuenta</p>
+        <p class="text-[20px] font-bold tabular-nums">{{ store.totals().account | money }}</p>
+      </div>
+      <div>
+        <p class="text-caption text-muted-foreground">Saldo pendiente</p>
+        <p class="text-[20px] font-bold tabular-nums" [class.text-danger]="store.totals().rest > 0">{{ store.totals().rest | money }}</p>
+      </div>
+    </div>
+  </div>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (store.loaded() && store.total() === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state [icon]="icons.receipt" title="Sin ventas en este período" text="Este vendedor no tiene ventas en el mes y la sucursal elegidos." />
+    </div>
+  } @else if (!store.loaded() || store.total() > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Folio</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Fecha</th>
+            <th scope="col" class="text-right">Total</th>
+            <th scope="col" class="text-right">A cuenta</th>
+            <th scope="col" class="text-right">Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="h-3 w-36" /></td>
+                <td><onv-skeleton class="h-3 w-20" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+              </tr>
+            }
+          } @else {
+            @for (sale of store.page(); track sale.id) {
+              <tr>
+                <td>
+                  <button
+                    type="button"
+                    (click)="viewDetails(sale)"
+                    class="font-mono text-primary underline-offset-2 hover:underline"
+                  >
+                    {{ sale.folio || '—' }}
+                  </button>
+                </td>
+                <td>{{ sale.patientName || '—' }}</td>
+                <td class="tabular-nums">{{ sale.date | date: 'dd/MM/yyyy' }}</td>
+                <td class="text-right font-semibold tabular-nums">{{ sale.totalWithDiscount | money }}</td>
+                <td class="text-right tabular-nums text-muted-foreground">{{ sale.account | money }}</td>
+                <td class="text-right tabular-nums" [class.font-semibold]="sale.rest > 0" [class.text-danger]="sale.rest > 0">
+                  {{ sale.rest | money }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      @if (store.loaded()) {
+        <onv-paginator
+          footer
+          class="border-t border-border"
+          [page]="search().page"
+          [pageSize]="search().pageSize"
+          [total]="store.total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="changePageSize($event)"
+        />
+      }
+    </onv-table-card>
+  }
+</div>

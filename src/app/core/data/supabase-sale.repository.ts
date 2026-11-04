@@ -3,8 +3,10 @@ import { AppError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Sale } from '../models/sale';
 import { NewSaleItem, SaleItem } from '../models/sale-item';
-import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
+import { NewSale, SaleMonthSearch, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
 import { Result, err, ok } from '../result';
+import { escapeLike } from '../supabase/escape-like';
+import { monthRange } from '../../shared/utils/month';
 import { SUPABASE } from '../supabase/supabase.client';
 
 /** Fila de `ventas` tal como viene de la DB. */
@@ -94,11 +96,6 @@ function toSaleItem(row: SaleItemRow): SaleItem {
   };
 }
 
-/** `%` y `_` son comodines de `ilike`: se escriben literales. */
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, '\\\\$&');
-}
-
 @Injectable()
 export class SupabaseSaleRepository extends SaleRepository {
   private readonly supabase = inject(SUPABASE);
@@ -153,6 +150,21 @@ export class SupabaseSaleRepository extends SaleRepository {
     if (paid.error) return err(toAppError(paid.error));
 
     return ok({ all: all.count ?? 0, balance: balance.count ?? 0, paid: paid.count ?? 0 });
+  }
+
+  async listByMonth({ month, branch }: SaleMonthSearch): Promise<Result<Sale[], AppError>> {
+    const { from, to } = monthRange(month);
+
+    let request = this.supabase
+      .from('ventas')
+      .select(COLUMNS)
+      .gte('fecha_actualizada', from)
+      .lte('fecha_actualizada', to);
+    if (branch) request = request.eq('sucursal', branch);
+
+    const { data, error } = await request.order('fecha_actualizada', { ascending: false }).overrideTypes<SaleRow[], { merge: false }>();
+    if (error) return err(toAppError(error));
+    return ok(data.map(toSale));
   }
 
   async getItems(folio: string): Promise<Result<SaleItem[], AppError>> {

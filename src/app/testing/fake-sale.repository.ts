@@ -2,7 +2,7 @@ import { AppError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
 import { Sale } from '../core/models/sale';
 import { NewSaleItem, SaleItem } from '../core/models/sale-item';
-import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
+import { NewSale, SaleMonthSearch, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
 import { Result, err, ok } from '../core/result';
 
 export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`, patientId: string | null = null): Sale => ({
@@ -35,6 +35,8 @@ export class FakeSaleRepository extends SaleRepository {
   created: { sale: NewSale; items: NewSaleItem[] }[] = [];
   createFailWith: AppError | null = null;
   private nextId = 9000;
+
+  listByMonthFailWith: AppError | null = null;
 
   private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'patientId'>): Sale[] {
     const text = params.query.trim().toLowerCase();
@@ -70,6 +72,11 @@ export class FakeSaleRepository extends SaleRepository {
       balance: matches.filter((s) => s.rest > 0).length,
       paid: matches.filter((s) => s.rest === 0).length,
     });
+  }
+
+  async listByMonth({ month, branch }: SaleMonthSearch): Promise<Result<Sale[], AppError>> {
+    if (this.listByMonthFailWith) return err(this.listByMonthFailWith);
+    return ok(this.sales.filter((s) => s.date.startsWith(month) && (!branch || s.branch === branch)));
   }
 
   async getItems(folio: string): Promise<Result<SaleItem[], AppError>> {

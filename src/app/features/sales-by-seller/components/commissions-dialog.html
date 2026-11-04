@@ -1,0 +1,48 @@
+<div class="border-b border-border px-6 py-4">
+  <h2 [id]="titleId" class="text-heading">Cálculo de comisiones</h2>
+  <p class="text-body-sm text-muted-foreground">Un porcentaje sobre el total vendido del período, solo para simular.</p>
+</div>
+
+<div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
+  <onv-field label="Porcentaje" inputId="commission-pct" [errors]="{ min: 'Debe ser mayor a 0.' }">
+    <input id="commission-pct" type="number" onvInput [formControl]="pctControl" step="0.1" min="0.01" placeholder="Ej. 1.2" />
+  </onv-field>
+
+  <div class="overflow-hidden rounded-lg border border-border">
+    <table class="w-full text-body-sm">
+      <thead class="bg-muted/50">
+        <tr>
+          <th scope="col" class="px-3 py-2 text-left font-medium">Vendedor</th>
+          <th scope="col" class="px-3 py-2 text-right font-medium">Total vendido</th>
+          <th scope="col" class="px-3 py-2 text-right font-medium">Comisión</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.name) {
+          <tr class="border-t border-border">
+            <td class="px-3 py-2">{{ row.name }}</td>
+            <td class="px-3 py-2 text-right tabular-nums">{{ row.total | money }}</td>
+            <td class="px-3 py-2 text-right font-semibold tabular-nums">
+              {{ row.commission !== null ? (row.commission | money) : '—' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between rounded-md bg-success-subtle px-3 py-2.5 text-body text-success-subtle-foreground">
+    <span class="font-medium">Total de comisiones</span>
+    <span class="font-bold tabular-nums">{{ grandTotalCommission() | money }}</span>
+  </div>
+</div>
+
+<div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+  <button
+    type="button"
+    (click)="close()"
+    class="inline-flex h-(--onv-control-h) items-center rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+  >
+    Cerrar
+  </button>
+</div>

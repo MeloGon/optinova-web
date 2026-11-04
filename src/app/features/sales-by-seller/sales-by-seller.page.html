@@ -1,0 +1,153 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Filtros -->
+  <div class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 elev-sm">
+    <div class="flex flex-col gap-1.5">
+      <label for="seller-month" class="text-label">Mes</label>
+      <select
+        id="seller-month"
+        class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        (change)="setMonth($any($event.target).value)"
+      >
+        @for (m of monthOptions; track m.value) {
+          <option [value]="m.value" [selected]="m.value === selectedMonth()">{{ m.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="seller-year" class="text-label">Año</label>
+      <select
+        id="seller-year"
+        class="h-(--onv-control-h) rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        (change)="setYear($any($event.target).value)"
+      >
+        @for (y of yearOptions; track y) {
+          <option [value]="y" [selected]="y === selectedYearNumber()">{{ y }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="flex w-56 flex-col gap-1.5">
+      <label for="seller-branch" class="text-label">Sucursal</label>
+      <select
+        id="seller-branch"
+        class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        [value]="search().branch ?? ''"
+        (change)="setBranch($any($event.target).value)"
+      >
+        <option value="">Todas las sucursales</option>
+        @for (b of branches(); track b.value) {
+          <option [value]="b.value">{{ b.label }}</option>
+        }
+      </select>
+    </div>
+
+    <button
+      type="button"
+      [disabled]="store.sellers().length === 0"
+      (click)="openCommissions()"
+      class="ml-auto inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-border-strong px-4 text-[14px] font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <svg [lucideIcon]="icons.calculator" [size]="16"></svg>
+      Calcular comisiones
+    </button>
+  </div>
+
+  <!-- Resumen del mes filtrado (nunca de "esta página": acá no hay paginación). -->
+  <div class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Total vendido</span>
+        <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
+          <svg [lucideIcon]="icons.total" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.totals().total | money }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Saldo pendiente</span>
+        <span class="grid size-8 place-items-center rounded-md bg-warning-subtle text-warning-subtle-foreground">
+          <svg [lucideIcon]="icons.pending" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.totals().rest | money }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Vendedores con ventas</span>
+        <span class="grid size-8 place-items-center rounded-md bg-success-subtle text-success-subtle-foreground">
+          <svg [lucideIcon]="icons.sellers" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.totals().sellerCount }}</p>
+    </div>
+  </div>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (!store.loaded() && store.loading()) {
+    <div class="flex items-center justify-center rounded-lg border border-border bg-card p-10 elev-sm">
+      <span class="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" aria-hidden="true"></span>
+    </div>
+  } @else if (store.loaded() && store.sellers().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state
+        [icon]="icons.sellers"
+        title="Sin ventas en este período"
+        text="No hay ventas registradas para el mes y la sucursal elegidos."
+      />
+    </div>
+  } @else if (store.sellers().length > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Vendedor</th>
+            <th scope="col" class="text-right">Ventas</th>
+            <th scope="col" class="text-right">Total vendido</th>
+            <th scope="col" class="text-right">A cuenta</th>
+            <th scope="col" class="text-right">Saldo pendiente</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (seller of store.sellers(); track seller.name) {
+            <tr>
+              <td class="font-medium">
+                <a
+                  [routerLink]="['/dashboard/settings/sales-by-seller', seller.name]"
+                  [queryParams]="{ month: search().month, branch: search().branch }"
+                  class="text-primary underline-offset-2 hover:underline"
+                >
+                  {{ seller.name }}
+                </a>
+              </td>
+              <td class="text-right tabular-nums">{{ seller.salesCount }}</td>
+              <td class="text-right font-semibold tabular-nums">{{ seller.total | money }}</td>
+              <td class="text-right tabular-nums text-muted-foreground">{{ seller.account | money }}</td>
+              <td class="text-right tabular-nums" [class.font-semibold]="seller.rest > 0" [class.text-danger]="seller.rest > 0">
+                {{ seller.rest | money }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </onv-table-card>
+  }
+</div>

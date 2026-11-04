@@ -26,6 +26,12 @@ export interface SaleStatusCounts {
   paid: number;
 }
 
+export interface SaleMonthSearch {
+  /** `yyyy-MM`. */
+  month: string;
+  branch: string | null;
+}
+
 /** Venta nueva a crear (= el encabezado que arma Vender antes de confirmar). */
 export interface NewSale {
   branch: string;
@@ -57,6 +63,12 @@ export abstract class SaleRepository {
   abstract countByStatus(
     params: Omit<SaleSearch, 'status' | 'page' | 'pageSize'>,
   ): Promise<Result<SaleStatusCounts, AppError>>;
+
+  /**
+   * Todas las ventas de un mes (sin paginar: es un reporte, se agrupa por vendedor en el cliente,
+   * igual que Flutter trae el mes completo con `getSalesByDateRange`).
+   */
+  abstract listByMonth(params: SaleMonthSearch): Promise<Result<Sale[], AppError>>;
 
   /** Líneas de una venta por su folio (= getSaleDetails de Flutter, que también filtra por folio). */
   abstract getItems(folio: string): Promise<Result<SaleItem[], AppError>>;
