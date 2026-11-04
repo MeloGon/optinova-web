@@ -119,6 +119,12 @@ export class SupabasePatientRepository extends PatientRepository {
 /**
  * `%` y `_` son comodines de `ilike`: se escriben literales.
  * La barra va doble porque PostgREST quita una al leer el filtro (probado contra DEV).
+ *
+ * Distinto adrede del `escapeLike` compartido (`core/supabase/escape-like.ts`, una sola barra):
+ * acá se llama como `.ilike(columna, patrón)` directo, no dentro de un filtro de texto de
+ * `.or(...)`. Antigravity encontró el bug de la doble barra solo en los repos que arman el
+ * filtro con `.or()` (2026-11-04); esta función sigue probada para su propio caso de uso, no se
+ * tocó para no reintroducir el problema que el comentario de arriba ya documentaba.
  */
 function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, '\\\\$&');

@@ -1,6 +1,7 @@
 import { AppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Resin } from '../models/resin';
+import { StockStatus } from '../models/stock-status';
 import { Result } from '../result';
 
 export interface ResinSearch {
@@ -10,7 +11,25 @@ export interface ResinSearch {
   pageSize: number;
 }
 
-/** Contrato de resinas (= ResinRepository abstracto de Flutter, recortado al alcance de E2.6: sin alta/edición). */
+export interface ResinInventorySearch {
+  query: string;
+  /** "low" = 1 o 2 unidades (mismo umbral que el Dashboard); "out" = 0. */
+  stockStatus: StockStatus;
+  /** Empieza en 1. */
+  page: number;
+  pageSize: number;
+}
+
+export interface ResinStockCounts {
+  all: number;
+  low: number;
+  out: number;
+}
+
+/** `text` se arma solo a partir del resto de campos (= Flutter); no lo pide el formulario. */
+export type NewResin = Omit<Resin, 'id' | 'text'>;
+
+/** Contrato de resinas. Recortado al alcance de E2.6: sin alta/edición. */
 export abstract class ResinRepository {
   /**
    * Busca en `descripcion` y `texto` (Flutter solo buscaba en `texto`, pero ahí no vive el nombre
@@ -18,4 +37,15 @@ export abstract class ResinRepository {
    * encontraba nada; corregido tras probar, 2026-10-31). Paginado para no traer el catálogo entero.
    */
   abstract search(params: ResinSearch): Promise<Result<Page<Resin>, AppError>>;
+
+  /** Listado completo para Settings · Resinas (incluye agotadas; `search` nunca las necesitaba). */
+  abstract listInventory(params: ResinInventorySearch): Promise<Result<Page<Resin>, AppError>>;
+
+  abstract countByStock(params: Pick<ResinInventorySearch, 'query'>): Promise<Result<ResinStockCounts, AppError>>;
+
+  abstract insert(resin: NewResin): Promise<Result<Resin, AppError>>;
+
+  abstract update(resin: Resin): Promise<Result<void, AppError>>;
+
+  abstract delete(id: number): Promise<Result<void, AppError>>;
 }
