@@ -6,12 +6,16 @@ import { SessionStore } from './core/auth/session.store';
 import { Role } from './core/models/role';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
+import { ExpenseRepository } from './core/repositories/expense.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
+import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
 import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
+import { FakeExpenseRepository } from './testing/fake-expense.repository';
 import { FakePaymentRepository } from './testing/fake-payment.repository';
 import { FakeSaleRepository } from './testing/fake-sale.repository';
+import { FakeUserAdminRepository } from './testing/fake-user-admin.repository';
 
 describe('Rutas y guards', () => {
   let repo: FakeAuthRepository;
@@ -29,6 +33,10 @@ describe('Rutas y guards', () => {
         // El store del dashboard registra abonos con SalePaymentService, que pide estos dos.
         { provide: PaymentRepository, useValue: new FakePaymentRepository() },
         { provide: SaleRepository, useValue: new FakeSaleRepository() },
+        // Ingresos y egresos (E2.8) los pide su propio store al entrar.
+        { provide: ExpenseRepository, useValue: new FakeExpenseRepository() },
+        // Usuarios (E2.8) lo pide su propio store al entrar.
+        { provide: UserAdminRepository, useValue: new FakeUserAdminRepository() },
       ],
     });
     await TestBed.inject(SessionStore).restore();
@@ -55,8 +63,8 @@ describe('Rutas y guards', () => {
 
   it('una página pendiente muestra su título y su entregable', async () => {
     const h = await start('admin');
-    await h.navigateByUrl('/dashboard/settings/resins');
-    expect(text(h)).toContain('Resinas');
+    await h.navigateByUrl('/dashboard/settings/features');
+    expect(text(h)).toContain('Funcionalidades');
     expect(text(h)).toContain('E2.8');
   });
 

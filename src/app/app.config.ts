@@ -8,6 +8,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideLucideConfig } from '@lucide/angular';
 import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
+import { SupabaseAuditLogRepository } from './core/data/supabase-audit-log.repository';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
 import { SupabaseDashboardRepository } from './core/data/supabase-dashboard.repository';
 import { SupabaseExpenseRepository } from './core/data/supabase-expense.repository';
@@ -19,6 +20,8 @@ import { SupabaseResinRepository } from './core/data/supabase-resin.repository';
 import { SupabaseReviewRepository } from './core/data/supabase-review.repository';
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
 import { SupabaseSellerRepository } from './core/data/supabase-seller.repository';
+import { SupabaseUserAdminRepository } from './core/data/supabase-user-admin.repository';
+import { AuditLogRepository } from './core/repositories/audit-log.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
 import { ExpenseRepository } from './core/repositories/expense.repository';
@@ -30,6 +33,7 @@ import { ResinRepository } from './core/repositories/resin.repository';
 import { ReviewRepository } from './core/repositories/review.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
 import { SellerRepository } from './core/repositories/seller.repository';
+import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -41,6 +45,7 @@ export const appConfig: ApplicationConfig = {
     provideLucideConfig({ strokeWidth: 1.75 }),
     // Repositorio abstracto → implementación (= Provider<AuthRepository>((ref) => AuthRepositoryImpl())).
     { provide: AuthRepository, useClass: SupabaseAuthRepository },
+    { provide: AuditLogRepository, useClass: SupabaseAuditLogRepository },
     { provide: PatientRepository, useClass: SupabasePatientRepository },
     { provide: PatientLifecycleRepository, useClass: SupabasePatientLifecycleRepository },
     { provide: ReviewRepository, useClass: SupabaseReviewRepository },
@@ -50,6 +55,7 @@ export const appConfig: ApplicationConfig = {
     { provide: MountRepository, useClass: SupabaseMountRepository },
     { provide: ResinRepository, useClass: SupabaseResinRepository },
     { provide: SellerRepository, useClass: SupabaseSellerRepository },
+    { provide: UserAdminRepository, useClass: SupabaseUserAdminRepository },
     { provide: DashboardRepository, useClass: SupabaseDashboardRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.
     provideAppInitializer(() => {
