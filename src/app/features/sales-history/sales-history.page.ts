@@ -150,8 +150,11 @@ export class SalesHistoryPage {
     });
 
     effect(() => {
-      const query = this.search().query;
-      untracked(() => this.text.setValue(query));
+      // Solo depende de `q()`, no de `search()` entero (hallazgo de Antigravity, 2026-11-04).
+      const query = (this.q() ?? '').trim();
+      untracked(() => {
+        if (this.text.value !== query) this.text.setValue(query);
+      });
     });
 
     effect(() => {

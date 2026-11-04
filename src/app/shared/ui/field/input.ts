@@ -1,5 +1,5 @@
 // C-02 Input (también estilo de select y date nativos, C-03 y C-04 provisionales)
-import { DestroyRef, Directive, afterNextRender, inject, signal } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgControl } from '@angular/forms';
 
@@ -21,10 +21,12 @@ import { NgControl } from '@angular/forms';
       'disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground ' +
       '[&:is(textarea)]:h-auto [&:is(textarea)]:min-h-20 [&:is(textarea)]:resize-y [&:is(textarea)]:py-2',
     '[attr.aria-invalid]': 'errorKey() ? true : null',
+    '[attr.aria-describedby]': 'errorKey() ? errorId() : null',
   },
 })
 export class OnvInput {
   private readonly ngControl = inject(NgControl, { self: true, optional: true });
+  private readonly el = inject(ElementRef<HTMLElement>);
 
   /**
    * El estado de un FormControl (tocado, errores) no es un signal, y los componentes son OnPush:
@@ -52,5 +54,10 @@ export class OnvInput {
     const control = this.ngControl?.control;
     if (!control || !control.invalid || !(control.touched || control.dirty)) return null;
     return Object.keys(control.errors ?? {})[0] ?? null;
+  }
+
+  /** `id` del `<p role="alert">` de `<onv-field>`: el propio `id` del control + "-error". */
+  errorId(): string {
+    return `${this.el.nativeElement.id}-error`;
   }
 }

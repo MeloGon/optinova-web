@@ -19,7 +19,7 @@ import { OnvInput } from './input';
     </label>
     <ng-content />
     @if (errorMessage(); as message) {
-      <p class="flex items-center gap-1 text-body-sm text-danger-subtle-foreground">
+      <p [id]="inputId() + '-error'" role="alert" class="flex items-center gap-1 text-body-sm text-danger-subtle-foreground">
         <svg [lucideIcon]="alertIcon" [size]="14" class="shrink-0"></svg>
         {{ message }}
       </p>

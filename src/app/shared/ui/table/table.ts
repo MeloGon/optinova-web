@@ -18,7 +18,10 @@ import { Component, Directive, input } from '@angular/core';
     class:
       'min-w-full border-collapse whitespace-nowrap text-[length:var(--onv-cell-fs)] ' +
       '[&_th]:sticky [&_th]:top-0 [&_th]:z-(--z-sticky) [&_th]:h-9 [&_th]:bg-muted [&_th]:px-(--onv-cell-x) ' +
-      '[&_th]:text-left [&_th]:text-caption [&_th]:text-muted-foreground in-data-[density=compact]:[&_th]:h-8 ' +
+      // :not(.text-right):not(.text-center) — si no, esta regla le gana en especificidad a esas
+      // clases puestas en el propio <th> (ambas son una clase + un elemento), y un encabezado
+      // numérico con `class="text-right"` se queda alineado a la izquierda igual.
+      '[&_th:not(.text-right):not(.text-center)]:text-left [&_th]:text-caption [&_th]:text-muted-foreground in-data-[density=compact]:[&_th]:h-8 ' +
       '[&_td]:h-(--onv-row-h) [&_td]:px-(--onv-cell-x) [&_tbody_tr]:border-t [&_tbody_tr]:border-border ' +
       '[&_tbody_tr:hover]:bg-subtle',
   },

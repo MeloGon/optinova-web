@@ -138,8 +138,13 @@ export class SearchPatientPage {
 
     // Con "Atrás" el cuadro de texto vuelve a lo que decía la URL.
     effect(() => {
-      const query = this.search().query;
-      untracked(() => this.text.setValue(query));
+      // Solo depende de `q()`, no de `search()` entero: si dependiera de todo el objeto, cambiar
+      // sucursal/estado mientras se escribe sin enviar borraría lo tecleado (hallazgo de
+      // Antigravity, 2026-11-04: el query de la URL es "" hasta que se envía la búsqueda).
+      const query = (this.q() ?? '').trim();
+      untracked(() => {
+        if (this.text.value !== query) this.text.setValue(query);
+      });
     });
 
     // Página que ya no existe (se borraron pacientes, URL a mano): ir a la última.
