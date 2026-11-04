@@ -1,0 +1,76 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">{{ isEditing ? 'Editar armazón' : 'Nuevo armazón' }}</h2>
+  </div>
+
+  <div class="flex max-h-[calc(100dvh-14rem)] flex-col gap-4 overflow-y-auto p-6">
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Marca" inputId="mount-brand" [required]="true" [errors]="{ required: 'Ingresa la marca.' }">
+        <input id="mount-brand" onvInput formControlName="brand" placeholder="Ej. RAY-BAN" />
+      </onv-field>
+      <onv-field label="Modelo" inputId="mount-model" [required]="true" [errors]="{ required: 'Ingresa el modelo.' }">
+        <input id="mount-model" onvInput formControlName="model" placeholder="Ej. RB2140" />
+      </onv-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Color" inputId="mount-color">
+        <input id="mount-color" onvInput formControlName="color" placeholder="Ej. Negro" />
+      </onv-field>
+      <onv-field label="Código de barras" inputId="mount-barcode">
+        <input id="mount-barcode" onvInput formControlName="barcode" placeholder="Ej. 7501234567890" />
+      </onv-field>
+    </div>
+
+    <onv-field label="Descripción (opcional)" inputId="mount-description">
+      <input id="mount-description" onvInput formControlName="description" placeholder="Ej. Acetato completo" />
+    </onv-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <onv-field label="Precio" inputId="mount-price" [required]="true" [errors]="{ required: 'Ingresa un precio.', min: 'Debe ser 0 o más.' }">
+        <input id="mount-price" type="number" onvInput formControlName="price" step="0.01" min="0" placeholder="0.00" />
+      </onv-field>
+      <onv-field label="Existencias" inputId="mount-stock" [required]="true" [errors]="{ required: 'Ingresa las existencias.', min: 'Debe ser 0 o más.' }">
+        <input id="mount-stock" type="number" onvInput formControlName="stock" step="1" min="0" placeholder="0" />
+      </onv-field>
+    </div>
+
+    <onv-field label="Sucursal" inputId="mount-branch">
+      <select id="mount-branch" onvInput formControlName="branch">
+        <option value="">Sin sucursal</option>
+        @for (branch of branches; track branch.value) {
+          <option [value]="branch.value">{{ branch.label }}</option>
+        }
+      </select>
+    </onv-field>
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-end gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ isEditing ? 'Guardar cambios' : 'Registrar' }}
+      }
+    </button>
+  </div>
+</form>

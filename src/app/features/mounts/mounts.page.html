@@ -1,0 +1,231 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  <!-- Header -->
+  <div class="flex flex-wrap items-end justify-end gap-2">
+    <button
+      type="button"
+      (click)="openNew()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      <svg [lucideIcon]="icons.plus" [size]="16"></svg>
+      Nuevo armazón
+    </button>
+  </div>
+
+  <!-- Resumen: de la página actual, no de todo el inventario (igual que Egresos). -->
+  <div class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Registros</span>
+        <span class="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary-subtle-foreground">
+          <svg [lucideIcon]="icons.mount" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.total() }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Stock bajo</span>
+        <span class="grid size-8 place-items-center rounded-md bg-warning-subtle text-warning-subtle-foreground">
+          <svg [lucideIcon]="icons.alert" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.counts().low }}</p>
+    </div>
+    <div class="rounded-lg border border-border bg-card p-5 elev-sm">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-body-sm font-medium text-muted-foreground">Agotados</span>
+        <span class="grid size-8 place-items-center rounded-md bg-danger-subtle text-danger-subtle-foreground">
+          <svg [lucideIcon]="icons.alert" [size]="16"></svg>
+        </span>
+      </div>
+      <p class="mt-3 text-[24px] font-bold tabular-nums">{{ store.counts().out }}</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form
+    (submit)="$event.preventDefault(); submit()"
+    role="search"
+    class="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4 elev-sm"
+  >
+    <div class="flex min-w-[220px] flex-1 flex-col gap-1.5">
+      <label for="mount-search" class="text-label">Buscar</label>
+      <div
+        class="flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input bg-input-background px-3 focus-within:outline-2 focus-within:outline-ring"
+      >
+        <svg [lucideIcon]="icons.search" [size]="16" class="shrink-0 text-muted-foreground"></svg>
+        <input
+          id="mount-search"
+          type="search"
+          [formControl]="text"
+          autocomplete="off"
+          placeholder="Marca o modelo"
+          class="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+        />
+        @if (text.value) {
+          <button
+            type="button"
+            (click)="clear()"
+            aria-label="Limpiar búsqueda"
+            class="-mr-2 grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+          >
+            <svg [lucideIcon]="icons.clear" [size]="14"></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="flex w-48 flex-col gap-1.5">
+      <label for="mount-branch-filter" class="text-label">Sucursal</label>
+      <select
+        id="mount-branch-filter"
+        class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+        [value]="search().branch ?? ''"
+        (change)="setBranch($any($event.target).value)"
+      >
+        <option value="">Todas las sucursales</option>
+        @for (b of branches(); track b.value) {
+          <option [value]="b.value">{{ b.label }}</option>
+        }
+      </select>
+    </div>
+
+    <onv-segmented [options]="stockOptions()" label="Stock" [formControl]="stockControl" class="self-end" />
+
+    <button
+      type="submit"
+      class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+    >
+      Buscar
+    </button>
+  </form>
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (store.loaded() && store.items().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state
+        [icon]="icons.mount"
+        title="Sin armazones"
+        text="No encontramos armazones con este filtro, o todavía no registraste ninguno."
+      >
+        <button
+          type="button"
+          (click)="openNew()"
+          class="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-[13px] font-medium text-primary-foreground hover:bg-primary-hover"
+        >
+          <svg [lucideIcon]="icons.plus" [size]="14"></svg>
+          Nuevo armazón
+        </button>
+      </onv-empty-state>
+    </div>
+  } @else if (!store.loaded() || store.items().length > 0) {
+    <onv-table-card [busy]="store.loading() && store.loaded()">
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Marca / Modelo</th>
+            <th scope="col">Color</th>
+            <th scope="col">Código de barras</th>
+            <th scope="col">Sucursal</th>
+            <th scope="col" class="text-right">Existencias</th>
+            <th scope="col" class="text-right">Precio</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <tr aria-hidden="true">
+                <td><onv-skeleton class="h-3 w-40" /></td>
+                <td><onv-skeleton class="h-3 w-16" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="h-3 w-24" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-12" /></td>
+                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
+                <td></td>
+              </tr>
+            }
+          } @else {
+            @for (mount of store.items(); track mount.id) {
+              <tr>
+                <td class="font-medium">
+                  {{ mount.brand }} {{ mount.model }}
+                  @if (mount.description) {
+                    <p class="text-caption font-normal text-muted-foreground">{{ mount.description }}</p>
+                  }
+                </td>
+                <td>{{ mount.color || '—' }}</td>
+                <td class="font-mono text-caption">{{ mount.barcode || '—' }}</td>
+                <td>{{ mount.branch || 'Sin sucursal' }}</td>
+                <td
+                  class="text-right tabular-nums"
+                  [class.font-semibold]="mount.stock <= 2"
+                  [class.text-danger]="mount.stock === 0"
+                  [class.text-warning]="mount.stock > 0 && mount.stock <= 2"
+                >
+                  {{ mount.stock }}
+                </td>
+                <td class="text-right tabular-nums">{{ mount.price | money }}</td>
+                <td class="w-20 text-right">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      (click)="openEdit(mount)"
+                      [attr.aria-label]="'Editar ' + mount.brand + ' ' + mount.model"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.edit" [size]="15"></svg>
+                    </button>
+                    @if (loadingDelete() === mount.id) {
+                      <span class="grid size-8 place-items-center" aria-live="polite">
+                        <span class="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></span>
+                      </span>
+                    } @else {
+                      <button
+                        type="button"
+                        (click)="askDelete(mount)"
+                        [attr.aria-label]="'Eliminar ' + mount.brand + ' ' + mount.model"
+                        class="grid size-8 place-items-center rounded-sm text-danger-subtle-foreground hover:bg-danger-subtle"
+                      >
+                        <svg [lucideIcon]="icons.trash" [size]="15"></svg>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      @if (store.loaded()) {
+        <onv-paginator
+          footer
+          class="border-t border-border"
+          [page]="search().page"
+          [pageSize]="search().pageSize"
+          [total]="store.total()"
+          (pageChange)="goToPage($event)"
+          (pageSizeChange)="changePageSize($event)"
+        />
+      }
+    </onv-table-card>
+  }
+</div>
