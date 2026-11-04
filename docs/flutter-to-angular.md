@@ -335,3 +335,78 @@ Lectura: [Ficha de paciente](lessons/12-ficha-paciente.md). S-03 `e6d7a6c` y cor
 La FK de paciente ya existía desde #8 y `NewSale.patientId` ya se enviaba al crear; faltaba exponerla en la lectura de `Sale` y en el filtro del repositorio. Pagos se resolvía en dos consultas; `e019946` usa la FK existente de `pagos.id_remision` para un embed con `!inner` y filtro por paciente. El baseline y #8 conservaban esa relación tras el rename; no hizo falta otra migración.
 
 En un paciente archivado, Eliminar se sustituye por Restaurar para admin+; Editar permanece en la plantilla. Restaurar recarga la ficha, mientras borrar/archivar vuelve a la lista. Ir a vender aún no preselecciona al paciente. C-14 incorpora flechas cíclicas, Home/End y paneles enlazados mediante helpers de IDs desde `e019946`; el estado de página de Ventas es local, no parte de la URL.
+
+## L13: Resinas e inventario
+
+Lectura: [Resinas](lessons/13-resinas.md). E2.8 publicado en `1c86dbd`, verificado sobre `e456cfe` después del pull del 2026-11-04.
+
+| Flutter / Dart | Angular publicado |
+|---|---|
+| `ResinsView` y `PagedListCard` de tarjetas | Tabla C-07, paginador y segmented de stock |
+| Controllers alojados en `Resins` | FormGroup local de `ResinFormDialog`; store para datos |
+| Offset y `hasMore` | URL `q/stock/page/size`, `range` y conteo exacto |
+| Construir el nombre compuesto en el Notifier | Mapper genera `texto` desde `NewResin` |
+| Esperar repositorio y renovar lista | Callback `save` con `Result`, recarga de última búsqueda |
+| Auditar operaciones sin bloquearlas, patrón de armazones Flutter | `AuditLogRepository.log` best-effort también para resinas |
+
+Página y contadores son consultas diferentes; estos cuentan coincidencias, no filas visibles. El número `lastRequest` ignora respuestas viejas sin cancelar la petición. La validación requerida/mínimo no incorpora por sí sola enteros ni rechazo de espacios.
+
+## L14: Armazones y secuencias
+
+Lectura: [Armazones](lessons/14-armazones.md). Publicado en `9793658`, con #18 aplicada en dev según registro.
+
+| Flutter / Dart | Angular publicado |
+|---|---|
+| `MountsView` con búsqueda y tarjetas | Tabla con sucursal y filtro de stock |
+| `generateRandomId(17)` en el cliente | Default `nextval` de `armazones_id_seq` desde #18 |
+| Controller de código precargado pero literal de prueba al guardar | Campo de texto real enviado a `codigo_barras` |
+| Catálogo de Vender y administración comparten entidad | Contratos `search` y `listInventory` con propósitos distintos |
+| Auditar cambios de armazón | Eventos best-effort; detalle Angular parcial, sin diff íntegro |
+
+El inicio usa `max(id)+1`, no un número de dev fijo. La secuencia no corrige el contrato `Mount.id: number`: transportar históricos de 17 dígitos exige revisión de precisión. ID interno y código de barras son datos distintos.
+
+## L15: Auditoría y retención
+
+Lectura: [Auditoría](lessons/15-auditoria.md). Visor y cambio #17 publicados en `eb1530a`.
+
+| Flutter / Riverpod | Angular publicado |
+|---|---|
+| `AuditLogsView` con tarjetas, acción y usuario | Buscador único OR y tabla paginada |
+| `AuditLogsNotifier` y estado de offset | `AuditLogsStore` de página; parámetros en URL |
+| Interpretación especializada de detalles | Formateo genérico clave/valor y JSON |
+| Consultar registros recientes o lista | `search` más RPC `audit_logs_stats()` global |
+| Mantenimiento ajeno a la pantalla | `pg_cron` ejecuta la limpieza aunque no haya navegador abierto |
+
+Stats describe toda la tabla, no el filtro. Limpieza mensual de filas con más de tres meses de calendario no equivale a borrado instantáneo al cumplir 90 días. El guard admin no reemplaza las políticas de lectura/escritura del baseline.
+
+## L16: Ventas por vendedor
+
+Lectura: [Ventas por vendedor](lessons/16-ventas-por-vendedor.md). Publicado en `d99ced3`, con rutas/providers consolidados en `e456cfe`.
+
+| Flutter / Dart | Angular publicado |
+|---|---|
+| Un `SellerSection` por vendedor | Tabla de agregados con `Map`/`computed` |
+| Nombre normalizado del vendedor | `sellerKey` compartido; sigue sin FK de identidad |
+| Filtros en Notifier | Mes/sucursal en URL y selects Mes/Año |
+| Seleccionar vendedores e imprimir PDF | Esas dos funciones del original quedan fuera por ahora |
+| Calcular comisiones con acción explícita | `toSignal(valueChanges)` y cálculo derivado, sin persistencia |
+| Detalle en secciones de la misma pantalla | Ruta `/:name`, paginación en memoria; venta puntual en diálogo reutilizado |
+
+`listByMonth` usa `fecha_actualizada`, que puede cambiar con un abono. La página de detalle vuelve a cargar el mes en cada `load` y luego aplica `slice`; no es paginación del servidor por vendedor. C-07 excluye de su alineación izquierda por defecto a los encabezados que declaren `text-right`/`text-center`.
+
+## L17: Ingresos y egresos
+
+Lectura: [Reporte de pagos](lessons/17-reporte-pagos.md). Publicado en `1693555`, sin CSV; código contrastado con `e456cfe`.
+
+| Flutter / Riverpod | Angular publicado |
+|---|---|
+| `PaymentsReport` y Día/Mes/Rango | Inputs de URL, C-06, C-04 y selects compartidos |
+| Filtrar sucursal en las listas recibidas | Filtro enviado a Supabase; alcance de supervisor decidido en cliente |
+| Consultar pagos y egresos secuencialmente | `Promise.all` y protección frente a respuestas viejas |
+| `where`/`fold` en la vista | `computed` de tipos, métodos, categorías y totales en el store |
+| Tablas sin paginación | Tres páginas locales de 10 filas sobre listas descargadas |
+| Diferenciar nueva venta y pago de saldo | `nueva_venta` y `abono_saldo`; se suman importes de cobros |
+
+Ingresos suma cobros, no importes totales de ventas; Neto resta egresos recibidos. El saldo mostrado es el actual de la venta y no se debe sumar repetido por pago. El fallo de egresos deja una lista vacía pero ahora muestra «Egresos no disponibles» con reintento; los pagos permanecen visibles y el neto queda incompleto hasta recuperar gastos. Ningún reporte descarga automáticamente todas las páginas de la API: la completitud requiere revisión.
+
+Consolidación L13–L17 (2026-11-04): las cinco implementaciones ya están publicadas. El efecto del borrador depende solo de `q()` para no borrarlo al cambiar otro filtro; `monthRange` usa `Date.UTC` y se comparte con `listByMonth`. La reverificación de Antigravity y 346 tests/build limpio reportados por Claude quedan como evidencia, sin repetirlos desde Codex.

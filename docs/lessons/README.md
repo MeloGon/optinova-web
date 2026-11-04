@@ -17,6 +17,11 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 10 | [Egresos, formularios y categorías](10-egresos.md) | E2.4 |
 | 11 | [Historial de ventas y registro de abonos](11-historial-ventas.md) | E2.5 y cambio #8 |
 | 12 | [Ficha de paciente: ruta y pestañas](12-ficha-paciente.md) | S-03, C-14 y lectura de relaciones por ID |
+| 13 | [Resinas: inventario y búsqueda](13-resinas.md) | E2.8, `1c86dbd` |
+| 14 | [Armazones, código de barras e IDs](14-armazones.md) | E2.8 y migración #18, `9793658` |
+| 15 | [Auditoría y retención](15-auditoria.md) | E2.8 y migración #17, `eb1530a` |
+| 16 | [Ventas por vendedor](16-ventas-por-vendedor.md) | E2.8, agregados y detalle; `d99ced3` |
+| 17 | [Reporte de pagos: ingresos y egresos](17-reporte-pagos.md) | E2.8, períodos y totales; `1693555` |
 
 ## Fundamentos desde Flutter y Dart
 
@@ -38,6 +43,10 @@ L08 documenta el estado de revisiones del 2026-10-27, incluidas las correcciones
 L09–L11 se prepararon el 2026-11-01 comparando Angular `59fa465` con Flutter `7d3fa5f`. L09 atiende Vender; L10 y L11 completan las lecciones pendientes de Egresos e Historial. La numeración refleja el orden de entrega documental. No se modifican las lecciones previas para actualizar sus referencias históricas a componentes o features que llegaron después.
 
 ## PDF y entrega para Drive
+
+L13–L17 se prepararon el 2026-11-04 y se contrastaron después del pull con `development` en `e456cfe`: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` y Reporte de pagos `1693555`; UI compartida en `55b74fe`. Comparan con Flutter `7d3fa5f`, donde esas funciones usan tarjetas o secciones/tablas repetidas. Incorporan la reverificación de Antigravity y los arreglos posteriores de borrador, mes UTC y aviso de egresos. Solo teoría y ejemplos, sin ejercicios; el dueño autorizó el commit y push de estas fuentes el 2026-11-04. Dashboard, recibo y Usuarios siguen pendientes de lección propia, sin número reservado.
+
+PDF individuales: `docs/informes/13-resinas.pdf`, `14-armazones.pdf`, `15-auditoria.pdf`, `16-ventas-por-vendedor.pdf` y `17-reporte-pagos.pdf`. No se incorporan retroactivamente al ZIP histórico del 2026-11-01. Las fuentes de lecciones 00–12 y los informes históricos se conservan.
 
 L12 se preparó el 2026-11-02 sobre `e6d7a6c`, actualizada con las correcciones de pagos/teclado de `e019946`. Explica una mejora nueva sin pantalla equivalente en Flutter: ficha con Revisiones/Ventas/Pagos, ruta `:id`, C-14 y reutilización de acciones/diálogos. PDF individual en `docs/informes/12-ficha-paciente.pdf`; se entrega aparte del paquete histórico del 2026-11-01. Las lecciones 00–11 conservan el contexto de su fecha.
 

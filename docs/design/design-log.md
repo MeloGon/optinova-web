@@ -30,10 +30,10 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-04 | Date picker | implementado v1 (2026-10-30, `shared/ui/date-picker`) | D-001 |
 | C-05 | Checkbox, Radio, Switch | v1 | D-001 |
 | C-06 | Segmented control / Toggle group | v1 | D-001 |
-| C-07 | Table (densa) | v1 | D-001 |
+| C-07 | Table (densa) | implementado; fix de especificidad CSS en `55b74fe` (2026-11-04) | D-001 |
 | C-08 | Paginador | v1 | D-001 |
 | C-09 | Card | v1 | D-001 |
-| C-10 | Stat card (KPI) | v1 | D-001 |
+| C-10 | Stat card (KPI) | implementado en Dashboard; variación/tendencia en `3e89319` | D-001 |
 | C-11 | Badge / Pill de estado | v1 | D-001 |
 | C-12 | Dialog / Modal | v1 | D-001 |
 | C-13 | Toast | v1 | D-001 |
@@ -46,7 +46,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-20 | Sidebar de navegación | implementado v1 | D-001 |
 | C-21 | Navbar / Topbar | implementado v1 | D-001 |
 | C-22 | Stepper | implementado v1 (2026-11-01, `shared/ui/stepper`, `59fa465`) | D-001 |
-| C-23 | Gráficas (barras, dona) | v1 | D-001 |
+| C-23 | Gráficas (barras, dona) | implementado SVG: `85b9582`; sparkline `3e89319`, ranking `f390165` | D-001 |
 | C-24 | Selector de color primario | v1 | D-001 |
 
 ### Patrones
@@ -63,9 +63,9 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | ID | Nombre | Estado | Pedido |
 |---|---|---|---|
 | S-01 | Login | v1 | D-001 |
-| S-02 | Dashboard | v1 | D-001 |
+| S-02 | Dashboard | implementado: `85b9582`, `3e89319`, `f390165`; Dashboard v2 aprobado por Antigravity | D-001 |
 | S-03 | Buscar paciente + ficha con revisiones | implementado en `e6d7a6c` (2026-11-02): ruta propia, encabezado y Revisiones/Ventas/Pagos | D-001 |
-| S-04 | Nueva venta (3 pasos) | implementado en `59fa465` (recibo PDF y P-04 completo pendientes) | D-001 |
+| S-04 | Nueva venta (3 pasos) | implementado en `59fa465`; recibo PDF en `c5d5950`; P-04 de descuentos pendiente | D-001 |
 | S-05 | Historial de ventas + registrar pago | v1 | D-001 |
 | S-06 | Configuración / Apariencia | v1 | D-001 |
 
@@ -79,6 +79,16 @@ Al cierre de E2.3b (2026-10-27), S-03 se difirió hasta que existieran Ventas/Pa
 
 `e6d7a6c`, commit local en `development`: ficha en `/dashboard/search-patient/:id`, encabezado y pestañas Revisiones/Ventas/Pagos con contadores. Decisión del dueño: página propia en lugar de panel partido; sección en `?tab=`. C-14 recibe selección y emite cambios; la página monta el contenido. Se reutilizan P-05, diálogos de revisión y venta/abono, y acciones de ciclo de vida extraídas. Los dos arreglos tras Antigravity están incluidos: Restaurar sustituye a Eliminar para archivados (admin+; Editar permanece) y Revisiones usa el mismo empty-state con tarjeta que Ventas/Pagos. `e019946` completa flechas cíclicas/Home/End, foco con `viewChildren` y vínculo de paneles mediante `tabId`/`tabPanelId`. También reemplaza la consulta de pagos en dos pasos por embed sobre la FK existente. Lectura y límites: [L12](../lessons/12-ficha-paciente.md). Sin equivalente de pantalla en Flutter `7d3fa5f`.
 
+## Fix de C-07 Table: encabezados `text-right` (2026-11-04)
+
+El dueño notó la cabecera de "Ventas por vendedor" descuadrada: el dato de cada columna quedaba a la derecha, pero el título de la columna ("Total vendido", "Saldo pendiente"...) se quedaba pegado a la izquierda. Causa real, no solo de esa pantalla: `OnvTable` fuerza `[&_th]:text-left` en el host, y esa regla tiene más especificidad CSS (una clase + un elemento) que el `class="text-right"` puesto en un `<th>` suelto (solo una clase), así que el `<th>` siempre perdía el pulso sin importar el orden del HTML. Afectaba por igual a Egresos, Historial de ventas, Mounts y Resinas; se notó más aquí por tener encabezados de dos palabras. Arreglo en `shared/ui/table/table.ts`: la regla por defecto ahora es `[&_th:not(.text-right):not(.text-center)]:text-left`, que simplemente no aplica sobre un `<th>` que ya trae su propia alineación, sin pelear por especificidad. 328 tests siguen en verde, `ng build` limpio.
+
 ## Implementación de E2.5 y C-04 (2026-10-30)
 
 S-05 Historial de ventas implementado siguiendo el diseño: un buscador, segmented de estado con contadores (se le agregó esa capacidad a C-06), tabla C-07, diálogo de detalle y "Registrar pago" con método como botones con ícono. Pedido del dueño al probar: el `<input type="date">` nativo no tiene forma de volver a "hoy" (el calendario lo dibuja el navegador, no se puede tocar). Se construyó **C-04 Date picker** (`shared/ui/date-picker`): input enmascarado `dd/mm/aaaa` + calendario propio con `CdkConnectedOverlay` (grid ARIA, Limpiar/Hoy, min/maxDate), reemplazando el input nativo en los 6 lugares donde se usaba (fecha de nacimiento y de registro en pacientes, fecha de revisión, fecha de egreso, fecha de pago y el filtro de Historial de ventas). Sin la variante de rango (ningún filtro de la app la necesita todavía) y sin navegación por teclado día a día en la grilla (mejora pendiente). Value accessor propio: no usa el provider `NG_VALUE_ACCESSOR` + auto-inyección de `NgControl` (causa NG0200, dependencia circular); se asigna `ngControl.valueAccessor = this` a mano, como recomienda Angular para controles de formulario a medida.
+
+## Consolidación de Dashboard, recibo y E2.8 (2026-11-04)
+
+El estado pendiente del recibo quedó resuelto en `c5d5950`: ticket pdfmake de 80 mm, configuración de sucursal para logo/teléfono y QR con folio. C-10/C-23/S-02 ya tienen implementación en los tres commits de E2.7: base por rol `85b9582`, periodo/variación `3e89319` y cobranza/stock/top/ranking `f390165`. Se consolidan desde el historial, el reporte de Antigravity y el pull confirmado a `e456cfe`.
+
+Las cinco pantallas de E2.8 ya están publicadas: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` e Ingresos y egresos `1693555`. Usan C-07/C-08 y componentes del sistema; no se inventa un nuevo ID de pantalla. El fix C-07 está en `55b74fe` y las rutas/providers, en `e456cfe`. Clases [L13](../lessons/13-resinas.md), [L14](../lessons/14-armazones.md), [L15](../lessons/15-auditoria.md), [L16](../lessons/16-ventas-por-vendedor.md) y [L17](../lessons/17-reporte-pagos.md). Las tarjetas/secciones de Flutter son referencia funcional; la disposición de tablas Angular es nueva. Usuarios, publicado en `53e72de`, reutiliza C-07/C-11/C-12/C-15/C-19; su lección sigue pendiente. Esta consolidación se contrastó tras el pull a `e456cfe`.
