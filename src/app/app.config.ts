@@ -8,6 +8,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideLucideConfig } from '@lucide/angular';
 import { routes } from './app.routes';
 import { SessionStore } from './core/auth/session.store';
+import { SupabaseAppConfigRepository } from './core/data/supabase-app-config.repository';
 import { SupabaseAuditLogRepository } from './core/data/supabase-audit-log.repository';
 import { SupabaseAuthRepository } from './core/data/supabase-auth.repository';
 import { SupabaseDashboardRepository } from './core/data/supabase-dashboard.repository';
@@ -20,8 +21,11 @@ import { SupabasePaymentsReportRepository } from './core/data/supabase-payments-
 import { SupabaseResinRepository } from './core/data/supabase-resin.repository';
 import { SupabaseReviewRepository } from './core/data/supabase-review.repository';
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
+import { SupabaseSalesBySellerReportRepository } from './core/data/supabase-sales-by-seller-report.repository';
 import { SupabaseSellerRepository } from './core/data/supabase-seller.repository';
+import { SupabaseTeamPermissionsRepository } from './core/data/supabase-team-permissions.repository';
 import { SupabaseUserAdminRepository } from './core/data/supabase-user-admin.repository';
+import { AppConfigRepository } from './core/repositories/app-config.repository';
 import { AuditLogRepository } from './core/repositories/audit-log.repository';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
@@ -34,7 +38,9 @@ import { PaymentsReportRepository } from './core/repositories/payments-report.re
 import { ResinRepository } from './core/repositories/resin.repository';
 import { ReviewRepository } from './core/repositories/review.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
+import { SalesBySellerReportRepository } from './core/repositories/sales-by-seller-report.repository';
 import { SellerRepository } from './core/repositories/seller.repository';
+import { TeamPermissionsRepository } from './core/repositories/team-permissions.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { ThemeService } from './core/theme/theme.service';
 
@@ -48,6 +54,7 @@ export const appConfig: ApplicationConfig = {
     // Repositorio abstracto → implementación (= Provider<AuthRepository>((ref) => AuthRepositoryImpl())).
     { provide: AuthRepository, useClass: SupabaseAuthRepository },
     { provide: AuditLogRepository, useClass: SupabaseAuditLogRepository },
+    { provide: AppConfigRepository, useClass: SupabaseAppConfigRepository },
     { provide: PatientRepository, useClass: SupabasePatientRepository },
     { provide: PatientLifecycleRepository, useClass: SupabasePatientLifecycleRepository },
     { provide: ReviewRepository, useClass: SupabaseReviewRepository },
@@ -55,9 +62,11 @@ export const appConfig: ApplicationConfig = {
     { provide: SaleRepository, useClass: SupabaseSaleRepository },
     { provide: PaymentRepository, useClass: SupabasePaymentRepository },
     { provide: PaymentsReportRepository, useClass: SupabasePaymentsReportRepository },
+    { provide: SalesBySellerReportRepository, useClass: SupabaseSalesBySellerReportRepository },
     { provide: MountRepository, useClass: SupabaseMountRepository },
     { provide: ResinRepository, useClass: SupabaseResinRepository },
     { provide: SellerRepository, useClass: SupabaseSellerRepository },
+    { provide: TeamPermissionsRepository, useClass: SupabaseTeamPermissionsRepository },
     { provide: UserAdminRepository, useClass: SupabaseUserAdminRepository },
     { provide: DashboardRepository, useClass: SupabaseDashboardRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.

@@ -26,12 +26,6 @@ export interface SaleStatusCounts {
   paid: number;
 }
 
-export interface SaleMonthSearch {
-  /** `yyyy-MM`. */
-  month: string;
-  branch: string | null;
-}
-
 /** Venta nueva a crear (= el encabezado que arma Vender antes de confirmar). */
 export interface NewSale {
   branch: string;
@@ -64,12 +58,6 @@ export abstract class SaleRepository {
     params: Omit<SaleSearch, 'status' | 'page' | 'pageSize'>,
   ): Promise<Result<SaleStatusCounts, AppError>>;
 
-  /**
-   * Todas las ventas de un mes (sin paginar: es un reporte, se agrupa por vendedor en el cliente,
-   * igual que Flutter trae el mes completo con `getSalesByDateRange`).
-   */
-  abstract listByMonth(params: SaleMonthSearch): Promise<Result<Sale[], AppError>>;
-
   /** Líneas de una venta por su folio (= getSaleDetails de Flutter, que también filtra por folio). */
   abstract getItems(folio: string): Promise<Result<SaleItem[], AppError>>;
 
@@ -93,4 +81,12 @@ export abstract class SaleRepository {
    * si el segundo falla, la venta queda creada sin líneas.
    */
   abstract create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>>;
+
+  /**
+   * Corrige la fecha mostrada de una venta (= `updateSaleDate` de Flutter, pero sobre
+   * `fecha_actualizada`, el campo que la app realmente usa — Flutter corrige `"FECHA"`/
+   * `"FECHA DE VENTA"`, campos de respaldo que acá nadie lee desde el cambio #8). Gateada por el
+   * flag `feature_change_date` de Settings · Features; sin restricción de rol, igual que Flutter.
+   */
+  abstract changeDate(saleId: string, newDate: string): Promise<Result<void, AppError>>;
 }

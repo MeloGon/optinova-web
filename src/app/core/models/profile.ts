@@ -8,4 +8,6 @@ export interface Profile {
   branch: string;
   role: Role;
   email: string;
+  /** `perfiles.puede_cambiar_fecha`: solo aplica a un vendedor; otro rol lo ignora (siempre puede). */
+  canChangeDate: boolean;
 }

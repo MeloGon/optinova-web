@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { appError } from '../../core/errors/app-error';
+import { AppConfigRepository } from '../../core/repositories/app-config.repository';
+import { AuditLogRepository } from '../../core/repositories/audit-log.repository';
 import { PaymentRepository } from '../../core/repositories/payment.repository';
 import { SaleRepository } from '../../core/repositories/sale.repository';
+import { FakeAppConfigRepository } from '../../testing/fake-app-config.repository';
+import { FakeAuditLogRepository } from '../../testing/fake-audit-log.repository';
 import { FakePaymentRepository, fakePayment } from '../../testing/fake-payment.repository';
 import { FakeSaleRepository, fakeSale } from '../../testing/fake-sale.repository';
 import { SalesHistoryStore } from './sales-history.store';
@@ -9,6 +13,8 @@ import { SalesHistoryStore } from './sales-history.store';
 describe('SalesHistoryStore', () => {
   let saleRepo: FakeSaleRepository;
   let paymentRepo: FakePaymentRepository;
+  let appConfigRepo: FakeAppConfigRepository;
+  let auditLog: FakeAuditLogRepository;
   let store: SalesHistoryStore;
 
   beforeEach(() => {
@@ -19,11 +25,15 @@ describe('SalesHistoryStore', () => {
       { ...fakeSale(3, 'ANA GARCIA'), rest: 50 },
     ];
     paymentRepo = new FakePaymentRepository();
+    appConfigRepo = new FakeAppConfigRepository();
+    auditLog = new FakeAuditLogRepository();
     TestBed.configureTestingModule({
       providers: [
         SalesHistoryStore,
         { provide: SaleRepository, useValue: saleRepo },
         { provide: PaymentRepository, useValue: paymentRepo },
+        { provide: AppConfigRepository, useValue: appConfigRepo },
+        { provide: AuditLogRepository, useValue: auditLog },
       ],
     });
     store = TestBed.inject(SalesHistoryStore);
@@ -157,5 +167,39 @@ describe('SalesHistoryStore', () => {
     );
 
     expect(saleRepo.appliedPayments[0].newRest).toBe(0);
+  });
+
+  it('carga el flag de "cambiar fecha" desde app_config', async () => {
+    appConfigRepo.features = [{ key: 'feature_change_date', value: false, description: '' }];
+    await store.loadChangeDateFlag();
+    expect(store.changeDateEnabled()).toBe(false);
+  });
+
+  it('sin el flag en la lista, se queda con el valor por defecto (habilitado)', async () => {
+    appConfigRepo.features = [];
+    await store.loadChangeDateFlag();
+    expect(store.changeDateEnabled()).toBe(true);
+  });
+
+  it('al cambiar la fecha, guarda, audita y refresca la lista pedida', async () => {
+    await store.load(search());
+    const sale = store.items()[0];
+
+    const result = await store.changeDate(sale, '2026-12-25', 'admin@optinova.test');
+
+    expect(result.ok).toBe(true);
+    expect(saleRepo.changeDateCalls).toEqual([{ saleId: sale.id, newDate: '2026-12-25' }]);
+    expect(auditLog.logged[0].entry.action).toBe('change_date');
+    expect(auditLog.logged[0].userEmail).toBe('admin@optinova.test');
+  });
+
+  it('si cambiar la fecha falla, no audita', async () => {
+    await store.load(search());
+    saleRepo.changeDateFailWith = appError('server', 'Falló.');
+
+    const result = await store.changeDate(store.items()[0], '2026-12-25', 'admin@optinova.test');
+
+    expect(result.ok).toBe(false);
+    expect(auditLog.logged.length).toBe(0);
   });
 });

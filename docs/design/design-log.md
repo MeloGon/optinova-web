@@ -28,7 +28,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 | C-02 | Input de texto / número / moneda | v1 | D-001 |
 | C-03 | Select / Combobox con búsqueda | v1 | D-001 |
 | C-04 | Date picker | implementado v1 (2026-10-30, `shared/ui/date-picker`) | D-001 |
-| C-05 | Checkbox, Radio, Switch | v1 | D-001 |
+| C-05 | Checkbox, Radio, Switch | Switch implementado (2026-11-05, `shared/ui/switch`, Settings · Features); Checkbox/Radio siguen v1 | D-001 |
 | C-06 | Segmented control / Toggle group | v1 | D-001 |
 | C-07 | Table (densa) | implementado; fix de especificidad CSS en `55b74fe` (2026-11-04) | D-001 |
 | C-08 | Paginador | v1 | D-001 |

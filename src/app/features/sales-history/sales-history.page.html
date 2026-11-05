@@ -230,5 +230,16 @@
         Registrar pago
       </button>
     }
+    @if (canChangeDate()) {
+      <button
+        cdkMenuItem
+        type="button"
+        (cdkMenuItemTriggered)="changeDate(sale)"
+        class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+      >
+        <svg [lucideIcon]="icons.changeDate" [size]="16"></svg>
+        Cambiar fecha
+      </button>
+    }
   </div>
 </ng-template>

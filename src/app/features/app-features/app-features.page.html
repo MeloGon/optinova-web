@@ -1,0 +1,111 @@
+<div class="mx-auto flex max-w-3xl flex-col gap-6 p-4 md:p-6">
+  @if (isAdmin) {
+    <section class="flex flex-col gap-3">
+      <h2 class="text-heading-sm font-semibold">Funciones generales</h2>
+
+      @if (store.error(); as message) {
+        <div
+          role="alert"
+          class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+        >
+          <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+          <span class="flex-1">{{ message }}</span>
+          <button
+            type="button"
+            (click)="retry()"
+            class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+          >
+            <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+            Reintentar
+          </button>
+        </div>
+      }
+
+      @if (store.loaded() && store.features().length === 0 && !store.error()) {
+        <div class="rounded-lg border border-border bg-card elev-sm">
+          <onv-empty-state [icon]="icons.features" title="Sin funciones" text="Todavía no hay interruptores configurados." />
+        </div>
+      } @else {
+        <div class="overflow-hidden rounded-lg border border-border bg-card elev-sm">
+          @if (!store.loaded()) {
+            @for (row of skeletonRows; track row) {
+              <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+                <onv-skeleton class="h-4 w-64" />
+                <onv-skeleton class="h-5 w-9 shrink-0 rounded-full" />
+              </div>
+            }
+          } @else {
+            @for (feature of store.features(); track feature.key) {
+              <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+                <span class="text-body">{{ feature.description || feature.key }}</span>
+                <onv-switch
+                  [checked]="feature.value"
+                  [disabled]="store.savingKey() === feature.key"
+                  [label]="feature.description || feature.key"
+                  (checkedChange)="toggle(feature.key, $event)"
+                />
+              </div>
+            }
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <section class="flex flex-col gap-3">
+    <h2 class="text-heading-sm font-semibold">Permisos de vendedores</h2>
+    <p class="text-body-sm text-muted-foreground">
+      Quién puede cambiar la fecha de una venta en Historial de ventas.
+    </p>
+
+    @if (store.vendorsError(); as message) {
+      <div
+        role="alert"
+        class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+      >
+        <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+        <span class="flex-1">{{ message }}</span>
+        <button
+          type="button"
+          (click)="retryVendors()"
+          class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+        >
+          <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+          Reintentar
+        </button>
+      </div>
+    }
+
+    @if (store.vendorsLoaded() && store.vendors().length === 0 && !store.vendorsError()) {
+      <div class="rounded-lg border border-border bg-card elev-sm">
+        <onv-empty-state [icon]="icons.team" title="Sin vendedores" text="No hay vendedores a tu cargo todavía." />
+      </div>
+    } @else {
+      <div class="overflow-hidden rounded-lg border border-border bg-card elev-sm">
+        @if (!store.vendorsLoaded()) {
+          @for (row of skeletonRows; track row) {
+            <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+              <onv-skeleton class="h-4 w-64" />
+              <onv-skeleton class="h-5 w-9 shrink-0 rounded-full" />
+            </div>
+          }
+        } @else {
+          @for (vendor of store.vendors(); track vendor.id) {
+            <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+              <span class="text-body">
+                {{ vendor.name }}
+                <span class="text-body-sm text-muted-foreground">· {{ vendor.branch }}</span>
+              </span>
+              <onv-switch
+                [checked]="vendor.canChangeDate"
+                [disabled]="store.savingVendorId() === vendor.id"
+                [label]="'Cambiar fecha de venta: ' + vendor.name"
+                (checkedChange)="toggleVendor(vendor.id, $event)"
+              />
+            </div>
+          }
+        }
+      </div>
+    }
+  </section>
+</div>

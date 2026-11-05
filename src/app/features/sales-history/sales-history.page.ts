@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {
+  LucideCalendarClock,
   LucideDynamicIcon,
   LucideEllipsis,
   LucideEye,
@@ -31,6 +32,7 @@ import { OnvTable, TableCard } from '../../shared/ui/table/table';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { ReceiptPdfService, saleItemToReceiptLine } from '../../shared/services/receipt-pdf.service';
 import { Badge } from '../../shared/ui/badge/badge';
+import { ChangeDateDialog, ChangeDateDialogData, CHANGE_DATE_TITLE_ID } from './components/change-date-dialog';
 import { RegisterPaymentDialog, RegisterPaymentDialogData, REGISTER_PAYMENT_TITLE_ID } from './components/register-payment-dialog';
 import {
   SaleDetailsDialog,
@@ -105,6 +107,18 @@ export class SalesHistoryPage {
   protected readonly branches = computed(() => this.config().branches);
   protected readonly saleStatus = saleStatus;
 
+  /**
+   * "Cambiar fecha" exige DOS cosas: el apagado de emergencia de `app_config` (admin+, toda la
+   * empresa) y, si quien mira es vendedor, su propio permiso otorgado por su supervisor
+   * (`perfiles.puede_cambiar_fecha`, Settings · Features). Supervisor o superior siempre puede.
+   */
+  protected readonly canChangeDate = computed(() => {
+    if (!this.store.changeDateEnabled()) return false;
+    const profile = this.session.profile();
+    if (!profile) return false;
+    return profile.role !== 'vendedor' || profile.canChangeDate;
+  });
+
   protected readonly search = computed<SaleSearch>(() => ({
     query: (this.q() ?? '').trim(),
     branch: this.branch() || null,
@@ -141,9 +155,12 @@ export class SalesHistoryPage {
     more: LucideEllipsis,
     pay: LucideHandCoins,
     print: LucidePrinter,
+    changeDate: LucideCalendarClock,
   };
 
   constructor() {
+    void this.store.loadChangeDateFlag();
+
     effect(() => {
       const search = this.search();
       untracked(() => void this.store.load(search));
@@ -277,6 +294,24 @@ export class SalesHistoryPage {
     });
     ref.closed.subscribe((saved) => {
       if (saved) this.toast.show({ tone: 'success', title: 'Abono registrado', text: sale.patientName });
+    });
+  }
+
+  protected changeDate(sale: Sale): void {
+    const data: ChangeDateDialogData = {
+      folio: sale.folio,
+      currentDate: sale.date,
+      save: (newDate) => this.store.changeDate(sale, newDate, this.session.profile()?.email ?? ''),
+    };
+    const ref = this.dialog.open<boolean>(ChangeDateDialog, {
+      data,
+      role: 'dialog',
+      ariaLabelledBy: CHANGE_DATE_TITLE_ID,
+      disableClose: true,
+      backdropClass: ['bg-overlay'],
+    });
+    ref.closed.subscribe((saved) => {
+      if (saved) this.toast.show({ tone: 'success', title: 'Fecha actualizada' });
     });
   }
 

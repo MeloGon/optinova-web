@@ -6,10 +6,14 @@ import { SessionStore } from './core/auth/session.store';
 import { Role } from './core/models/role';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
+import { AppConfigRepository } from './core/repositories/app-config.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
 import { PaymentsReportRepository } from './core/repositories/payments-report.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
+import { TeamPermissionsRepository } from './core/repositories/team-permissions.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
+import { FakeAppConfigRepository } from './testing/fake-app-config.repository';
+import { FakeTeamPermissionsRepository } from './testing/fake-team-permissions.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
 import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
 import { FakePaymentRepository } from './testing/fake-payment.repository';
@@ -37,6 +41,10 @@ describe('Rutas y guards', () => {
         { provide: PaymentsReportRepository, useValue: new FakePaymentsReportRepository() },
         // Usuarios (E2.8) lo pide su propio store al entrar.
         { provide: UserAdminRepository, useValue: new FakeUserAdminRepository() },
+        // Features (E2.8) y "cambiar fecha" de Historial de ventas leen app_config.
+        { provide: AppConfigRepository, useValue: new FakeAppConfigRepository() },
+        // Features (E2.8) también lista/administra el permiso por vendedor.
+        { provide: TeamPermissionsRepository, useValue: new FakeTeamPermissionsRepository() },
       ],
     });
     await TestBed.inject(SessionStore).restore();
@@ -61,11 +69,10 @@ describe('Rutas y guards', () => {
     expect(url()).toBe('/dashboard');
   });
 
-  it('una página pendiente muestra su título y su entregable', async () => {
+  it('admin entra a Funcionalidades; E2.8 ya no tiene páginas pendientes', async () => {
     const h = await start('admin');
     await h.navigateByUrl('/dashboard/settings/features');
-    expect(text(h)).toContain('Funcionalidades');
-    expect(text(h)).toContain('E2.8');
+    expect(url()).toBe('/dashboard/settings/features');
   });
 
   it('Apariencia (donde vive el selector de tema) está abierta a todos los roles', async () => {
@@ -81,11 +88,19 @@ describe('Rutas y guards', () => {
     expect(url()).toBe('/dashboard');
   });
 
-  it('un supervisor entra a Ingresos y egresos pero no a Usuarios', async () => {
+  it('un supervisor entra a Ingresos y egresos y a Funcionalidades, pero no a Usuarios', async () => {
     const h = await start('supervisor');
     await h.navigateByUrl('/dashboard/settings/payments-report');
     expect(url()).toBe('/dashboard/settings/payments-report');
+    await h.navigateByUrl('/dashboard/settings/features');
+    expect(url()).toBe('/dashboard/settings/features');
     await h.navigateByUrl('/dashboard/settings/users-management');
+    expect(url()).toBe('/dashboard');
+  });
+
+  it('un vendedor no entra a Funcionalidades', async () => {
+    const h = await start('vendedor');
+    await h.navigateByUrl('/dashboard/settings/features');
     expect(url()).toBe('/dashboard');
   });
 

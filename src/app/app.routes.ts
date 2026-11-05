@@ -1,20 +1,6 @@
-import { Route, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth/guards';
 import { PageData } from './core/models/page-data';
-
-/**
- * Página de una feature que todavía no existe: muestra "En construcción".
- * Si la página pide un rol (data.minRole), se protege con roleGuard.
- */
-function pending(path: string, data: PageData & { delivery: string }): Route {
-  return {
-    path,
-    title: `${data.title} · Optinova`,
-    data,
-    canActivate: data.minRole ? [roleGuard(data.minRole)] : [],
-    loadComponent: () => import('./shared/pages/coming-soon.page').then((m) => m.ComingSoonPage),
-  };
-}
 
 // = el GoRouter de app_router.dart. Mismas rutas que RouterName de Flutter.
 export const routes: Routes = [
@@ -162,12 +148,17 @@ export const routes: Routes = [
         canActivate: [roleGuard('admin')],
         loadComponent: () => import('./features/sales-by-seller/seller-sales.page').then((m) => m.SellerSalesPage),
       },
-      pending('settings/features', {
-        minRole: 'admin',
-        title: 'Funcionalidades',
-        description: 'Activa o desactiva funciones de la app.',
-        delivery: 'E2.8',
-      }),
+      {
+        path: 'settings/features',
+        title: 'Funcionalidades · Optinova',
+        data: {
+          title: 'Funcionalidades',
+          description: 'Permisos de vendedores y funciones de la app.',
+          minRole: 'supervisor',
+        } satisfies PageData,
+        canActivate: [roleGuard('supervisor')],
+        loadComponent: () => import('./features/app-features/app-features.page').then((m) => m.AppFeaturesPage),
+      },
       {
         path: 'settings/users-management',
         title: 'Usuarios · Optinova',

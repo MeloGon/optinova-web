@@ -13,6 +13,7 @@ interface ProfileRow {
   nombre: string | null;
   sucursal: string | null;
   rol: string | null;
+  puede_cambiar_fecha: boolean;
 }
 
 @Injectable()
@@ -50,7 +51,7 @@ export class SupabaseAuthRepository extends AuthRepository {
   private async loadProfile(user: User): Promise<Result<Profile, AppError>> {
     const { data, error } = await this.supabase
       .from('perfiles')
-      .select('id, nombre, sucursal, rol')
+      .select('id, nombre, sucursal, rol, puede_cambiar_fecha')
       .eq('id', user.id)
       .maybeSingle<ProfileRow>();
 
@@ -64,6 +65,7 @@ export class SupabaseAuthRepository extends AuthRepository {
       branch: data.sucursal ?? '',
       role: toRole(data.rol),
       email: user.email ?? '',
+      canChangeDate: data.puede_cambiar_fecha,
     });
   }
 }

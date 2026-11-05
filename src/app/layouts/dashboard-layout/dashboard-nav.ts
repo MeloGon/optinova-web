@@ -68,7 +68,12 @@ export const DASHBOARD_NAV: DashboardNavSection[] = [
   {
     title: 'Administración',
     items: [
-      { label: 'Funcionalidades', icon: LucideSlidersHorizontal, path: '/dashboard/settings/features', minRole: 'admin' },
+      {
+        label: 'Funcionalidades',
+        icon: LucideSlidersHorizontal,
+        path: '/dashboard/settings/features',
+        minRole: 'supervisor',
+      },
       { label: 'Auditoría', icon: LucideShieldCheck, path: '/dashboard/settings/audit-logs', minRole: 'admin' },
     ],
   },

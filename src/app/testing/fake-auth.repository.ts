@@ -4,12 +4,13 @@ import { Role } from '../core/models/role';
 import { AuthRepository } from '../core/repositories/auth.repository';
 import { Result, err, ok } from '../core/result';
 
-export const fakeProfile = (role: Role): Profile => ({
+export const fakeProfile = (role: Role, canChangeDate = false): Profile => ({
   id: `id-${role}`,
   name: `${role} Prueba`,
   branch: 'OFTALVISION',
   role,
   email: `${role}@optinova.test`,
+  canChangeDate,
 });
 
 /** AuthRepository en memoria para tests (= un mock de mocktail). */
