@@ -22,6 +22,9 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 15 | [Auditoría y retención](15-auditoria.md) | E2.8 y migración #17, `eb1530a` |
 | 16 | [Ventas por vendedor](16-ventas-por-vendedor.md) | E2.8, agregados y detalle; `d99ced3` |
 | 17 | [Reporte de pagos: ingresos y egresos](17-reporte-pagos.md) | E2.8, períodos y totales; `1693555` |
+| 18 | [Dashboard v2](18-dashboard.md) | E2.7, roles y métricas |
+| 19 | [Recibo PDF térmico](19-recibo-pdf.md) | E2.6, `c5d5950` |
+| 20 | [Gestión de usuarios](20-usuarios.md) | E2.8, `53e72de` |
 
 ## Fundamentos desde Flutter y Dart
 
@@ -44,7 +47,7 @@ L09–L11 se prepararon el 2026-11-01 comparando Angular `59fa465` con Flutter `
 
 ## PDF y entrega para Drive
 
-L13–L17 se prepararon el 2026-11-04 y se contrastaron después del pull con `development` en `e456cfe`: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` y Reporte de pagos `1693555`; UI compartida en `55b74fe`. Comparan con Flutter `7d3fa5f`, donde esas funciones usan tarjetas o secciones/tablas repetidas. Incorporan la reverificación de Antigravity y los arreglos posteriores de borrador, mes UTC y aviso de egresos. Solo teoría y ejemplos, sin ejercicios; el dueño autorizó el commit y push de estas fuentes el 2026-11-04. Dashboard, recibo y Usuarios siguen pendientes de lección propia, sin número reservado.
+L13–L17 se prepararon el 2026-11-04 y se contrastaron después del pull con `development` en `e456cfe`: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` y Reporte de pagos `1693555`; UI compartida en `55b74fe`. Comparan con Flutter `7d3fa5f`, donde esas funciones usan tarjetas o secciones/tablas repetidas. Incorporan la reverificación de Antigravity y los arreglos posteriores de borrador, mes UTC y aviso de egresos. Solo teoría y ejemplos, sin ejercicios; el dueño autorizó el commit y push de estas fuentes el 2026-11-04. Dashboard, recibo y Usuarios se documentaron después en L18–L20.
 
 PDF individuales: `docs/informes/13-resinas.pdf`, `14-armazones.pdf`, `15-auditoria.pdf`, `16-ventas-por-vendedor.pdf` y `17-reporte-pagos.pdf`. No se incorporan retroactivamente al ZIP histórico del 2026-11-01. Las fuentes de lecciones 00–12 y los informes históricos se conservan.
 

@@ -410,3 +410,15 @@ Lectura: [Reporte de pagos](lessons/17-reporte-pagos.md). Publicado en `1693555`
 Ingresos suma cobros, no importes totales de ventas; Neto resta egresos recibidos. El saldo mostrado es el actual de la venta y no se debe sumar repetido por pago. El fallo de egresos deja una lista vacía pero ahora muestra «Egresos no disponibles» con reintento; los pagos permanecen visibles y el neto queda incompleto hasta recuperar gastos. Ningún reporte descarga automáticamente todas las páginas de la API: la completitud requiere revisión.
 
 Consolidación L13–L17 (2026-11-04): las cinco implementaciones ya están publicadas. El efecto del borrador depende solo de `q()` para no borrarlo al cambiar otro filtro; `monthRange` usa `Date.UTC` y se comparte con `listByMonth`. La reverificación de Antigravity y 346 tests/build limpio reportados por Claude quedan como evidencia, sin repetirlos desde Codex.
+
+
+## Dashboard, recibo y usuarios (L18–L20)
+
+| Flutter / Riverpod | Angular / Optinova |
+|---|---|
+| `DashboardProvider` y varias lecturas | `DashboardStore` y `DashboardRepository`: resumen SQL con alcance según rol; `computed` deriva valores de presentación. |
+| `pw.Document` y `PdfPageFormat.roll80` | pdfmake con definición declarativa y ancho de 80 mm; servicio de recibos compartido. |
+| `UsersManagement` y `copyWith` | `UsersStore` provisto por página, signals, repositorio y `Result`. |
+| Servicio administrativo en backend | Edge Function verifica megadmin; la clave privilegiada permanece en servidor. |
+
+Ver [Dashboard](lessons/18-dashboard.md), [recibo](lessons/19-recibo-pdf.md) y [usuarios](lessons/20-usuarios.md).
