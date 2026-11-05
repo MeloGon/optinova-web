@@ -12,8 +12,11 @@
  *     si el color no cabe en sRGB se reduce C (L y H se conservan).
  *  3. El color elegido queda EXACTO en el paso cuya L está más cerca (ancla).
  *  4. color-primary = el ancla, acotada a 400–700 en claro y 300–500 en oscuro.
- *  5. color-primary-foreground = blanco si contraste ≥ 4.5:1; si no, primary-950; si no, #0b0d12.
- *     Si ninguno llega, el primario se mueve un paso hacia el lado con mejor contraste.
+ *  5. color-primary-foreground = blanco siempre que se pueda: si el paso elegido no llega a
+ *     4.5:1 con blanco, se oscurece paso a paso (nunca se aclara: un color más claro nunca
+ *     mejora el contraste con blanco) hasta encontrar uno que sí llegue, aunque eso signifique
+ *     salirse del rango pensado para el modo (ej. oscuro, pensado más claro para resaltar sobre
+ *     el fondo). Solo si ni el paso más oscuro (950) alcanzara, cae a primary-950 o #0b0d12.
  *  6. Hover/activo se alejan del texto: con texto blanco oscurecen, con texto oscuro aclaran.
  *  Probado con 764 colores (36 tonos × 7 luminosidades × 3 cromas + presets): 0 fallos AA.
  */
@@ -147,11 +150,9 @@ export function semanticFor(gen: Scale, mode: Mode): Record<string, string> {
   const max = STEPS.indexOf(mode === 'light' ? 700 : 500);
   let i = Math.min(max, Math.max(min, idx));
   const dark950 = s[950];
-  for (let guard = 0; guard < 4; guard++) {
-    const fill = s[STEPS[i]];
-    if (contrast(fill, '#ffffff') >= 4.5 || contrast(fill, dark950) >= 4.5) break;
-    i += contrast(fill, '#ffffff') > contrast(fill, dark950) ? 1 : -1;
-  }
+  // Preferimos blanco: oscurecer siempre ayuda al contraste con blanco, así que basta avanzar
+  // hasta el primer paso que llegue a AA, incluso más allá del `max` pensado para el modo.
+  while (i < STEPS.length - 1 && contrast(s[STEPS[i]], '#ffffff') < 4.5) i += 1;
   const step = (k: number) => STEPS[Math.min(10, Math.max(0, k))];
   const primary = STEPS[i];
   const fg = pickForeground(s[primary], dark950);

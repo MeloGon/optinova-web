@@ -13,7 +13,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 ### Tokens
 | ID | Nombre | Estado | Pedido |
 |---|---|---|---|
-| T-01 | Color (primario personalizable, neutros, semánticos) | implementado v1 | D-001 |
+| T-01 | Color (primario personalizable, neutros, semánticos) | implementado v1; fix de contraste en `core/theme/primary-scale.ts` (2026-11-05, pedido del dueño) | D-001 |
 | T-02 | Tipografía | implementado v1 | D-001 |
 | T-03 | Espaciado y layout | implementado v1 | D-001 |
 | T-04 | Radios y bordes | implementado v1 | D-001 |
@@ -92,3 +92,14 @@ S-05 Historial de ventas implementado siguiendo el diseño: un buscador, segment
 El estado pendiente del recibo quedó resuelto en `c5d5950`: ticket pdfmake de 80 mm, configuración de sucursal para logo/teléfono y QR con folio. C-10/C-23/S-02 ya tienen implementación en los tres commits de E2.7: base por rol `85b9582`, periodo/variación `3e89319` y cobranza/stock/top/ranking `f390165`. Se consolidan desde el historial, el reporte de Antigravity y el pull confirmado a `e456cfe`.
 
 Las cinco pantallas de E2.8 ya están publicadas: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` e Ingresos y egresos `1693555`. Usan C-07/C-08 y componentes del sistema; no se inventa un nuevo ID de pantalla. El fix C-07 está en `55b74fe` y las rutas/providers, en `e456cfe`. Clases [L13](../lessons/13-resinas.md), [L14](../lessons/14-armazones.md), [L15](../lessons/15-auditoria.md), [L16](../lessons/16-ventas-por-vendedor.md) y [L17](../lessons/17-reporte-pagos.md). Las tarjetas/secciones de Flutter son referencia funcional; la disposición de tablas Angular es nueva. Usuarios, publicado en `53e72de`, reutiliza C-07/C-11/C-12/C-15/C-19; su lección sigue pendiente. Esta consolidación se contrastó tras el pull a `e456cfe`.
+
+## Fix de T-01: texto del botón primary siempre blanco (2026-11-05)
+
+El dueño notó que el texto del botón primary salía negro con algunos colores (Turquesa, Verde menta, Coral, Ámbar) y, en modo oscuro, con TODOS los colores — incluidos Azul óptico/Violeta/Frambuesa, que en claro sí dan blanco. Dos causas distintas, encontradas con números reales (contraste real, no a ojo):
+
+1. **Bug en claro:** el generador se conformaba con el primer texto que "alcanzara algo" (blanco O negro), sin seguir buscando un paso más oscuro del MISMO color donde el blanco también funcionara. Turquesa en su paso elegido (500, `#0b9bb5`) solo da 3.30:1 con blanco (no llega a AA, 4.5:1 mínimo), pero su paso 600 (`#007f95`) da 4.70:1 — nunca se probaba.
+2. **No era bug en oscuro:** el rango de relleno en oscuro (pasos 300–500, más claro a propósito para resaltar sobre fondo oscuro) no tiene NINGÚN paso con blanco ≥4.5:1 para ninguno de los 8 presets (el mejor caso, Azul óptico, solo llega a 3.45:1). Pedirle blanco siempre significa renunciar a ese "paso más claro" en oscuro.
+
+Decisión del dueño (ambas confirmadas): corregir el bug de claro Y aceptar que oscuro use un paso más oscuro/saturado (parecido al de claro) para que el texto sea blanco siempre. Cambio en `semanticFor()` (`core/theme/primary-scale.ts`): en vez de un buscador bidireccional de 4 pasos que se detenía con la primera opción que alcanzara algo, ahora oscurece paso a paso (nunca aclara: oscurecer siempre ayuda al contraste con blanco) hasta encontrar un paso con blanco ≥4.5:1, sin techo por modo. Verificado con los 8 presets × 2 modos: los 16 casos quedan en blanco con contraste real entre 4.56:1 y 7.84:1 (antes, 8 de 16 caían en negro). 360 tests en verde, `ng build` limpio.
+
+**Pendiente:** este archivo viene del Artifact D-001 ("no editar a mano" en su comentario); el fix se aplicó directo en el repo por practicidad, sin volver al Artifact a corregir `export/primary-scale.ts` ahí también. Quedan desincronizados hasta que alguien actualice el Artifact o se documente que la versión del repo es ahora la autoritativa.
