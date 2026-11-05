@@ -1,15 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { appError } from '../../core/errors/app-error';
-import { SaleRepository } from '../../core/repositories/sale.repository';
-import { FakeSaleRepository, fakeSale } from '../../testing/fake-sale.repository';
+import { SalesBySellerReportRepository } from '../../core/repositories/sales-by-seller-report.repository';
+import { fakeSale } from '../../testing/fake-sale.repository';
+import { FakeSalesBySellerReportRepository } from '../../testing/fake-sales-by-seller-report.repository';
 import { SalesBySellerStore } from './sales-by-seller.store';
 
 describe('SalesBySellerStore', () => {
-  let repo: FakeSaleRepository;
+  let repo: FakeSalesBySellerReportRepository;
   let store: SalesBySellerStore;
 
   beforeEach(() => {
-    repo = new FakeSaleRepository();
+    repo = new FakeSalesBySellerReportRepository();
     repo.sales = [
       { ...fakeSale(1), date: '2026-11-05', sellerName: 'ADMIN PRUEBA', totalWithDiscount: 100, account: 100, rest: 0, branch: 'OFTALVISION' },
       { ...fakeSale(2), date: '2026-11-10', sellerName: 'admin prueba', totalWithDiscount: 50, account: 0, rest: 50, branch: 'OFTALVISION' },
@@ -17,7 +18,7 @@ describe('SalesBySellerStore', () => {
       { ...fakeSale(4), date: '2026-10-20', sellerName: 'Admin Prueba', totalWithDiscount: 999, account: 0, rest: 999, branch: 'OFTALVISION' },
     ];
     TestBed.configureTestingModule({
-      providers: [SalesBySellerStore, { provide: SaleRepository, useValue: repo }],
+      providers: [SalesBySellerStore, { provide: SalesBySellerReportRepository, useValue: repo }],
     });
     store = TestBed.inject(SalesBySellerStore);
   });
@@ -46,13 +47,13 @@ describe('SalesBySellerStore', () => {
     expect(store.sellers().map((s) => s.name)).toEqual(['Supervisor Prueba']);
   });
 
-  it('calcula los totales del período (no solo de una página, acá no hay paginación)', async () => {
+  it('calcula los totales del período (ya agregados por el servidor, no en el navegador)', async () => {
     await store.load({ month: '2026-11', branch: null });
     expect(store.totals()).toEqual({ sellerCount: 2, salesCount: 3, total: 350, rest: 50 });
   });
 
   it('un error se guarda como mensaje', async () => {
-    repo.listByMonthFailWith = appError('network', 'Sin conexión.');
+    repo.summaryFailWith = appError('network', 'Sin conexión.');
     await store.load({ month: '2026-11', branch: null });
     expect(store.error()).toBe('Sin conexión.');
     expect(store.loaded()).toBe(true);

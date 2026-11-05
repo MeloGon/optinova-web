@@ -5,7 +5,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { Field } from '../../../shared/ui/field/field';
 import { OnvInput } from '../../../shared/ui/field/input';
-import { SellerAggregate } from '../sales-by-seller.store';
+import { SellerAggregate } from '../../../core/repositories/sales-by-seller-report.repository';
 
 export interface CommissionsDialogData {
   sellers: SellerAggregate[];

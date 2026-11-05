@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, input, untracked } from '@angular/
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { LucideBanknote, LucideCalculator, LucideDynamicIcon, LucideHandCoins, LucideRefreshCw, LucideTriangleAlert, LucideUsers } from '@lucide/angular';
 import { ConfigService } from '../../core/config/config.service';
-import { SaleMonthSearch } from '../../core/repositories/sale.repository';
+import { SellerSummarySearch } from '../../core/repositories/sales-by-seller-report.repository';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { OnvTable, TableCard } from '../../shared/ui/table/table';
@@ -39,7 +39,7 @@ export class SalesBySellerPage {
   protected readonly monthOptions = MONTH_OPTIONS;
   protected readonly yearOptions = yearOptions();
 
-  protected readonly search = computed<SaleMonthSearch>(() => ({
+  protected readonly search = computed<SellerSummarySearch>(() => ({
     month: toMonth(this.month()),
     branch: this.branch() || null,
   }));
