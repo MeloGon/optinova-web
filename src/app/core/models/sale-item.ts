@@ -44,7 +44,8 @@ export type NewSaleItem =
     }
   | {
       kind: 'mount';
-      mountId: number;
+      /** Texto, no número: ver el comentario de `Mount.id`. */
+      mountId: string;
       mountBrand: string;
       mountModel: string;
       mountColor: string;

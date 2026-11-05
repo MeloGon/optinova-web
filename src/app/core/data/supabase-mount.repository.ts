@@ -8,7 +8,7 @@ import { escapeLike } from '../supabase/escape-like';
 import { SUPABASE } from '../supabase/supabase.client';
 
 interface MountRow {
-  id: number;
+  id: string;
   marca: string | null;
   modelo: string | null;
   color: string | null;
@@ -19,7 +19,9 @@ interface MountRow {
   existencias: number | null;
 }
 
-const COLUMNS = 'id, marca, modelo, color, descripcion, precio, sucursal, codigo_barras, existencias';
+// id::text: armazones.id es bigint, y un ID viejo de PROD (hasta 17 dígitos al azar, antes de
+// la secuencia del cambio #18) llegaría como número JSON y perdería dígitos.
+const COLUMNS = 'id::text, marca, modelo, color, descripcion, precio, sucursal, codigo_barras, existencias';
 
 function toMount(row: MountRow): Mount {
   return {
@@ -125,14 +127,14 @@ export class SupabaseMountRepository extends MountRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
+  async delete(id: string): Promise<Result<void, AppError>> {
     const { data, error } = await this.supabase.from('armazones').delete().eq('id', id).select('id');
     if (error) return err(toAppError(error));
     if (data.length === 0) return err(appError('notFound', 'El armazón ya no existe o no tienes permiso para eliminarlo.'));
     return ok(undefined);
   }
 
-  async decrementStock(id: number, quantity: number): Promise<Result<void, AppError>> {
+  async decrementStock(id: string, quantity: number): Promise<Result<void, AppError>> {
     const { data, error: readError } = await this.supabase
       .from('armazones')
       .select('existencias')

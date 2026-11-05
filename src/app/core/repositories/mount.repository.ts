@@ -50,7 +50,7 @@ export abstract class MountRepository {
 
   abstract update(mount: Mount): Promise<Result<void, AppError>>;
 
-  abstract delete(id: number): Promise<Result<void, AppError>>;
+  abstract delete(id: string): Promise<Result<void, AppError>>;
 
   /**
    * Resta `quantity` del stock (nunca baja de 0): lee el valor actual y escribe el nuevo, igual
@@ -59,5 +59,5 @@ export abstract class MountRepository {
    * Mejora consciente frente a Flutter: ahí siempre resta exactamente 1, sin mirar cuántas
    * unidades se vendieron.
    */
-  abstract decrementStock(id: number, quantity: number): Promise<Result<void, AppError>>;
+  abstract decrementStock(id: string, quantity: number): Promise<Result<void, AppError>>;
 }

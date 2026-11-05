@@ -110,7 +110,7 @@ export class MountsPage {
     retry: LucideRefreshCw,
   };
 
-  protected readonly loadingDelete = signal<number | null>(null);
+  protected readonly loadingDelete = signal<string | null>(null);
 
   constructor() {
     effect(() => {

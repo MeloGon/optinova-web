@@ -102,7 +102,7 @@ describe('SellStore', () => {
     mountRepo.mounts = [fakeMount(1, 'RAY-BAN'), fakeMount(2, 'OAKLEY'), { ...fakeMount(3, 'RAY-BAN'), stock: 0 }];
     await store.searchCatalog('ray');
 
-    expect(store.mounts().map((m) => m.id)).toEqual([1]);
+    expect(store.mounts().map((m) => m.id)).toEqual(['1']);
   });
 
   it('busca resinas por descripción, no solo por "texto" (bug real: Flutter solo buscaba "texto")', async () => {
@@ -124,7 +124,7 @@ describe('SellStore', () => {
     expect(store.catalogPage()).toBe(1);
 
     await store.setCatalogPage(2);
-    expect(store.mounts().map((m) => m.id)).toEqual([11, 12, 13, 14, 15]);
+    expect(store.mounts().map((m) => m.id)).toEqual(['11', '12', '13', '14', '15']);
     expect(store.catalogPage()).toBe(2);
   });
 
@@ -240,7 +240,7 @@ describe('SellStore', () => {
       );
       expect(saleRepo.created[0].items.length).toBe(3);
       // dos líneas del mismo armazón → un solo decrementStock con cantidad 2.
-      expect(mountRepo.decrementCalls).toEqual([{ id: 10, quantity: 2 }]);
+      expect(mountRepo.decrementCalls).toEqual([{ id: '10', quantity: 2 }]);
     });
 
     it('si hay cuenta inicial, registra el pago con tipo nueva_venta', async () => {

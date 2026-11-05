@@ -43,7 +43,7 @@ describe('MountsStore', () => {
 
   it('filtra por sucursal y por estado de stock', async () => {
     await store.load({ query: '', branch: 'OFTALVISION', stockStatus: 'out', page: 1, pageSize: 10 });
-    expect(store.items().map((m) => m.id)).toEqual([3]);
+    expect(store.items().map((m) => m.id)).toEqual(['3']);
   });
 
   it('un error se guarda como mensaje', async () => {
@@ -81,18 +81,18 @@ describe('MountsStore', () => {
 
   it('al editar guarda en el repositorio, audita y refresca la lista', async () => {
     await store.load({ query: '', branch: null, stockStatus: 'all', page: 1, pageSize: 10 });
-    const mount = store.items().find((m) => m.id === 1)!;
+    const mount = store.items().find((m) => m.id === '1')!;
 
     const result = await store.update({ ...mount, color: 'AZUL' }, 'admin@optinova.test');
 
     expect(result.ok).toBe(true);
-    expect(store.items().find((m) => m.id === 1)?.color).toBe('AZUL');
+    expect(store.items().find((m) => m.id === '1')?.color).toBe('AZUL');
     expect(auditLog.logged[0].entry.action).toBe('update_mount');
   });
 
   it('al eliminar borra en el repositorio, audita y refresca la lista', async () => {
     await store.load({ query: '', branch: null, stockStatus: 'all', page: 1, pageSize: 10 });
-    const mount = store.items().find((m) => m.id === 1)!;
+    const mount = store.items().find((m) => m.id === '1')!;
 
     const result = await store.remove(mount, 'admin@optinova.test');
 

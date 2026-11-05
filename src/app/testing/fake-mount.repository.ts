@@ -11,7 +11,7 @@ import {
 import { Result, err, ok } from '../core/result';
 
 export const fakeMount = (id: number, brand = 'RAY-BAN', stock = 5): Mount => ({
-  id,
+  id: String(id),
   brand,
   model: `MOD-${id}`,
   color: 'NEGRO',
@@ -32,7 +32,7 @@ function matchesStock(mount: Mount, status: MountInventorySearch['stockStatus'])
 export class FakeMountRepository extends MountRepository {
   mounts: Mount[] = [];
   searchFailWith: AppError | null = null;
-  decrementCalls: { id: number; quantity: number }[] = [];
+  decrementCalls: { id: string; quantity: number }[] = [];
   decrementFailWith: AppError | null = null;
 
   insertFailWith: AppError | null = null;
@@ -82,7 +82,7 @@ export class FakeMountRepository extends MountRepository {
 
   async insert(mount: NewMount): Promise<Result<Mount, AppError>> {
     if (this.insertFailWith) return err(this.insertFailWith);
-    const saved: Mount = { ...mount, id: this.nextId++ };
+    const saved: Mount = { ...mount, id: String(this.nextId++) };
     this.mounts = [...this.mounts, saved];
     return ok(saved);
   }
@@ -94,14 +94,14 @@ export class FakeMountRepository extends MountRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
+  async delete(id: string): Promise<Result<void, AppError>> {
     if (this.deleteFailWith) return err(this.deleteFailWith);
     if (!this.mounts.some((m) => m.id === id)) return err(appError('notFound', 'El armazón ya no existe.'));
     this.mounts = this.mounts.filter((m) => m.id !== id);
     return ok(undefined);
   }
 
-  async decrementStock(id: number, quantity: number): Promise<Result<void, AppError>> {
+  async decrementStock(id: string, quantity: number): Promise<Result<void, AppError>> {
     if (this.decrementFailWith) return err(this.decrementFailWith);
     this.decrementCalls.push({ id, quantity });
     this.mounts = this.mounts.map((m) => (m.id === id ? { ...m, stock: Math.max(m.stock - quantity, 0) } : m));

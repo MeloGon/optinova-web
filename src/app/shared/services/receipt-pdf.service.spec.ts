@@ -65,7 +65,7 @@ describe('newSaleItemToReceiptLine', () => {
   it('monturas: marca + modelo, color como subtítulo, siempre 1 unidad', () => {
     const item: NewSaleItem = {
       kind: 'mount',
-      mountId: 1,
+      mountId: '1',
       mountBrand: 'Oakley',
       mountModel: 'OX8046',
       mountColor: 'Azul',

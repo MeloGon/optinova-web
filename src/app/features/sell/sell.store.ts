@@ -375,7 +375,7 @@ export class SellStore {
       return created;
     }
 
-    const mountCounts = new Map<number, number>();
+    const mountCounts = new Map<string, number>();
     for (const item of items) {
       if (item.kind === 'mount') mountCounts.set(item.mountId, (mountCounts.get(item.mountId) ?? 0) + 1);
     }
