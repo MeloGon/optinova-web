@@ -1,7 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Expense } from '../../core/models/expense';
-import { ExpenseDateRangeSearch, ExpenseRepository } from '../../core/repositories/expense.repository';
-import { PaymentDateRangeSearch, PaymentRepository, PaymentReportEntry } from '../../core/repositories/payment.repository';
+import { PaymentReportEntry, PaymentsReportRepository, PaymentsReportSearch } from '../../core/repositories/payments-report.repository';
 
 export interface AmountByKey {
   key: string;
@@ -43,14 +42,14 @@ function groupByAmount<T>(items: T[], key: (item: T) => { key: string; label: st
 
 /**
  * Estado de Settings · Ingresos y egresos (= PaymentsReport Notifier de Flutter). Trae todos los
- * pagos y egresos del período (sin paginar, es un reporte) y deriva los totales/agrupaciones; la
- * tabla de detalle de cada sección se pagina en memoria en la página, como el resto de los
- * reportes nuevos de E2.8. Se provee en la página (providers: [PaymentsReportStore]).
+ * pagos y egresos del período con una sola llamada a `payments_report` (RPC `SECURITY DEFINER`,
+ * cambio #19: el rol y la sucursal se deciden en el servidor, no en este store) y deriva los
+ * totales/agrupaciones; la tabla de detalle de cada sección se pagina en memoria en la página,
+ * como el resto de los reportes nuevos de E2.8. Se provee en la página (providers: [PaymentsReportStore]).
  */
 @Injectable()
 export class PaymentsReportStore {
-  private readonly paymentRepo = inject(PaymentRepository);
-  private readonly expenseRepo = inject(ExpenseRepository);
+  private readonly repo = inject(PaymentsReportRepository);
 
   private readonly state = signal<PaymentsReportState>({
     payments: [],
@@ -87,29 +86,17 @@ export class PaymentsReportStore {
   /** Número de la última búsqueda lanzada: una respuesta vieja no pisa a una más nueva. */
   private lastRequest = 0;
 
-  async load(search: PaymentDateRangeSearch & ExpenseDateRangeSearch): Promise<void> {
+  async load(search: PaymentsReportSearch): Promise<void> {
     const request = ++this.lastRequest;
     this.state.update((s) => ({ ...s, loading: true, error: null }));
 
-    const [paymentsResult, expensesResult] = await Promise.all([
-      this.paymentRepo.listByDateRange(search),
-      this.expenseRepo.listByDateRange(search),
-    ]);
+    const result = await this.repo.load(search);
     if (request !== this.lastRequest) return;
 
-    if (!paymentsResult.ok) {
-      this.state.update((s) => ({ ...s, loading: false, error: paymentsResult.error.message, loaded: true }));
-      return;
+    if (result.ok) {
+      this.state.update((s) => ({ ...s, payments: result.value.payments, expenses: result.value.expenses, loading: false, loaded: true }));
+    } else {
+      this.state.update((s) => ({ ...s, loading: false, error: result.error.message, loaded: true }));
     }
-    // Si los egresos fallan, no se muestran en silencio como "0": el "Neto" de un reporte
-    // financiero no puede quedar mal sin avisar (hallazgo de Codex, 2026-11-04).
-    this.state.update((s) => ({
-      ...s,
-      payments: paymentsResult.value,
-      expenses: expensesResult.ok ? expensesResult.value : [],
-      loading: false,
-      error: expensesResult.ok ? null : `Egresos no disponibles: ${expensesResult.error.message}`,
-      loaded: true,
-    }));
   }
 }

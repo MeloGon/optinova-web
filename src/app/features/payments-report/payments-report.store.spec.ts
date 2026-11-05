@@ -1,42 +1,46 @@
 import { TestBed } from '@angular/core/testing';
 import { appError } from '../../core/errors/app-error';
-import { ExpenseRepository } from '../../core/repositories/expense.repository';
-import { PaymentRepository } from '../../core/repositories/payment.repository';
-import { FakeExpenseRepository, fakeExpense } from '../../testing/fake-expense.repository';
-import { FakePaymentRepository } from '../../testing/fake-payment.repository';
-import { FakeSaleRepository, fakeSale } from '../../testing/fake-sale.repository';
+import { PaymentReportEntry } from '../../core/repositories/payments-report.repository';
+import { PaymentsReportRepository } from '../../core/repositories/payments-report.repository';
+import { fakeExpense } from '../../testing/fake-expense.repository';
+import { FakePaymentsReportRepository } from '../../testing/fake-payments-report.repository';
 import { PaymentsReportStore } from './payments-report.store';
 
+const payment = (id: number, overrides: Partial<PaymentReportEntry>): PaymentReportEntry => ({
+  id,
+  saleId: `V${id}`,
+  amount: 0,
+  date: '2026-11-05',
+  paymentMethod: 'efectivo',
+  registeredBy: 'X',
+  notes: '',
+  type: 'abono_saldo',
+  patientName: 'Paciente',
+  folio: `F${id}`,
+  branch: 'OFTALVISION',
+  saleTotal: 0,
+  saleRest: 0,
+  ...overrides,
+});
+
 describe('PaymentsReportStore', () => {
-  let paymentRepo: FakePaymentRepository;
-  let expenseRepo: FakeExpenseRepository;
+  let repo: FakePaymentsReportRepository;
   let store: PaymentsReportStore;
 
   beforeEach(() => {
-    const saleRepo = new FakeSaleRepository();
-    saleRepo.sales = [
-      { ...fakeSale('V1'), branch: 'OFTALVISION', totalWithDiscount: 500, rest: 0 },
-      { ...fakeSale('V2'), branch: 'MEDILENT', totalWithDiscount: 300, rest: 100 },
+    repo = new FakePaymentsReportRepository();
+    repo.payments = [
+      payment(1, { amount: 400, date: '2026-11-05', type: 'nueva_venta', branch: 'OFTALVISION' }),
+      payment(2, { amount: 100, date: '2026-11-06', paymentMethod: 'tarjeta', type: 'abono_saldo', branch: 'OFTALVISION' }),
+      payment(3, { amount: 200, date: '2026-11-06', type: 'nueva_venta', branch: 'MEDILENT' }),
     ];
-    paymentRepo = new FakePaymentRepository(saleRepo);
-    paymentRepo.payments = [
-      { id: 1, saleId: 'V1', amount: 400, date: '2026-11-05', paymentMethod: 'efectivo', registeredBy: 'X', notes: '', type: 'nueva_venta' },
-      { id: 2, saleId: 'V1', amount: 100, date: '2026-11-06', paymentMethod: 'tarjeta', registeredBy: 'X', notes: '', type: 'abono_saldo' },
-      { id: 3, saleId: 'V2', amount: 200, date: '2026-11-06', paymentMethod: 'efectivo', registeredBy: 'X', notes: '', type: 'nueva_venta' },
-    ];
-
-    expenseRepo = new FakeExpenseRepository();
-    expenseRepo.expenses = [
+    repo.expenses = [
       { ...fakeExpense(1, 'Luz'), date: '2026-11-05', amount: 120, categoryName: 'Servicios', branch: 'OFTALVISION' },
       { ...fakeExpense(2, 'Agua'), date: '2026-11-07', amount: 30, categoryName: 'Servicios', branch: 'OFTALVISION' },
     ];
 
     TestBed.configureTestingModule({
-      providers: [
-        PaymentsReportStore,
-        { provide: PaymentRepository, useValue: paymentRepo },
-        { provide: ExpenseRepository, useValue: expenseRepo },
-      ],
+      providers: [PaymentsReportStore, { provide: PaymentsReportRepository, useValue: repo }],
     });
     store = TestBed.inject(PaymentsReportStore);
   });
@@ -56,9 +60,7 @@ describe('PaymentsReportStore', () => {
 
   it('agrupa por método de pago, de mayor a menor monto', async () => {
     await store.load({ from: '2026-11-01', to: '2026-11-30', branch: null });
-    expect(store.newSalesByMethod()).toEqual([
-      { key: 'efectivo', label: 'Efectivo', amount: 600, color: null },
-    ]);
+    expect(store.newSalesByMethod()).toEqual([{ key: 'efectivo', label: 'Efectivo', amount: 600, color: null }]);
   });
 
   it('agrupa egresos por categoría', async () => {
@@ -66,24 +68,21 @@ describe('PaymentsReportStore', () => {
     expect(store.expensesByCategory()).toEqual([{ key: 'Servicios', label: 'Servicios', amount: 150, color: null }]);
   });
 
-  it('filtra por sucursal (embebida desde la venta en los pagos)', async () => {
+  it('filtra por sucursal (la decide el servidor, acá solo se pide)', async () => {
     await store.load({ from: '2026-11-01', to: '2026-11-30', branch: 'MEDILENT' });
     expect(store.newSales().map((p) => p.id)).toEqual([3]);
     expect(store.expenses()).toEqual([]);
   });
 
-  it('un error en egresos no se esconde como "0": avisa y conserva los pagos cargados', async () => {
-    expenseRepo.listByDateRangeFailWith = appError('network', 'Sin conexión.');
-    await store.load({ from: '2026-11-01', to: '2026-11-30', branch: null });
-    expect(store.error()).toContain('Egresos no disponibles');
-    expect(store.newSales().length).toBeGreaterThan(0);
-    expect(store.expenses()).toEqual([]);
-  });
-
-  it('un error en pagos se guarda como mensaje', async () => {
-    paymentRepo.listByDateRangeFailWith = appError('network', 'Sin conexión.');
+  it('un error se guarda como mensaje', async () => {
+    repo.failWith = appError('network', 'Sin conexión.');
     await store.load({ from: '2026-11-01', to: '2026-11-30', branch: null });
     expect(store.error()).toBe('Sin conexión.');
     expect(store.loaded()).toBe(true);
+  });
+
+  it('pide el rango y la sucursal pedidos, sin más filtros propios', async () => {
+    await store.load({ from: '2026-11-01', to: '2026-11-30', branch: 'MEDILENT' });
+    expect(repo.calls).toEqual([{ from: '2026-11-01', to: '2026-11-30', branch: 'MEDILENT' }]);
   });
 });

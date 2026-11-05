@@ -16,6 +16,7 @@ import { SupabaseMountRepository } from './core/data/supabase-mount.repository';
 import { SupabasePatientLifecycleRepository } from './core/data/supabase-patient-lifecycle.repository';
 import { SupabasePatientRepository } from './core/data/supabase-patient.repository';
 import { SupabasePaymentRepository } from './core/data/supabase-payment.repository';
+import { SupabasePaymentsReportRepository } from './core/data/supabase-payments-report.repository';
 import { SupabaseResinRepository } from './core/data/supabase-resin.repository';
 import { SupabaseReviewRepository } from './core/data/supabase-review.repository';
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
@@ -29,6 +30,7 @@ import { MountRepository } from './core/repositories/mount.repository';
 import { PatientLifecycleRepository } from './core/repositories/patient-lifecycle.repository';
 import { PatientRepository } from './core/repositories/patient.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
+import { PaymentsReportRepository } from './core/repositories/payments-report.repository';
 import { ResinRepository } from './core/repositories/resin.repository';
 import { ReviewRepository } from './core/repositories/review.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
@@ -52,6 +54,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ExpenseRepository, useClass: SupabaseExpenseRepository },
     { provide: SaleRepository, useClass: SupabaseSaleRepository },
     { provide: PaymentRepository, useClass: SupabasePaymentRepository },
+    { provide: PaymentsReportRepository, useClass: SupabasePaymentsReportRepository },
     { provide: MountRepository, useClass: SupabaseMountRepository },
     { provide: ResinRepository, useClass: SupabaseResinRepository },
     { provide: SellerRepository, useClass: SupabaseSellerRepository },

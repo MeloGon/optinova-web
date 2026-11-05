@@ -6,14 +6,14 @@ import { SessionStore } from './core/auth/session.store';
 import { Role } from './core/models/role';
 import { AuthRepository } from './core/repositories/auth.repository';
 import { DashboardRepository } from './core/repositories/dashboard.repository';
-import { ExpenseRepository } from './core/repositories/expense.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
+import { PaymentsReportRepository } from './core/repositories/payments-report.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
 import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
-import { FakeExpenseRepository } from './testing/fake-expense.repository';
 import { FakePaymentRepository } from './testing/fake-payment.repository';
+import { FakePaymentsReportRepository } from './testing/fake-payments-report.repository';
 import { FakeSaleRepository } from './testing/fake-sale.repository';
 import { FakeUserAdminRepository } from './testing/fake-user-admin.repository';
 
@@ -34,7 +34,7 @@ describe('Rutas y guards', () => {
         { provide: PaymentRepository, useValue: new FakePaymentRepository() },
         { provide: SaleRepository, useValue: new FakeSaleRepository() },
         // Ingresos y egresos (E2.8) los pide su propio store al entrar.
-        { provide: ExpenseRepository, useValue: new FakeExpenseRepository() },
+        { provide: PaymentsReportRepository, useValue: new FakePaymentsReportRepository() },
         // Usuarios (E2.8) lo pide su propio store al entrar.
         { provide: UserAdminRepository, useValue: new FakeUserAdminRepository() },
       ],

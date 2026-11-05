@@ -14,8 +14,7 @@ import {
 } from '@lucide/angular';
 import { SessionStore } from '../../core/auth/session.store';
 import { ConfigService } from '../../core/config/config.service';
-import { ExpenseDateRangeSearch } from '../../core/repositories/expense.repository';
-import { PaymentDateRangeSearch } from '../../core/repositories/payment.repository';
+import { PaymentsReportSearch } from '../../core/repositories/payments-report.repository';
 import { MONTH_OPTIONS, monthRange, toMonth, today, yearOptions } from '../../shared/utils/month';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { Badge } from '../../shared/ui/badge/badge';
@@ -94,7 +93,7 @@ export class PaymentsReportPage {
   protected readonly monthOptions = MONTH_OPTIONS;
   protected readonly yearOptions = yearOptions();
 
-  protected readonly search = computed<PaymentDateRangeSearch & ExpenseDateRangeSearch>(() => {
+  protected readonly search = computed<PaymentsReportSearch>(() => {
     const period = this.periodType();
     const range =
       period === 'day'

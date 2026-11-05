@@ -3,7 +3,6 @@ import { Expense } from '../core/models/expense';
 import { ExpenseCategory } from '../core/models/expense-category';
 import { Page } from '../core/models/page';
 import {
-  ExpenseDateRangeSearch,
   ExpenseRepository,
   ExpenseSearch,
   NewExpense,
@@ -71,13 +70,6 @@ export class FakeExpenseRepository extends ExpenseRepository {
     );
     const from = (params.page - 1) * params.pageSize;
     return ok({ items: matches.slice(from, from + params.pageSize), total: matches.length });
-  }
-
-  listByDateRangeFailWith: AppError | null = null;
-
-  async listByDateRange({ from, to, branch }: ExpenseDateRangeSearch): Promise<Result<Expense[], AppError>> {
-    if (this.listByDateRangeFailWith) return err(this.listByDateRangeFailWith);
-    return ok(this.expenses.filter((e) => e.date >= from && e.date <= to && (!branch || e.branch === branch)));
   }
 
   async create(expense: NewExpense, registeredBy: string): Promise<Result<Expense, AppError>> {

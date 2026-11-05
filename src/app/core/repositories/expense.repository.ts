@@ -19,20 +19,10 @@ export type NewExpense = Omit<Expense, 'id' | 'categoryName' | 'categoryColor' |
 
 export type NewExpenseCategory = Omit<ExpenseCategory, 'id'>;
 
-export interface ExpenseDateRangeSearch {
-  /** `yyyy-MM-dd`, ambas incluidas. */
-  from: string;
-  to: string;
-  branch: string | null;
-}
-
 /** Contrato de egresos (= ExpenseRepository abstracto de Flutter). */
 export abstract class ExpenseRepository {
   /** Egresos del más reciente al más antiguo. */
   abstract search(params: ExpenseSearch): Promise<Result<Page<Expense>, AppError>>;
-
-  /** Todos los egresos de un período (sin paginar: es un reporte, para Ingresos y egresos, E2.8). */
-  abstract listByDateRange(params: ExpenseDateRangeSearch): Promise<Result<Expense[], AppError>>;
 
   abstract create(expense: NewExpense, registeredBy: string): Promise<Result<Expense, AppError>>;
 

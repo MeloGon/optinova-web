@@ -4,7 +4,6 @@ import { Expense } from '../models/expense';
 import { ExpenseCategory } from '../models/expense-category';
 import { Page } from '../models/page';
 import {
-  ExpenseDateRangeSearch,
   ExpenseRepository,
   ExpenseSearch,
   NewExpense,
@@ -96,15 +95,6 @@ export class SupabaseExpenseRepository extends ExpenseRepository {
 
     if (error) return err(toAppError(error));
     return ok({ items: data.map(toExpense), total: count ?? 0 });
-  }
-
-  async listByDateRange({ from, to, branch }: ExpenseDateRangeSearch): Promise<Result<Expense[], AppError>> {
-    let request = this.supabase.from('egresos').select(COLUMNS).gte('fecha', from).lte('fecha', to);
-    if (branch) request = request.eq('sucursal', branch);
-
-    const { data, error } = await request.order('fecha', { ascending: false }).overrideTypes<ExpenseRow[], { merge: false }>();
-    if (error) return err(toAppError(error));
-    return ok(data.map(toExpense));
   }
 
   async create(expense: NewExpense, registeredBy: string): Promise<Result<Expense, AppError>> {
