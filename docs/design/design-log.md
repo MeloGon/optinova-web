@@ -13,7 +13,7 @@ Estado: `pedido` (aún no diseñado) · `v1`, `v2`... (versión aprobada) · `im
 ### Tokens
 | ID | Nombre | Estado | Pedido |
 |---|---|---|---|
-| T-01 | Color (primario personalizable, neutros, semánticos) | implementado v1; fix de contraste en `core/theme/primary-scale.ts` (2026-11-05, pedido del dueño) | D-001 |
+| T-01 | Color (primario personalizable, neutros, semánticos) | implementado v1; fix de contraste en `core/theme/primary-scale.ts` (`e988c33`, 2026-11-05, pedido del dueño) | D-001 |
 | T-02 | Tipografía | implementado v1 | D-001 |
 | T-03 | Espaciado y layout | implementado v1 | D-001 |
 | T-04 | Radios y bordes | implementado v1 | D-001 |
@@ -93,7 +93,7 @@ El estado pendiente del recibo quedó resuelto en `c5d5950`: ticket pdfmake de 8
 
 Las cinco pantallas de E2.8 ya están publicadas: Resinas `1c86dbd`, Armazones `9793658`, Auditoría `eb1530a`, Ventas por vendedor `d99ced3` e Ingresos y egresos `1693555`. Usan C-07/C-08 y componentes del sistema; no se inventa un nuevo ID de pantalla. El fix C-07 está en `55b74fe` y las rutas/providers, en `e456cfe`. Clases [L13](../lessons/13-resinas.md), [L14](../lessons/14-armazones.md), [L15](../lessons/15-auditoria.md), [L16](../lessons/16-ventas-por-vendedor.md) y [L17](../lessons/17-reporte-pagos.md). Las tarjetas/secciones de Flutter son referencia funcional; la disposición de tablas Angular es nueva. Usuarios, publicado en `53e72de`, reutiliza C-07/C-11/C-12/C-15/C-19; su lección sigue pendiente. Esta consolidación se contrastó tras el pull a `e456cfe`.
 
-## Fix de T-01: texto del botón primary siempre blanco (2026-11-05)
+## Fix de T-01: texto del botón primary siempre blanco (`e988c33`, 2026-11-05)
 
 El dueño notó que el texto del botón primary salía negro con algunos colores (Turquesa, Verde menta, Coral, Ámbar) y, en modo oscuro, con TODOS los colores — incluidos Azul óptico/Violeta/Frambuesa, que en claro sí dan blanco. Dos causas distintas, encontradas con números reales (contraste real, no a ojo):
 

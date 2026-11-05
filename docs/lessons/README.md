@@ -25,6 +25,7 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 18 | [Dashboard v2](18-dashboard.md) | E2.7, roles y métricas |
 | 19 | [Recibo PDF térmico](19-recibo-pdf.md) | E2.6, `c5d5950` |
 | 20 | [Gestión de usuarios](20-usuarios.md) | E2.8, `53e72de` |
+| 21 | [Funcionalidades y permisos](21-features.md) | E2.8, `98d9439` |
 
 ## Fundamentos desde Flutter y Dart
 
@@ -34,9 +35,9 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | F01 | [TypeScript desde Dart, primera parte](fundamentos/F01-typescript-desde-dart.md) | Disponible |
 | F02 | [Objetos y organización de TypeScript](fundamentos/F02-typescript-desde-dart-objetos.md) | Disponible |
 | F03 | [HTML y árbol de etiquetas](fundamentos/F03-html-arbol-etiquetas.md) | Disponible |
-| F04 | CSS y Tailwind | Pendiente |
-| F05 | Componentes y signals | Pendiente |
-| F06 | Servicios e inyección | Pendiente |
+| F04 | [CSS y Tailwind](fundamentos/F04-css-tailwind.md) | Preparada y PDF generado |
+| F05 | [Componentes y signals](fundamentos/F05-componentes-signals.md) | Preparada y PDF generado |
+| F06 | [Servicios e inyección](fundamentos/F06-servicios-inyeccion.md) | Preparada y PDF generado |
 | F07 | [Recorrido de E2.1](fundamentos/F07-recorrido-e2-1.md) | Revisada y aprobada por el dueño el 2026-10-26 |
 
 Las lecciones nuevas son teoría con ejemplos comparados, sin ejercicios. 00–04, F00–F03 y F07 se conservan sin modificar su contenido: son documentos de su entregable, por lo que algunos pendientes o detalles históricos ya evolucionaron. Para el estado al 26 de octubre se debe leer el [informe de avance](../avance/2026-10-26-informe-de-avance.md) y las lecciones 05–07.

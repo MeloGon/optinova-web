@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-11-04
+> Última actualización: 2026-11-05
 
 ## 1. Contexto
 
@@ -76,7 +76,7 @@
 - Al terminar la Fase 0 se recorre el código de E2.1 archivo por archivo (F07) y se marca el checkbox de F07. E2.1 ya tiene su propio commit; el recorrido didáctico F07 fue revisado y aprobado por el dueño el 2026-10-26.
 - Después, cada pieza nueva de una feature se explica antes de escribirla.
 
-**Actualización del dueño (2026-10-26):** se retoma el desarrollo de features con E2.2 sin esperar F04–F06. La formación continúa en paralelo. F07 fue revisada y aprobada; F04–F06 siguen pendientes.
+**Actualización del dueño (2026-10-26):** se retoma el desarrollo de features con E2.2 sin esperar F04–F06. La formación continúa en paralelo. F07 fue revisada y aprobada; F04–F06 se prepararon el 2026-11-05.
 
 ## 6. Fases y entregables
 
@@ -85,10 +85,10 @@
 - [x] F01: TypeScript visto desde Dart (1): variables, tipos, null safety, funciones (2026-10-23, commit `8b30961`).
 - [x] F02: TypeScript visto desde Dart (2): objetos, interfaces, clases, uniones, genéricos, `import/export`, async/await. Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
 - [x] F03: HTML básico: el árbol de etiquetas como árbol de widgets. Markdown y PDF preparados el 2026-10-26; commit aprobado por el dueño.
-- [ ] F04: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery
-- [ ] F05: Componentes y signals: `signal`, `computed`, `input`, `output`, plantilla (`@if`, `@for`, `{{ }}`, `(click)`)
-- [ ] F06: Servicios e inyección: `inject`, `providedIn: 'root'` vs `providers: []`
-- [x] F07: Recorrido guiado del código de E2.1 (login, sesión, guards; implementación ya registrada en `765c39e`). Markdown `F07-recorrido-e2-1.md` y PDF revisados y aprobados por el dueño el 2026-10-26; incluidos en el commit documental aprobado. F04–F06 siguen pendientes.
+- [x] F04: CSS + Tailwind: Flexbox/Grid = Row/Column/Expanded; responsive = MediaQuery — [lección](lessons/fundamentos/F04-css-tailwind.md) y PDF preparados el 2026-11-05
+- [x] F05: Componentes y signals: `signal`, `computed`, `input`, `output`, plantilla (`@if`, `@for`, `{{ }}`, `(click)`) — [lección](lessons/fundamentos/F05-componentes-signals.md) y PDF preparados el 2026-11-05
+- [x] F06: Servicios e inyección: `inject`, `providedIn: 'root'` vs `providers: []` — [lección](lessons/fundamentos/F06-servicios-inyeccion.md) y PDF preparados el 2026-11-05
+- [x] F07: Recorrido guiado del código de E2.1 (login, sesión, guards; implementación ya registrada en `765c39e`). Markdown `F07-recorrido-e2-1.md` y PDF revisados y aprobados por el dueño el 2026-10-26; incluidos en el commit documental aprobado. F04–F06 se prepararon posteriormente el 2026-11-05.
 
 ### Fase 1: Infraestructura
 - [x] **E1.1 Herramientas** (2026-10-13: Angular CLI 22.2.2, Node 24.18, PostgreSQL client 17.11): Angular CLI global y cliente PostgreSQL 17 (`pg_dump`, `psql`)
@@ -102,6 +102,7 @@
 - [x] **E1.3 Scaffold Angular** (2026-10-14): `ng new` (Angular 22.2, zoneless, Vitest), Tailwind v4, `@angular/cdk` + `@angular/aria`, pantalla de prueba con primario dinámico. Environments: `environment.ts` (prod, sin claves) y `environment.local.ts` (dev, ignorado) vía `fileReplacements`. Lección L00
 - [ ] **E1.5 Sistema de diseño**: pedido D-001 a Claude Design, tokens a `styles.css` (`@theme`), componentes base en `src/app/shared/ui/` construidos a medida que cada feature los necesite
   - [x] **E1.5a Tokens y tema** (2026-10-14): `optinova-theme.css` → `src/styles.css`, `primary-scale.ts` → `core/theme/`, `ThemeService` (modo claro/oscuro/sistema, densidad, primario; guardado en `localStorage`), fuentes Geist, script anti-destello en `index.html`. Lección L01
+    - [x] **Contraste del botón primary** (`e988c33`, 2026-11-05): texto blanco y selección de tono con contraste mínimo 4.5:1 para los presets comprobados. El Artifact D-001 aún debe sincronizarse con el código del repo; ver `docs/design/design-log.md`.
   - [ ] **E1.5b+ Componentes** `C-xx` en `src/app/shared/ui/`, a medida que cada feature los necesite
     - [x] **C-04 Date picker** (`7b6faf5`, 2026-10-30): `shared/ui/date-picker`, input enmascarado `dd/mm/aaaa`, calendario propio con CDK Overlay, grid ARIA, Limpiar/Hoy y límites de fecha; integrado en formularios de pacientes, revisiones, egresos y pagos, y en el filtro de ventas. Sin variante de rango ni navegación por teclado día a día en la grilla (pendientes). Inventario de diseño: `docs/design/design-log.md`. Claude reportó 10 tests nuevos (156 en total) y build limpio. E1.5b sigue abierto para los demás componentes.
     - [x] **C-22 Stepper** (`59fa465`, 2026-11-01): cabecera compartida de pasos actual/completos/futuros y regreso a pasos completos; usada en S-04 Vender. Documentado en L09. E1.5b continúa abierto para los componentes restantes.
@@ -138,7 +139,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
   - [x] **Rutas/providers y conexión E2.8** (`e456cfe`): páginas reales lazy, guards por rol y repositorios registrados; reemplaza pendientes de esas seis pantallas.
   - [x] **Documentación L13–L17/plan/estado preparada y aprobada:** revisión terminada sobre `e456cfe`, cinco PDF y quince páginas revisadas; el dueño autorizó commit y push el 2026-11-04.
   - [ ] **Exportar CSV del reporte:** alcance separado; no implementado aquí ni en el provider Flutter consultado.
-  - [x] **Features / app_config** (`98d9439`, `settings/features`): control global para admin+ y permiso individual de cambiar fecha para vendedores; supervisor gestiona su sucursal, admin+ todas. Migraciones #21/#22; Antigravity reportó 8 casos aprobados. Flutter tenía un flag global. Lección específica pendiente.
+  - [x] **Features / app_config** (`98d9439`, `settings/features`): control global para admin+ y permiso individual de cambiar fecha para vendedores; supervisor gestiona su sucursal, admin+ todas. Migraciones #21/#22; Antigravity reportó 8 casos aprobados. Flutter tenía un flag global. [L21 Features](lessons/21-features.md) y PDF preparados; revisar el control efectivo del cambio de fecha en servidor.
 
 ### Fase 3: Calidad y beta
 - [ ] Tests de stores y repos (runner por defecto de Angular CLI)
@@ -253,5 +254,6 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | 2026-11-04 | Conexión de páginas E2.8, guards, repositorios y providers | L13–L17 contrastadas con esta base tras pull | `e456cfe` — `chore(app): conecta rutas y proveedores de E2.8` |
 | 2026-11-04 | Reporte de pagos: alcance por sucursal en servidor, migración #19 | L17 conserva el corte anterior | `854d076` — `feat(pagos): mueve el alcance de sucursal a una función server-side (RPC payments_report)` |
 | 2026-11-04 | Armazones: ID como texto, cambio #20 | L14 conserva el corte anterior | `4268276` — `fix(armazones): Mount.id viaja como texto, no número` |
-| 2026-11-04 | Features: permiso por vendedor y cambio de fecha, migraciones #21/#22 | Lección pendiente; prueba de Antigravity registrada en status | `98d9439` — `feat(features): agrega permisos de vendedor para cambiar fecha de venta` |
+| 2026-11-04 | Features: permiso por vendedor y cambio de fecha, migraciones #21/#22 | L21 y PDF preparados; prueba de Antigravity registrada en status | `98d9439` — `feat(features): agrega permisos de vendedor para cambiar fecha de venta` |
 | 2026-11-04 | Ventas por vendedor: agregación y paginación en servidor, migración #23 | L16 conserva el corte anterior; prueba de Antigravity registrada en status | `146155d` — `refactor(ventas): ventas por vendedor deja de traer el mes completo` |
+| 2026-11-05 | T-01: contraste de texto blanco en botón primary, tonos claro y oscuro | 8 presets y 2 modos verificados por Claude; Artifact pendiente de sincronizar | `e988c33` — `fix(tema): texto del botón primary siempre blanco con buen contraste` |

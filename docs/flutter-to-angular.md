@@ -422,3 +422,16 @@ Consolidación L13–L17 (2026-11-04): las cinco implementaciones ya están publ
 | Servicio administrativo en backend | Edge Function verifica megadmin; la clave privilegiada permanece en servidor. |
 
 Ver [Dashboard](lessons/18-dashboard.md), [recibo](lessons/19-recibo-pdf.md) y [usuarios](lessons/20-usuarios.md).
+
+
+## Fundamentos F04–F06 y Features L21
+
+| Flutter / Riverpod | Angular / web |
+|---|---|
+| `Row`, `Column`, `Expanded`, `MediaQuery` | Flexbox/Grid, utilidades Tailwind y media queries; son comparaciones de distribución, con reglas de restricciones distintas. |
+| Notifier y valores derivados | `signal`, `computed` y estado observable; leer un objeto mutable no lo convierte en signal. |
+| Widget con datos y callbacks | Componente standalone, `input`, `output` y plantilla con `@if`/`@for`. |
+| Provider y overrides | `inject`, token y providers en raíz o página; el inyector determina alcance. |
+| Flag global de Features | Flag global más permisos de vendedores por sucursal; RPC verifica quién administra los permisos. |
+
+Ver [F04](lessons/fundamentos/F04-css-tailwind.md), [F05](lessons/fundamentos/F05-componentes-signals.md), [F06](lessons/fundamentos/F06-servicios-inyeccion.md) y [L21](lessons/21-features.md).
