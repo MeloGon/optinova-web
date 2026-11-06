@@ -10,9 +10,13 @@ import { AppConfigRepository } from './core/repositories/app-config.repository';
 import { PaymentRepository } from './core/repositories/payment.repository';
 import { PaymentsReportRepository } from './core/repositories/payments-report.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
+import { BranchSettingsRepository } from './core/repositories/branch-settings.repository';
+import { DiscountAuthorizationRepository } from './core/repositories/discount-authorization.repository';
 import { TeamPermissionsRepository } from './core/repositories/team-permissions.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { FakeAppConfigRepository } from './testing/fake-app-config.repository';
+import { FakeBranchSettingsRepository } from './testing/fake-branch-settings.repository';
+import { FakeDiscountAuthorizationRepository } from './testing/fake-discount-authorization.repository';
 import { FakeTeamPermissionsRepository } from './testing/fake-team-permissions.repository';
 import { FakeAuthRepository, fakeProfile } from './testing/fake-auth.repository';
 import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
@@ -45,6 +49,8 @@ describe('Rutas y guards', () => {
         { provide: AppConfigRepository, useValue: new FakeAppConfigRepository() },
         // Features (E2.8) también lista/administra el permiso por vendedor.
         { provide: TeamPermissionsRepository, useValue: new FakeTeamPermissionsRepository() },
+        { provide: BranchSettingsRepository, useValue: new FakeBranchSettingsRepository() },
+        { provide: DiscountAuthorizationRepository, useValue: new FakeDiscountAuthorizationRepository() },
       ],
     });
     await TestBed.inject(SessionStore).restore();
@@ -61,7 +67,9 @@ describe('Rutas y guards', () => {
     await h.navigateByUrl('/dashboard/sell');
     expect(url()).toBe('/auth/login');
     expect(text(h)).toContain('Inicia sesión');
-  });
+    // Es el primer test del archivo: compila en frío las rutas lazy y con la suite completa en
+    // paralelo supera los 5 s por defecto (aislado pasa). 20 s de margen, no es un bug de la app.
+  }, 20_000);
 
   it('con sesión, el login manda al dashboard', async () => {
     const h = await start('vendedor');

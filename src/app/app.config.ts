@@ -23,6 +23,8 @@ import { SupabaseReviewRepository } from './core/data/supabase-review.repository
 import { SupabaseSaleRepository } from './core/data/supabase-sale.repository';
 import { SupabaseSalesBySellerReportRepository } from './core/data/supabase-sales-by-seller-report.repository';
 import { SupabaseSellerRepository } from './core/data/supabase-seller.repository';
+import { SupabaseBranchSettingsRepository } from './core/data/supabase-branch-settings.repository';
+import { SupabaseDiscountAuthorizationRepository } from './core/data/supabase-discount-authorization.repository';
 import { SupabaseTeamPermissionsRepository } from './core/data/supabase-team-permissions.repository';
 import { SupabaseUserAdminRepository } from './core/data/supabase-user-admin.repository';
 import { AppConfigRepository } from './core/repositories/app-config.repository';
@@ -40,6 +42,8 @@ import { ReviewRepository } from './core/repositories/review.repository';
 import { SaleRepository } from './core/repositories/sale.repository';
 import { SalesBySellerReportRepository } from './core/repositories/sales-by-seller-report.repository';
 import { SellerRepository } from './core/repositories/seller.repository';
+import { BranchSettingsRepository } from './core/repositories/branch-settings.repository';
+import { DiscountAuthorizationRepository } from './core/repositories/discount-authorization.repository';
 import { TeamPermissionsRepository } from './core/repositories/team-permissions.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { ThemeService } from './core/theme/theme.service';
@@ -67,6 +71,8 @@ export const appConfig: ApplicationConfig = {
     { provide: ResinRepository, useClass: SupabaseResinRepository },
     { provide: SellerRepository, useClass: SupabaseSellerRepository },
     { provide: TeamPermissionsRepository, useClass: SupabaseTeamPermissionsRepository },
+    { provide: BranchSettingsRepository, useClass: SupabaseBranchSettingsRepository },
+    { provide: DiscountAuthorizationRepository, useClass: SupabaseDiscountAuthorizationRepository },
     { provide: UserAdminRepository, useClass: SupabaseUserAdminRepository },
     { provide: DashboardRepository, useClass: SupabaseDashboardRepository },
     // Crea ThemeService al arrancar para aplicar el primario guardado antes de la primera pantalla.

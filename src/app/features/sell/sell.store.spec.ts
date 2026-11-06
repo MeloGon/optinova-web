@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import { appError } from '../../core/errors/app-error';
 import { SessionStore } from '../../core/auth/session.store';
 import { Role } from '../../core/models/role';
 import { AuthRepository } from '../../core/repositories/auth.repository';
+import { BranchSettingsRepository } from '../../core/repositories/branch-settings.repository';
+import { DiscountAuthorizationRepository } from '../../core/repositories/discount-authorization.repository';
 import { MountRepository } from '../../core/repositories/mount.repository';
 import { PatientRepository } from '../../core/repositories/patient.repository';
 import { PaymentRepository } from '../../core/repositories/payment.repository';
@@ -10,6 +13,8 @@ import { SaleRepository } from '../../core/repositories/sale.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
 import { SellerRepository } from '../../core/repositories/seller.repository';
 import { FakeAuthRepository, fakeProfile } from '../../testing/fake-auth.repository';
+import { FakeBranchSettingsRepository } from '../../testing/fake-branch-settings.repository';
+import { FakeDiscountAuthorizationRepository } from '../../testing/fake-discount-authorization.repository';
 import { FakeMountRepository, fakeMount } from '../../testing/fake-mount.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
 import { FakePaymentRepository } from '../../testing/fake-payment.repository';
@@ -27,6 +32,8 @@ describe('SellStore', () => {
   let saleRepo: FakeSaleRepository;
   let paymentRepo: FakePaymentRepository;
   let reviewRepo: FakeReviewRepository;
+  let branchSettingsRepo: FakeBranchSettingsRepository;
+  let discountAuthRepo: FakeDiscountAuthorizationRepository;
   let store: SellStore;
 
   async function setup(role: Role = 'vendedor'): Promise<void> {
@@ -40,6 +47,8 @@ describe('SellStore', () => {
     saleRepo = new FakeSaleRepository();
     paymentRepo = new FakePaymentRepository();
     reviewRepo = new FakeReviewRepository();
+    branchSettingsRepo = new FakeBranchSettingsRepository();
+    discountAuthRepo = new FakeDiscountAuthorizationRepository();
 
     TestBed.configureTestingModule({
       providers: [
@@ -52,6 +61,8 @@ describe('SellStore', () => {
         { provide: SaleRepository, useValue: saleRepo },
         { provide: PaymentRepository, useValue: paymentRepo },
         { provide: ReviewRepository, useValue: reviewRepo },
+        { provide: BranchSettingsRepository, useValue: branchSettingsRepo },
+        { provide: DiscountAuthorizationRepository, useValue: discountAuthRepo },
       ],
     });
     await TestBed.inject(SessionStore).restore();
@@ -177,12 +188,63 @@ describe('SellStore', () => {
     expect(store.total()).toBe(250);
   });
 
-  it('solo supervisor o superior puede aplicar descuento', async () => {
-    await setup('vendedor');
-    expect(store.canApplyDiscount()).toBe(false);
+  describe('autorización de descuentos (P-04)', () => {
+    async function withDiscount(role: Role, requireAuth: boolean): Promise<void> {
+      await setup(role);
+      branchSettingsRepo.settings = [{ branch: 'OFTALVISION', discountRequiresAuth: requireAuth }];
+      await store.loadDiscountPolicy();
+      await store.selectPatient(fakePatient(1));
+      store.setSeller(fakeSeller(1));
+      store.addResin({ ...fakeResin(1), price: 100 });
+      store.setDiscount(20, 'promo');
+    }
 
-    await setup('supervisor');
-    expect(store.canApplyDiscount()).toBe(true);
+    it('con la sucursal sin regla, el vendedor descuenta directo', async () => {
+      await withDiscount('vendedor', false);
+      expect(store.discountNeedsAuth()).toBe(false);
+      expect(store.discountAuthorized()).toBe(true);
+      expect(store.canConfirm()).toBe(true);
+    });
+
+    it('con la regla activa, el vendedor no puede confirmar un descuento sin autorizar', async () => {
+      await withDiscount('vendedor', true);
+      expect(store.discountNeedsAuth()).toBe(true);
+      expect(store.discountAuthorized()).toBe(false);
+      expect(store.canConfirm()).toBe(false);
+
+      const result = await store.confirmSale();
+      expect(result.ok).toBe(false);
+      expect(saleRepo.created).toHaveLength(0);
+    });
+
+    it('un supervisor autoriza y el descuento queda cubierto hasta ese monto', async () => {
+      await withDiscount('vendedor', true);
+      const result = await store.authorizeDiscount('sup@x.com', 'clave');
+
+      expect(result.ok).toBe(true);
+      expect(discountAuthRepo.calls).toEqual([{ email: 'sup@x.com', password: 'clave', amount: 20 }]);
+      expect(store.discountAuthorized()).toBe(true);
+
+      store.setDiscount(10, 'promo');
+      expect(store.discountAuthorized()).toBe(true);
+      store.setDiscount(30, 'promo');
+      expect(store.discountAuthorized()).toBe(false);
+    });
+
+    it('si las credenciales fallan, el descuento sigue sin autorizar', async () => {
+      await withDiscount('vendedor', true);
+      discountAuthRepo.failWith = appError('unknown', 'Correo o contraseña incorrectos.');
+      const result = await store.authorizeDiscount('sup@x.com', 'mal');
+
+      expect(result.ok).toBe(false);
+      expect(store.discountAuthorized()).toBe(false);
+    });
+
+    it('supervisor descuenta directo aunque la regla esté activa', async () => {
+      await withDiscount('supervisor', true);
+      expect(store.discountNeedsAuth()).toBe(false);
+      expect(store.canConfirm()).toBe(true);
+    });
   });
 
   describe('canConfirm', () => {

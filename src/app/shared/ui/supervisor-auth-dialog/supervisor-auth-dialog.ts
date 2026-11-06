@@ -4,22 +4,26 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { LucideDynamicIcon, LucideTriangleAlert } from '@lucide/angular';
 import { AppError } from '../../../core/errors/app-error';
 import { Result } from '../../../core/result';
-import { Field } from '../../../shared/ui/field/field';
-import { OnvInput } from '../../../shared/ui/field/input';
+import { Field } from '../field/field';
+import { OnvInput } from '../field/input';
 
 export interface SupervisorAuthDialogData {
-  patientName: string;
-  reviewCount: number;
+  /** Qué se está autorizando, en una o dos frases (ya redactado por quien abre el diálogo). */
+  description: string;
+  /** Texto del botón principal, p. ej. "Autorizar y eliminar". */
+  confirmLabel: string;
   /** Verifica las credenciales e intenta la acción. El diálogo se queda abierto con el error si falla. */
   authorize: (email: string, password: string) => Promise<Result<unknown, AppError>>;
 }
 
 export const SUPERVISOR_AUTH_TITLE_ID = 'supervisor-auth-title';
 
+// P-04 Autorización de supervisor
 /**
  * Autorización de un supervisor+ (P-04), sin cerrar la sesión del vendedor. = el diálogo de
  * correo/contraseña que Flutter nunca tuvo (ver docs/status.md, decisión del dueño 2026-10-26).
- * Las credenciales se verifican en el Edge Function `patients-lifecycle`, nunca en el navegador.
+ * Es genérico: quien lo abre pasa el texto y la función `authorize`, que llama a su Edge Function
+ * (`patients-lifecycle`, `authorize-discount`...). Las credenciales nunca se verifican en el navegador.
  */
 @Component({
   selector: 'app-supervisor-auth-dialog',

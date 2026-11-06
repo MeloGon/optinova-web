@@ -11,6 +11,8 @@ import { AppFeaturesStore } from './app-features.store';
  * - "Funciones generales": interruptores de `app_config` (apagado de emergencia para toda la
  *   empresa). Solo visible y editable para admin+ (RLS, cambio #21); un supervisor no ve esta
  *   sección aunque entre a la página.
+ * - "Descuentos": por sucursal, si un vendedor necesita la autorización de un supervisor para dar
+ *   descuento (P-04 en Vender). El supervisor administra solo la suya; admin/megadmin, todas.
  * - "Permisos de vendedores": quién puede cambiar la fecha de una venta. Un supervisor administra
  *   solo a los vendedores de su propia sucursal; admin/megadmin, a cualquiera. Ruta abierta desde
  *   supervisor (antes era solo admin+).
@@ -39,6 +41,7 @@ export class AppFeaturesPage {
   constructor() {
     if (this.isAdmin) void this.store.load();
     void this.store.loadVendors();
+    void this.store.loadBranches();
   }
 
   protected retry(): void {
@@ -51,6 +54,14 @@ export class AppFeaturesPage {
 
   protected retryVendors(): void {
     void this.store.loadVendors();
+  }
+
+  protected retryBranches(): void {
+    void this.store.loadBranches();
+  }
+
+  protected toggleBranch(branch: string, next: boolean): void {
+    void this.store.toggleBranchDiscountAuth(branch, next);
   }
 
   protected toggleVendor(vendorId: string, next: boolean): void {

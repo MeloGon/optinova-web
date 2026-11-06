@@ -53,6 +53,58 @@
   }
 
   <section class="flex flex-col gap-3">
+    <h2 class="text-heading-sm font-semibold">Descuentos</h2>
+    <p class="text-body-sm text-muted-foreground">
+      Si está activado, un vendedor necesita el correo y la contraseña de un supervisor para dar un
+      descuento. Si está apagado, el vendedor descuenta directo.
+    </p>
+
+    @if (store.branchesError(); as message) {
+      <div
+        role="alert"
+        class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+      >
+        <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+        <span class="flex-1">{{ message }}</span>
+        <button
+          type="button"
+          (click)="retryBranches()"
+          class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+        >
+          <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+          Reintentar
+        </button>
+      </div>
+    }
+
+    <div class="overflow-hidden rounded-lg border border-border bg-card elev-sm">
+      @if (!store.branchesLoaded()) {
+        @for (row of skeletonRows; track row) {
+          <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+            <onv-skeleton class="h-4 w-64" />
+            <onv-skeleton class="h-5 w-9 shrink-0 rounded-full" />
+          </div>
+        }
+      } @else {
+        @for (row of store.discountBranches(); track row.branch) {
+          <div class="flex items-center justify-between gap-4 border-b border-border p-(--onv-card-p) last:border-b-0">
+            <span class="text-body">
+              Pedir autorización de supervisor para descuentos
+              <span class="text-body-sm text-muted-foreground">· {{ row.branch }}</span>
+            </span>
+            <onv-switch
+              [checked]="row.requiresAuth"
+              [disabled]="store.savingBranch() === row.branch"
+              [label]="'Pedir autorización para descuentos: ' + row.branch"
+              (checkedChange)="toggleBranch(row.branch, $event)"
+            />
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-3">
     <h2 class="text-heading-sm font-semibold">Permisos de vendedores</h2>
     <p class="text-body-sm text-muted-foreground">
       Quién puede cambiar la fecha de una venta en Historial de ventas.

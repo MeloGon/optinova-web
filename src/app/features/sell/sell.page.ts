@@ -33,6 +33,10 @@ export class SellPage {
 
   protected readonly icons = { back: LucideArrowLeft, next: LucideArrowRight, confirm: LucideCheck };
 
+  constructor() {
+    void this.store.loadDiscountPolicy();
+  }
+
   protected readonly steps = computed<Step[]>(() => {
     const current = this.currentStep();
     const cartCount = this.store.cart().length;

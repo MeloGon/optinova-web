@@ -1,3 +1,4 @@
+import { Dialog } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,6 +21,7 @@ import { ConfigService } from '../../../core/config/config.service';
 import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 import { DatePicker } from '../../../shared/ui/date-picker/date-picker';
 import { RxTable } from '../../../shared/ui/rx-table/rx-table';
+import { SUPERVISOR_AUTH_TITLE_ID, SupervisorAuthDialog, SupervisorAuthDialogData } from '../../../shared/ui/supervisor-auth-dialog/supervisor-auth-dialog';
 import { OnvTable } from '../../../shared/ui/table/table';
 import { CartLine, SellStore } from '../sell.store';
 
@@ -40,10 +42,9 @@ function today(): string {
 
 /**
  * Paso 3 de Vender (= S-04 paso 3): nota de venta a la izquierda (vendedor, sucursal, fecha,
- * precios editables, graduación) y resumen de cobro (P-06) a la derecha. El descuento especial
- * solo lo puede tocar supervisor o superior (gate simple por rol, decisión del dueño 2026-10-31);
- * P-04 completo (autorización con correo/contraseña de un supervisor) queda para cuando se
- * construya borrar/archivar pacientes.
+ * precios editables, graduación) y resumen de cobro (P-06) a la derecha. El descuento especial lo
+ * da directo cualquier rol, salvo que la sucursal exija autorización para vendedores: entonces se
+ * abre el diálogo P-04 (correo y contraseña de un supervisor, sin cerrar la sesión del vendedor).
  */
 @Component({
   selector: 'app-sell-checkout-step',
@@ -53,6 +54,7 @@ function today(): string {
 export class CheckoutStep {
   protected readonly store = inject(SellStore);
   protected readonly config = inject(ConfigService).config;
+  private readonly dialog = inject(Dialog);
 
   protected readonly branches = computed(() => this.config().branches);
   protected readonly methods = computed(() => this.config().paymentMethods.map((m) => ({ ...m, icon: METHOD_ICONS[m.value] })));
@@ -77,6 +79,21 @@ export class CheckoutStep {
     });
     this.discountReason.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
       this.store.setDiscount(this.discountAmount.value ?? 0, value);
+    });
+  }
+
+  protected async askAuthorization(): Promise<void> {
+    const data: SupervisorAuthDialogData = {
+      description: `Descuento de ${this.store.discount().toFixed(2)} sobre esta venta.`,
+      confirmLabel: 'Autorizar descuento',
+      authorize: (email, password) => this.store.authorizeDiscount(email, password),
+    };
+    this.dialog.open<boolean>(SupervisorAuthDialog, {
+      data,
+      role: 'dialog',
+      ariaLabelledBy: SUPERVISOR_AUTH_TITLE_ID,
+      disableClose: true,
+      backdropClass: ['bg-overlay'],
     });
   }
 

@@ -15,6 +15,8 @@ import { ResinRepository } from '../../core/repositories/resin.repository';
 import { NewSale, SaleRepository } from '../../core/repositories/sale.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
 import { SellerRepository } from '../../core/repositories/seller.repository';
+import { BranchSettingsRepository } from '../../core/repositories/branch-settings.repository';
+import { DiscountAuthorizationRepository } from '../../core/repositories/discount-authorization.repository';
 import { Result, err, ok } from '../../core/result';
 
 export type CatalogOption = 'mount' | 'resin';
@@ -66,6 +68,8 @@ interface SellState {
   cart: CartLine[];
   discount: number;
   discountReason: string;
+  /** Hasta cuánto descuento autorizó un supervisor en esta venta (0 = nada autorizado todavía). */
+  authorizedDiscount: number;
   account: number;
   paymentMethod: string | null;
 
@@ -102,6 +106,7 @@ function initialState(branch: string): SellState {
     cart: [],
     discount: 0,
     discountReason: '',
+    authorizedDiscount: 0,
     account: 0,
     paymentMethod: null,
     saving: false,
@@ -125,9 +130,16 @@ export class SellStore {
   private readonly saleRepo = inject(SaleRepository);
   private readonly paymentRepo = inject(PaymentRepository);
   private readonly reviewRepo = inject(ReviewRepository);
+  private readonly branchSettingsRepo = inject(BranchSettingsRepository);
+  private readonly discountAuthRepo = inject(DiscountAuthorizationRepository);
   private readonly session = inject(SessionStore);
 
   private readonly state = signal<SellState>(initialState(this.session.profile()?.branch ?? ''));
+  /**
+   * Sucursales donde el descuento de un vendedor exige autorización. Vive fuera de `state` a
+   * propósito: se carga una vez y debe sobrevivir al reinicio que sigue a cada venta.
+   */
+  private readonly authBranches = signal<string[]>([]);
   private nextLocalId = 1;
 
   readonly patient = computed(() => this.state().patient);
@@ -167,12 +179,35 @@ export class SellStore {
   readonly error = computed(() => this.state().error);
 
   /**
-   * Un vendedor no puede aplicar descuento: hace falta un supervisor o superior (gate simple por
-   * rol, decisión del dueño 2026-10-31). El flujo completo de "pedir el correo y contraseña de un
-   * supervisor sin cerrar la sesión propia" (P-04) queda para cuando se construya borrar/archivar
-   * pacientes, que es lo que lo motivó; Vender lo va a poder reusar en ese momento.
+   * Supervisor y admin descuentan directo. Un vendedor también, salvo que su sucursal (o la de la
+   * venta) exija autorización: ahí cada descuento necesita el correo y contraseña de un supervisor
+   * (P-04), que el servidor vuelve a comprobar al guardar la venta (trigger `trg_ventas_descuento`).
    */
-  readonly canApplyDiscount = computed(() => this.session.can('supervisor'));
+  readonly discountNeedsAuth = computed(() => {
+    if (this.session.can('supervisor')) return false;
+    const required = this.authBranches();
+    return required.includes(this.state().branch) || required.includes(this.session.profile()?.branch ?? '');
+  });
+
+  /** `true` si el descuento puesto ya puede guardarse (no hace falta permiso, o ya está autorizado). */
+  readonly discountAuthorized = computed(() => {
+    const s = this.state();
+    return !this.discountNeedsAuth() || s.discount <= 0 || s.discount <= s.authorizedDiscount;
+  });
+
+  /** Carga la regla de descuentos por sucursal. Si falla, el servidor igual hace cumplir la regla al guardar. */
+  async loadDiscountPolicy(): Promise<void> {
+    const result = await this.branchSettingsRepo.list();
+    if (result.ok) this.authBranches.set(result.value.filter((s) => s.discountRequiresAuth).map((s) => s.branch));
+  }
+
+  /** Pide a un supervisor que autorice el descuento actual; al lograrlo, queda autorizado hasta ese monto. */
+  async authorizeDiscount(email: string, password: string): Promise<Result<void, AppError>> {
+    const amount = this.state().discount;
+    const result = await this.discountAuthRepo.authorize(email, password, amount);
+    if (result.ok) this.state.update((s) => ({ ...s, authorizedDiscount: Math.max(s.authorizedDiscount, amount) }));
+    return result;
+  }
 
   readonly total = computed(() => this.state().cart.reduce((sum, line) => sum + line.item.price, 0));
   readonly totalWithDiscount = computed(() => Math.max(this.total() - this.state().discount, 0));
@@ -182,7 +217,7 @@ export class SellStore {
     const s = this.state();
     if (!s.patient || !s.seller || !s.branch.trim() || s.cart.length === 0) return false;
     if (s.account > 0 && !s.paymentMethod) return false;
-    return true;
+    return this.discountAuthorized();
   });
 
   async searchPatients(query: string): Promise<void> {
@@ -342,6 +377,9 @@ export class SellStore {
     if (!s.seller) return err(appError('unknown', 'Selecciona un vendedor antes de crear la venta.'));
     if (!s.branch.trim()) return err(appError('unknown', 'Selecciona una sucursal antes de crear la venta.'));
     if (s.cart.length === 0) return err(appError('unknown', 'Agrega al menos un producto antes de crear la venta.'));
+    if (!this.discountAuthorized()) {
+      return err(appError('unknown', 'El descuento necesita la autorización de un supervisor.'));
+    }
     if (s.account > 0 && !s.paymentMethod) {
       return err(appError('unknown', 'Selecciona un método de pago para el monto a cuenta.'));
     }

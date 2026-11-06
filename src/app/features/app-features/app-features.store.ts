@@ -1,6 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { SessionStore } from '../../core/auth/session.store';
+import { ConfigService } from '../../core/config/config.service';
 import { TeamVendor } from '../../core/models/team-vendor';
 import { AppConfigRepository } from '../../core/repositories/app-config.repository';
+import { BranchSettingsRepository } from '../../core/repositories/branch-settings.repository';
 import { TeamPermissionsRepository } from '../../core/repositories/team-permissions.repository';
 
 interface AppFeaturesState {
@@ -17,6 +20,18 @@ interface AppFeaturesState {
   savingVendorId: string | null;
   vendorsError: string | null;
   vendorsLoaded: boolean;
+
+  /** Sucursales (por nombre) donde un vendedor necesita autorización de supervisor para descontar. */
+  discountAuthBranches: string[];
+  savingBranch: string | null;
+  branchesError: string | null;
+  branchesLoaded: boolean;
+}
+
+/** Una fila de la sección "Descuentos": una sucursal que el usuario puede administrar. */
+export interface DiscountBranchRow {
+  branch: string;
+  requiresAuth: boolean;
 }
 
 /**
@@ -33,6 +48,9 @@ interface AppFeaturesState {
 export class AppFeaturesStore {
   private readonly repo = inject(AppConfigRepository);
   private readonly teamRepo = inject(TeamPermissionsRepository);
+  private readonly branchRepo = inject(BranchSettingsRepository);
+  private readonly session = inject(SessionStore);
+  private readonly activeBranches = inject(ConfigService).activeBranches;
 
   private readonly state = signal<AppFeaturesState>({
     features: [],
@@ -46,6 +64,11 @@ export class AppFeaturesStore {
     savingVendorId: null,
     vendorsError: null,
     vendorsLoaded: false,
+
+    discountAuthBranches: [],
+    savingBranch: null,
+    branchesError: null,
+    branchesLoaded: false,
   });
 
   readonly features = computed(() => this.state().features);
@@ -59,6 +82,20 @@ export class AppFeaturesStore {
   readonly savingVendorId = computed(() => this.state().savingVendorId);
   readonly vendorsError = computed(() => this.state().vendorsError);
   readonly vendorsLoaded = computed(() => this.state().vendorsLoaded);
+
+  readonly savingBranch = computed(() => this.state().savingBranch);
+  readonly branchesError = computed(() => this.state().branchesError);
+  readonly branchesLoaded = computed(() => this.state().branchesLoaded);
+  /**
+   * Sucursales que puede administrar quien mira: el supervisor, solo la suya; admin/megadmin,
+   * todas las activas. El servidor (`set_branch_discount_auth`) vuelve a validarlo.
+   */
+  readonly discountBranches = computed<DiscountBranchRow[]>(() => {
+    const required = this.state().discountAuthBranches;
+    const own = this.session.profile()?.branch ?? '';
+    const names = this.session.can('admin') ? this.activeBranches().map((b) => b.value) : own ? [own] : [];
+    return names.map((branch) => ({ branch, requiresAuth: required.includes(branch) }));
+  });
 
   async load(): Promise<void> {
     this.state.update((s) => ({ ...s, loading: true, error: null }));
@@ -114,6 +151,37 @@ export class AppFeaturesStore {
       vendors: result.ok
         ? s.vendors
         : s.vendors.map((v) => (v.id === vendorId ? { ...v, canChangeDate: !value } : v)),
+    }));
+  }
+
+  async loadBranches(): Promise<void> {
+    this.state.update((s) => ({ ...s, branchesError: null }));
+    const result = await this.branchRepo.list();
+    if (result.ok) {
+      const required = result.value.filter((b) => b.discountRequiresAuth).map((b) => b.branch);
+      this.state.update((s) => ({ ...s, discountAuthBranches: required, branchesLoaded: true }));
+    } else {
+      this.state.update((s) => ({ ...s, branchesError: result.error.message, branchesLoaded: true }));
+    }
+  }
+
+  async toggleBranchDiscountAuth(branch: string, value: boolean): Promise<void> {
+    const withValue = (list: string[], on: boolean) =>
+      on ? (list.includes(branch) ? list : [...list, branch]) : list.filter((b) => b !== branch);
+
+    this.state.update((s) => ({
+      ...s,
+      savingBranch: branch,
+      branchesError: null,
+      discountAuthBranches: withValue(s.discountAuthBranches, value),
+    }));
+
+    const result = await this.branchRepo.setDiscountRequiresAuth(branch, value);
+    this.state.update((s) => ({
+      ...s,
+      savingBranch: null,
+      branchesError: result.ok ? null : result.error.message,
+      discountAuthBranches: result.ok ? s.discountAuthBranches : withValue(s.discountAuthBranches, !value),
     }));
   }
 }

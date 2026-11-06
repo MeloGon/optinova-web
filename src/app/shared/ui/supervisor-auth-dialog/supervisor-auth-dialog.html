@@ -2,9 +2,8 @@
   <div class="border-b border-border px-6 py-4">
     <h2 [id]="titleId" class="text-heading">Autorización de un supervisor</h2>
     <p class="text-body-sm text-muted-foreground">
-      {{ data.patientName }} tiene {{ data.reviewCount }} {{ data.reviewCount === 1 ? 'medida' : 'medidas' }}
-      registrada{{ data.reviewCount === 1 ? '' : 's' }}. Se borrarán junto con el paciente. Pide a un
-      supervisor que ponga su correo y contraseña para continuar; tu sesión no se cierra.
+      {{ data.description }} Pide a un supervisor que ponga su correo y contraseña para continuar; tu
+      sesión no se cierra.
     </p>
   </div>
 
@@ -41,7 +40,7 @@
         <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
         Verificando…
       } @else {
-        Autorizar y eliminar
+        {{ data.confirmLabel }}
       }
     </button>
   </div>

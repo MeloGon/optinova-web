@@ -1,7 +1,13 @@
 import { TestBed } from '@angular/core/testing';
+import { SessionStore } from '../../core/auth/session.store';
 import { appError } from '../../core/errors/app-error';
+import { Role } from '../../core/models/role';
 import { AppConfigRepository } from '../../core/repositories/app-config.repository';
+import { AuthRepository } from '../../core/repositories/auth.repository';
+import { BranchSettingsRepository } from '../../core/repositories/branch-settings.repository';
 import { TeamPermissionsRepository } from '../../core/repositories/team-permissions.repository';
+import { FakeAuthRepository, fakeProfile } from '../../testing/fake-auth.repository';
+import { FakeBranchSettingsRepository } from '../../testing/fake-branch-settings.repository';
 import { FakeAppConfigRepository, fakeFeature } from '../../testing/fake-app-config.repository';
 import { FakeTeamPermissionsRepository, fakeVendor } from '../../testing/fake-team-permissions.repository';
 import { AppFeaturesStore } from './app-features.store';
@@ -9,21 +15,33 @@ import { AppFeaturesStore } from './app-features.store';
 describe('AppFeaturesStore', () => {
   let repo: FakeAppConfigRepository;
   let teamRepo: FakeTeamPermissionsRepository;
+  let branchRepo: FakeBranchSettingsRepository;
   let store: AppFeaturesStore;
 
-  beforeEach(() => {
+  async function setup(role: Role = 'admin'): Promise<void> {
+    TestBed.resetTestingModule();
+    const auth = new FakeAuthRepository();
+    auth.session = fakeProfile(role);
+    branchRepo = new FakeBranchSettingsRepository();
+    TestBed.configureTestingModule({
+      providers: [
+        AppFeaturesStore,
+        { provide: AuthRepository, useValue: auth },
+        { provide: AppConfigRepository, useValue: repo },
+        { provide: TeamPermissionsRepository, useValue: teamRepo },
+        { provide: BranchSettingsRepository, useValue: branchRepo },
+      ],
+    });
+    await TestBed.inject(SessionStore).restore();
+    store = TestBed.inject(AppFeaturesStore);
+  }
+
+  beforeEach(async () => {
     repo = new FakeAppConfigRepository();
     repo.features = [fakeFeature('feature_change_date', true, 'Permite cambiar la fecha de una venta')];
     teamRepo = new FakeTeamPermissionsRepository();
     teamRepo.vendors = [fakeVendor('v1', 'Vendedor Prueba', 'MEDILENT')];
-    TestBed.configureTestingModule({
-      providers: [
-        AppFeaturesStore,
-        { provide: AppConfigRepository, useValue: repo },
-        { provide: TeamPermissionsRepository, useValue: teamRepo },
-      ],
-    });
-    store = TestBed.inject(AppFeaturesStore);
+    await setup();
   });
 
   it('empieza sin cargar y sin funciones ni vendedores', () => {
@@ -88,5 +106,39 @@ describe('AppFeaturesStore', () => {
 
     expect(store.vendors()[0].canChangeDate).toBe(false);
     expect(store.vendorsError()).toBe('Solo puedes administrar vendedores de tu sucursal');
+  });
+
+  describe('descuentos por sucursal (P-04)', () => {
+    it('admin ve todas las sucursales activas; sin fila, la regla está apagada', async () => {
+      await store.loadBranches();
+      expect(store.discountBranches().map((b) => b.branch)).toEqual(['OFTALVISION', 'MEDILENT']);
+      expect(store.discountBranches().every((b) => !b.requiresAuth)).toBe(true);
+    });
+
+    it('supervisor ve solo su propia sucursal', async () => {
+      await setup('supervisor');
+      branchRepo.settings = [{ branch: 'OFTALVISION', discountRequiresAuth: true }];
+      await store.loadBranches();
+
+      expect(store.discountBranches()).toEqual([{ branch: 'OFTALVISION', requiresAuth: true }]);
+    });
+
+    it('al activar, cambia de inmediato y llama al servidor', async () => {
+      await store.loadBranches();
+      await store.toggleBranchDiscountAuth('MEDILENT', true);
+
+      expect(store.discountBranches().find((b) => b.branch === 'MEDILENT')?.requiresAuth).toBe(true);
+      expect(branchRepo.setCalls).toEqual([{ branch: 'MEDILENT', value: true }]);
+    });
+
+    it('si el servidor rechaza el cambio, revierte y avisa', async () => {
+      await store.loadBranches();
+      branchRepo.setFailWith = appError('unauthorized', 'Solo puedes administrar tu propia sucursal');
+
+      await store.toggleBranchDiscountAuth('MEDILENT', true);
+
+      expect(store.discountBranches().find((b) => b.branch === 'MEDILENT')?.requiresAuth).toBe(false);
+      expect(store.branchesError()).toBe('Solo puedes administrar tu propia sucursal');
+    });
   });
 });

@@ -12,7 +12,7 @@ import {
 import { Result } from '../../core/result';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
-import { SUPERVISOR_AUTH_TITLE_ID, SupervisorAuthDialog, SupervisorAuthDialogData } from './components/supervisor-auth-dialog';
+import { SUPERVISOR_AUTH_TITLE_ID, SupervisorAuthDialog, SupervisorAuthDialogData } from '../../shared/ui/supervisor-auth-dialog/supervisor-auth-dialog';
 
 /** Lo que necesita `askDelete`/`askRestore` de cualquier store que maneje el ciclo de vida del paciente. */
 export interface PatientLifecyclePort {
@@ -69,8 +69,8 @@ export class PatientLifecycleActions {
 
     if (tier === 'reviews' && !this.session.can('supervisor')) {
       const data: SupervisorAuthDialogData = {
-        patientName: patient.name,
-        reviewCount,
+        description: `${patient.name} tiene ${reviewCount} ${reviewCount === 1 ? 'medida' : 'medidas'} registrada${reviewCount === 1 ? '' : 's'}. Se borrarán junto con el paciente.`,
+        confirmLabel: 'Autorizar y eliminar',
         authorize: (email, password) => lifecycle.applyLifecycle(patient.id, { email, password }),
       };
       const ref = this.dialog.open<boolean>(SupervisorAuthDialog, {
