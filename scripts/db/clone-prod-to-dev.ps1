@@ -3,19 +3,27 @@
 
   - Por defecto: solo esquema (tablas, RLS, funciones, grants, trigger de auth).
     Los datos de DEV salen de supabase/seed.sql (datos falsos).
-  - -WithData: copia ademas usuarios y datos reales (solo para el corte final, Fase 5).
+  - -WithData: copia ademas usuarios y datos reales (ensayo y corte final, Fase 5).
   - PROD solo se LEE (pg_dump). Nunca se escribe.
-  - DEV se llena en UNA transaccion: si algo falla, no queda nada a medias.
-  - Las URLs (con password) se leen de variables de entorno; nunca se guardan.
+  - DEV se VACIA primero (esquema public + auth.users/identities) y se llena
+    todo en UNA transaccion: si algo falla, DEV queda como estaba.
+  - Pide escribir SI antes de vaciar DEV (-Yes lo omite; solo para automatizar).
+  - NO genera baseline en supabase/migrations/: el esquema clonado es el punto
+    de partida del ensayo y las migraciones #2 a #25 se reaplican encima.
+  - Las URLs (con password) se leen de .env.db (ignorado por git) o, si no
+    existe, de las variables de entorno; nunca se guardan en otro lado.
+
+  .env.db (raiz del repo):
+    PROD_DB_URL=postgresql://postgres.<ref-prod>:<password>@<host>:5432/postgres
+    DEV_DB_URL=postgresql://postgres.<ref-dev>:<password>@<host>:5432/postgres
 
   Uso (PowerShell, desde la raiz del repo):
-    $env:PROD_DB_URL = "<Session pooler URI de oftal-test-web>"
-    $env:DEV_DB_URL  = "<Session pooler URI de optinova-db>"
-    .\scripts\db\clone-prod-to-dev.ps1
+    .\scripts\db\clone-prod-to-dev.ps1 -WithData
 #>
 param(
   [switch]$WithData,  # copia tambien auth.users + datos public reales
-  [switch]$KeepDump  # conserva .db-dump/ (contiene datos reales; esta en .gitignore)
+  [switch]$KeepDump,  # conserva .db-dump/ (contiene datos reales; esta en .gitignore)
+  [switch]$Yes        # omite la confirmacion antes de vaciar DEV
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,6 +32,15 @@ $ProdRef = 'gutgxjgfjbodznzjiqtm'
 $DevRef  = 'dqofpmpyxumkzlsqcjri'
 
 # --- 1. Validaciones de seguridad -------------------------------------------
+$RepoRoot = (Resolve-Path (Join-Path (Join-Path $PSScriptRoot '..') '..')).Path
+$EnvFile = Join-Path $RepoRoot '.env.db'
+if (Test-Path $EnvFile) {
+  foreach ($line in Get-Content $EnvFile) {
+    if ($line -match '^\s*(PROD_DB_URL|DEV_DB_URL)\s*=\s*(.+?)\s*$') {
+      Set-Item -Path "Env:$($Matches[1])" -Value $Matches[2].Trim('"', "'")
+    }
+  }
+}
 $Prod = $env:PROD_DB_URL
 $Dev  = $env:DEV_DB_URL
 if (-not $Prod -or -not $Dev) { throw 'Faltan PROD_DB_URL y/o DEV_DB_URL.' }
@@ -41,7 +58,6 @@ function Invoke-Native([string]$Exe, [string[]]$ArgList) {
   if ($LASTEXITCODE -ne 0) { throw "$Exe fallo (exit $LASTEXITCODE)." }
 }
 
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Out = Join-Path $RepoRoot '.db-dump'
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
@@ -85,11 +101,55 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 '@, $Utf8NoBom)
 
-# --- 4. Restaurar en DEV (una sola transaccion) ------------------------------
+# --- 4. Vaciar y restaurar DEV (una sola transaccion) ------------------------
+if (-not $Yes) {
+  Write-Host ''
+  Write-Host "Se va a VACIAR DEV ($DevRef): esquema public y auth.users." -ForegroundColor Yellow
+  Write-Host 'Se pierden el seed y cualquier dato de prueba de DEV.'
+  if ((Read-Host 'Escribe SI para continuar') -ne 'SI') { throw 'Cancelado por el usuario.' }
+}
+
+# Borra tablas, vistas, secuencias sueltas, funciones y tipos de public (las de
+# extensiones se respetan) y vacia auth.users con sus dependientes. Se borran
+# los objetos y no el esquema porque recrear `public` falla por permisos.
+$WipeFile = Join-Path $Out 'wipe.sql'
+[IO.File]::WriteAllText($WipeFile, @'
+DO $wipe$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT format('%I.%I', schemaname, viewname) AS n FROM pg_views WHERE schemaname = 'public' LOOP
+    EXECUTE 'DROP VIEW IF EXISTS ' || r.n || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT format('%I.%I', schemaname, tablename) AS n FROM pg_tables WHERE schemaname = 'public' LOOP
+    EXECUTE 'DROP TABLE IF EXISTS ' || r.n || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT format('%I.%I', n.nspname, c.relname) AS n
+           FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+           WHERE n.nspname = 'public' AND c.relkind = 'S' LOOP
+    EXECUTE 'DROP SEQUENCE IF EXISTS ' || r.n || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT p.oid::regprocedure AS n
+           FROM pg_proc p JOIN pg_namespace ns ON ns.oid = p.pronamespace
+           WHERE ns.nspname = 'public' AND p.prokind IN ('f', 'p')
+             AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e') LOOP
+    EXECUTE 'DROP ROUTINE IF EXISTS ' || r.n || ' CASCADE';
+  END LOOP;
+  FOR r IN SELECT format('%I.%I', ns.nspname, t.typname) AS n
+           FROM pg_type t JOIN pg_namespace ns ON ns.oid = t.typnamespace
+           WHERE ns.nspname = 'public' AND t.typtype IN ('e', 'd')
+             AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = t.oid AND d.deptype = 'e') LOOP
+    EXECUTE 'DROP TYPE IF EXISTS ' || r.n || ' CASCADE';
+  END LOOP;
+END
+$wipe$;
+TRUNCATE auth.users CASCADE;
+'@, $Utf8NoBom)
+
 # session_replication_role = replica desactiva triggers y FKs durante la carga
 # (asi no se disparan los triggers de auditoria ni handle_new_user).
-Write-Host '[4/5] Restaurando en DEV (todo o nada)...'
+Write-Host '[4/5] Vaciando y restaurando DEV (todo o nada)...'
 Invoke-Native $Psql @('--dbname', $Dev, '--single-transaction', '-v', 'ON_ERROR_STOP=1', '--quiet',
+  '--file', $WipeFile,
   '--file', $SchemaFile,
   '--command', 'SET session_replication_role = replica',
   '--file', $AuthFile,
@@ -130,13 +190,6 @@ if ($diff) {
   Write-Host 'OK: PROD y DEV tienen los mismos conteos.' -ForegroundColor Green
 }
 }
-
-# --- Baseline de esquema (sin datos) para el repo ----------------------------
-$MigDir = Join-Path $RepoRoot 'supabase\migrations'
-New-Item -ItemType Directory -Force $MigDir | Out-Null
-$Baseline = Join-Path $MigDir ((Get-Date -Format 'yyyyMMddHHmmss') + '_baseline.sql')
-Copy-Item $SchemaFile $Baseline
-Write-Host "Baseline guardado: $Baseline"
 
 if (-not $KeepDump) {
   Remove-Item -Recurse -Force $Out

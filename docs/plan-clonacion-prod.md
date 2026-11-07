@@ -12,7 +12,7 @@ Estado: **en curso** (iniciado 2026-11-06, Claude). Retomable desde cualquier co
 ## Fases
 
 1. [x] **Huella de PROD** (solo lectura): ver abajo.
-2. [ ] **Arreglar `scripts/db/clone-prod-to-dev.ps1`**: que no genere baseline nuevo en `supabase/migrations/`, que lea `.env.db` y que vacíe DEV (esquema `public` + `auth.users`/`identities`) antes de cargar.
+2. [x] **Arreglar `scripts/db/clone-prod-to-dev.ps1`** (2026-11-06, sin ejecutar: la Mac no tiene `pg_dump`/`psql`/`pwsh`): ya no genera baseline, lee `.env.db`, y vacía DEV (objetos de `public` + `auth.users` en cascada) dentro de la misma transacción de carga, pidiendo escribir `SI` antes (`-Yes` lo omite). `.env.db` agregado a `.gitignore`. **Falta probarlo** en la otra computadora.
 3. [ ] **Clonar PROD a DEV con datos** (`-WithData`). Necesita `.env.db` con `PROD_DB_URL` y `DEV_DB_URL` (Session pooler, cada una con su ref).
 4. [ ] **Reaplicar migraciones #1 a #25** en orden (excepto `*_baseline.sql`, que ya es el esquema clonado), con comprobación entre cada una.
 5. [ ] **Comparar la huella de DEV con la de PROD.** Toda diferencia se explica o se corrige.
