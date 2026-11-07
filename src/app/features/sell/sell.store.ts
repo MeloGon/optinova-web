@@ -9,10 +9,9 @@ import { Sale } from '../../core/models/sale';
 import { Seller } from '../../core/models/seller';
 import { MountRepository } from '../../core/repositories/mount.repository';
 import { PatientRepository } from '../../core/repositories/patient.repository';
-import { NewPayment, PaymentRepository } from '../../core/repositories/payment.repository';
 import { Review } from '../../core/models/review';
 import { ResinRepository } from '../../core/repositories/resin.repository';
-import { NewSale, SaleRepository } from '../../core/repositories/sale.repository';
+import { NewInitialPayment, NewSale, SaleRepository } from '../../core/repositories/sale.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
 import { SellerRepository } from '../../core/repositories/seller.repository';
 import { BranchSettingsRepository } from '../../core/repositories/branch-settings.repository';
@@ -128,7 +127,6 @@ export class SellStore {
   private readonly resinRepo = inject(ResinRepository);
   private readonly sellerRepo = inject(SellerRepository);
   private readonly saleRepo = inject(SaleRepository);
-  private readonly paymentRepo = inject(PaymentRepository);
   private readonly reviewRepo = inject(ReviewRepository);
   private readonly branchSettingsRepo = inject(BranchSettingsRepository);
   private readonly discountAuthRepo = inject(DiscountAuthorizationRepository);
@@ -366,10 +364,11 @@ export class SellStore {
   }
 
   /**
-   * Crea la venta (= `createSale` de Flutter, con dos diferencias a propósito):
-   * 1. El stock se descuenta DESPUÉS de crear la venta, no antes: así nunca se resta stock de una
-   *    venta que al final no se llegó a crear.
-   * 2. Se resta la cantidad real de líneas por armazón (1 por "Agregar"), no siempre 1 por venta.
+   * Crea la venta (= `createSale` de Flutter, pero atómico): venta, líneas, descuento de stock y
+   * pago inicial se guardan en UNA transacción en la base (`create_sale`). Si algo falla (p. ej. un
+   * armazón sin stock suficiente) no queda nada a medias: ni una venta sin líneas, ni stock restado
+   * de una venta que no existe. Flutter lo hacía en pasos sueltos y restaba siempre 1 por venta;
+   * acá se resta la cantidad real de líneas por armazón (1 por "Agregar").
    */
   async confirmSale(): Promise<Result<SellSnapshot, AppError>> {
     const s = this.state();
@@ -382,6 +381,9 @@ export class SellStore {
     }
     if (s.account > 0 && !s.paymentMethod) {
       return err(appError('unknown', 'Selecciona un método de pago para el monto a cuenta.'));
+    }
+    if (s.account > this.totalWithDiscount()) {
+      return err(appError('unknown', 'El monto a cuenta no puede ser mayor al total con descuento.'));
     }
 
     this.state.update((st) => ({ ...st, saving: true, error: null }));
@@ -407,38 +409,13 @@ export class SellStore {
       rest,
     };
 
-    const created = await this.saleRepo.create(newSale, items);
+    const initialPayment: NewInitialPayment | null =
+      account > 0 ? { paymentMethod: s.paymentMethod ?? 'otro', notes: 'Pago inicial de venta' } : null;
+
+    const created = await this.saleRepo.create(newSale, items, initialPayment);
     if (!created.ok) {
       this.state.update((st) => ({ ...st, saving: false, error: created.error.message }));
       return created;
-    }
-
-    const mountCounts = new Map<string, number>();
-    for (const item of items) {
-      if (item.kind === 'mount') mountCounts.set(item.mountId, (mountCounts.get(item.mountId) ?? 0) + 1);
-    }
-    for (const [mountId, quantity] of mountCounts) {
-      const decremented = await this.mountRepo.decrementStock(mountId, quantity);
-      if (!decremented.ok) {
-        this.state.update((st) => ({ ...st, saving: false, error: decremented.error.message }));
-        return decremented;
-      }
-    }
-
-    if (account > 0) {
-      const payment: NewPayment = {
-        saleId: created.value.id,
-        amount: account,
-        date: s.date,
-        paymentMethod: s.paymentMethod ?? 'otro',
-        notes: 'Pago inicial de venta',
-        type: 'nueva_venta',
-      };
-      const paid = await this.paymentRepo.create(payment, this.session.profile()?.id ?? '');
-      if (!paid.ok) {
-        this.state.update((st) => ({ ...st, saving: false, error: paid.error.message }));
-        return paid;
-      }
     }
 
     const snapshot: SellSnapshot = { sale: created.value, items };

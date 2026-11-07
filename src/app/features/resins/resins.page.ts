@@ -198,7 +198,7 @@ export class ResinsPage {
   protected async askDelete(resin: Resin): Promise<void> {
     const confirmed = await this.confirm.confirm({
       title: '¿Eliminar esta resina?',
-      text: `"${resin.description}" no se puede deshacer.`,
+      text: `"${resin.description}": si nunca se vendió se elimina; si ya se vendió se archiva y deja de aparecer.`,
       confirmLabel: 'Eliminar resina',
     });
     if (!confirmed) return;
@@ -208,7 +208,11 @@ export class ResinsPage {
     this.loadingDelete.set(null);
 
     if (result.ok) {
-      this.toast.show({ tone: 'success', title: 'Resina eliminada' });
+      this.toast.show(
+        result.value === 'archived'
+          ? { tone: 'success', title: 'Resina archivada', text: 'Ya se vendió, así que se oculta en vez de borrarse.' }
+          : { tone: 'success', title: 'Resina eliminada' },
+      );
     } else {
       this.toast.show({ tone: 'danger', title: 'No se pudo eliminar', text: result.error.message });
     }

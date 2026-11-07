@@ -1,6 +1,7 @@
 import { AppError, appError } from '../core/errors/app-error';
 import { Mount } from '../core/models/mount';
 import { Page } from '../core/models/page';
+import { RemoveOutcome } from '../core/models/remove-outcome';
 import {
   MountInventorySearch,
   MountRepository,
@@ -32,12 +33,12 @@ function matchesStock(mount: Mount, status: MountInventorySearch['stockStatus'])
 export class FakeMountRepository extends MountRepository {
   mounts: Mount[] = [];
   searchFailWith: AppError | null = null;
-  decrementCalls: { id: string; quantity: number }[] = [];
-  decrementFailWith: AppError | null = null;
+  /** Ids que "ya se vendieron": quitarlos los archiva (se ocultan) en vez de borrarlos. */
+  soldIds = new Set<string>();
 
   insertFailWith: AppError | null = null;
   updateFailWith: AppError | null = null;
-  deleteFailWith: AppError | null = null;
+  removeFailWith: AppError | null = null;
   private nextId = 1000;
 
   async search({ query, branch, page, pageSize }: MountSearch): Promise<Result<Page<Mount>, AppError>> {
@@ -94,17 +95,11 @@ export class FakeMountRepository extends MountRepository {
     return ok(undefined);
   }
 
-  async delete(id: string): Promise<Result<void, AppError>> {
-    if (this.deleteFailWith) return err(this.deleteFailWith);
+  async remove(id: string): Promise<Result<RemoveOutcome, AppError>> {
+    if (this.removeFailWith) return err(this.removeFailWith);
     if (!this.mounts.some((m) => m.id === id)) return err(appError('notFound', 'El armazón ya no existe.'));
+    // Igual que la base: un armazón vendido desaparece del catálogo, pero no se borra.
     this.mounts = this.mounts.filter((m) => m.id !== id);
-    return ok(undefined);
-  }
-
-  async decrementStock(id: string, quantity: number): Promise<Result<void, AppError>> {
-    if (this.decrementFailWith) return err(this.decrementFailWith);
-    this.decrementCalls.push({ id, quantity });
-    this.mounts = this.mounts.map((m) => (m.id === id ? { ...m, stock: Math.max(m.stock - quantity, 0) } : m));
-    return ok(undefined);
+    return ok(this.soldIds.has(id) ? 'archived' : 'deleted');
   }
 }

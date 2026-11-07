@@ -8,6 +8,7 @@ import {
   ResinRepository,
   ResinStockCounts,
 } from '../../core/repositories/resin.repository';
+import { RemoveOutcome } from '../../core/models/remove-outcome';
 import { Result } from '../../core/result';
 
 interface ResinsState {
@@ -106,10 +107,15 @@ export class ResinsStore {
     return result;
   }
 
-  async remove(resin: Resin, actorEmail: string): Promise<Result<void, AppError>> {
-    const result = await this.repo.delete(resin.id);
+  /**
+   * "Eliminar": borra si nunca se vendió; si ya se vendió lo archiva y el historial de ventas
+   * conserva su referencia (la base decide, ver `remove_resin`). La auditoría dice cuál de las dos pasó.
+   */
+  async remove(resin: Resin, actorEmail: string): Promise<Result<RemoveOutcome, AppError>> {
+    const result = await this.repo.remove(resin.id);
     if (result.ok) {
-      void this.auditLog.log({ action: 'delete_resin', entity: 'resin', entityId: String(resin.id), detail: auditDetail(resin) }, actorEmail);
+      const action = result.value === 'archived' ? 'archive_resin' : 'delete_resin';
+      void this.auditLog.log({ action, entity: 'resin', entityId: String(resin.id), detail: auditDetail(resin) }, actorEmail);
       if (this.lastSearch) await this.load(this.lastSearch);
     }
     return result;

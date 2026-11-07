@@ -109,11 +109,11 @@ export class SalesHistoryStore {
   }
 
   /**
-   * Inserta el abono y actualiza el saldo de la venta (los dos pasos viven en `SalePaymentService`,
-   * compartido con la ficha del paciente y el Dashboard) y vuelve a pedir la lista.
+   * Registra el abono (abono y saldo en una sola transacción, ver `SalePaymentService`, compartido
+   * con la ficha del paciente y el Dashboard) y vuelve a pedir la lista.
    */
-  async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
-    const result = await this.salePayments.register(sale, payment, registeredById);
+  async registerPayment(payment: NewPayment): Promise<Result<void, AppError>> {
+    const result = await this.salePayments.register(payment);
     if (result.ok && this.lastSearch) await this.load(this.lastSearch);
     return result;
   }

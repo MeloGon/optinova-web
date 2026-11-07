@@ -93,7 +93,7 @@ describe('ResinsStore', () => {
     expect(auditLog.logged[0].entry.action).toBe('update_resin');
   });
 
-  it('al eliminar borra en el repositorio, audita y refresca la lista', async () => {
+  it('al eliminar una resina que nunca se vendió, la borra, audita y refresca la lista', async () => {
     await store.load({ query: '', stockStatus: 'all', page: 1, pageSize: 10 });
     const resin = store.items().find((r) => r.id === 1)!;
 
@@ -103,5 +103,27 @@ describe('ResinsStore', () => {
     expect(store.items().length).toBe(2);
     expect(auditLog.logged[0].entry.action).toBe('delete_resin');
     expect(auditLog.logged[0].entry.entityId).toBe('1');
+  });
+
+  it('si la resina ya se vendió, la archiva (no la borra), la audita como archivada y sale de la lista', async () => {
+    repo.soldIds.add(1);
+    await store.load({ query: '', stockStatus: 'all', page: 1, pageSize: 10 });
+    const resin = store.items().find((r) => r.id === 1)!;
+
+    const result = await store.remove(resin, 'admin@optinova.test');
+
+    expect(result.ok && result.value).toBe('archived');
+    expect(store.items().find((r) => r.id === 1)).toBeUndefined();
+    expect(auditLog.logged[0].entry.action).toBe('archive_resin');
+  });
+
+  it('si la base rechaza la eliminación, devuelve el error y no audita', async () => {
+    repo.removeFailWith = { kind: 'server', message: 'Falló.' };
+    await store.load({ query: '', stockStatus: 'all', page: 1, pageSize: 10 });
+
+    const result = await store.remove(store.items()[0], 'admin@optinova.test');
+
+    expect(result.ok).toBe(false);
+    expect(auditLog.logged).toHaveLength(0);
   });
 });

@@ -1,5 +1,6 @@
 import { AppError } from '../errors/app-error';
 import { Page } from '../models/page';
+import { RemoveOutcome } from '../models/remove-outcome';
 import { Resin } from '../models/resin';
 import { StockStatus } from '../models/stock-status';
 import { Result } from '../result';
@@ -47,5 +48,9 @@ export abstract class ResinRepository {
 
   abstract update(resin: Resin): Promise<Result<void, AppError>>;
 
-  abstract delete(id: number): Promise<Result<void, AppError>>;
+  /**
+   * "Eliminar": borra la resina si nunca se vendió; si ya está en alguna venta la archiva
+   * (función `remove_resin`, migración #26). Las archivadas no salen en el catálogo ni el inventario.
+   */
+  abstract remove(id: number): Promise<Result<RemoveOutcome, AppError>>;
 }

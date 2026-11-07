@@ -195,16 +195,7 @@ describe('SupabaseSaleRepository', () => {
     });
   });
 
-  describe('applyPayment y changeDate', () => {
-    it('applyPayment actualiza a cuenta, saldo y fecha de esa venta', async () => {
-      fake.enqueue({});
-      const result = await repo.applyPayment('10', 150, 50, '2026-11-06');
-
-      expect(result.ok).toBe(true);
-      expect(fake.queries[0].first('update')).toEqual([{ a_cuenta: 150, resta: 50, fecha_actualizada: '2026-11-06' }]);
-      expect(fake.queries[0].first('eq')).toEqual(['id', '10']);
-    });
-
+  describe('changeDate', () => {
     it('changeDate solo toca la fecha', async () => {
       fake.enqueue({});
       await repo.changeDate('10', '2026-10-01');
@@ -256,81 +247,88 @@ describe('SupabaseSaleRepository', () => {
       mountText: '',
       price: 120,
     };
+    const payment = { paymentMethod: 'efectivo', notes: 'Pago inicial de venta' };
 
-    it('inserta el encabezado con las columnas de la base, incluido el motivo del descuento', async () => {
-      fake.enqueue({ data: row() }).enqueue({});
-      await repo.create(sale, [resin]);
+    const rpcArgs = () => fake.queries[0].first('rpc')?.[0] as { p_sale: Record<string, unknown>; p_items: Record<string, unknown>[]; p_payment: unknown };
 
-      expect(fake.queries[0].table).toBe('ventas');
-      expect(fake.queries[0].first('insert')?.[0]).toEqual({
+    it('hace UNA sola llamada a create_sale: nada de inserts sueltos', async () => {
+      fake.enqueue({ data: row() });
+      await repo.create(sale, [resin, mount], payment);
+
+      expect(fake.queries).toHaveLength(1);
+      expect(fake.queries[0].table).toBe('rpc:create_sale');
+    });
+
+    it('manda el encabezado con los nombres de la base, sin total con descuento ni saldo (los calcula el servidor)', async () => {
+      fake.enqueue({ data: row() });
+      await repo.create(sale, [resin], payment);
+
+      expect(rpcArgs().p_sale).toEqual({
         sucursal: 'MEDILENT',
-        fecha_actualizada: '2026-11-05',
-        fecha_venta_iso: '2026-11-05',
-        paciente_nombre: 'ANA LOPEZ',
+        fecha: '2026-11-05',
         paciente_id: '12345678901234567',
+        paciente_nombre: 'ANA LOPEZ',
         autor_nombre: 'Vendedor Prueba',
         total: 200,
         descuento: 20,
         motivo_descuento: 'promo',
-        total_con_descuento: 180,
         a_cuenta: 50,
-        resta: 130,
       });
     });
 
-    it('inserta una fila por línea, ligada a la venta recién creada, siempre de 1 unidad', async () => {
-      fake.enqueue({ data: row({ id: '77', folio: 'F-0077' }) }).enqueue({});
-      const result = await repo.create(sale, [resin, mount]);
-
-      expect(result.ok && result.value).toMatchObject({ id: '77', folio: 'F-0077' });
-      const rows = fake.queries[1].first('insert')?.[0] as Record<string, unknown>[];
-      expect(fake.queries[1].table).toBe('venta_items');
-      expect(rows).toHaveLength(2);
-      expect(rows[0]).toMatchObject({
-        venta_id: '77',
-        folio_venta: 'F-0077',
-        paciente_nombre: 'ANA LOPEZ',
-        id_oftalmico: 5,
-        descripcion: 'Resina 1.56',
-        cantidad: '1',
-        precio: 80,
-      });
-      expect(rows[1]).toMatchObject({
-        venta_id: '77',
-        folio_venta: 'F-0077',
-        id_montura: '900001',
-        montura_marca: 'RayBan',
-        montura_cantidad: '1',
-        montura_precio: 120,
-      });
-      // Una línea de resina no lleva campos de montura y viceversa.
-      expect(rows[0]).not.toHaveProperty('id_montura');
-      expect(rows[1]).not.toHaveProperty('id_oftalmico');
-    });
-
-    it('sin líneas no hace el segundo insert', async () => {
+    it('manda una fila por línea, siempre de 1 unidad, con el armazón como texto', async () => {
       fake.enqueue({ data: row() });
-      await repo.create(sale, []);
+      await repo.create(sale, [resin, mount], null);
 
-      expect(fake.queries).toHaveLength(1);
+      const items = rpcArgs().p_items;
+      expect(items).toHaveLength(2);
+      expect(items[0]).toMatchObject({ id_oftalmico: 5, descripcion: 'Resina 1.56', cantidad: '1', precio: 80 });
+      expect(items[1]).toMatchObject({ id_montura: '900001', montura_marca: 'RayBan', montura_cantidad: '1', montura_precio: 120 });
+      // Una línea de resina no lleva campos de montura y viceversa; id, venta y folio los pone el servidor.
+      expect(items[0]).not.toHaveProperty('id_montura');
+      expect(items[1]).not.toHaveProperty('id_oftalmico');
+      expect(items[0]).not.toHaveProperty('venta_id');
+      expect(items[0]).not.toHaveProperty('folio_venta');
     });
 
-    it('si el encabezado falla, no intenta insertar líneas y devuelve el error', async () => {
-      fake.enqueue({ error: { message: 'El descuento requiere autorización de un supervisor', code: '42501' } });
-      const result = await repo.create(sale, [resin]);
+    it('manda el método de pago inicial, o null si no hay cuenta', async () => {
+      fake.enqueue({ data: row() }).enqueue({ data: row() });
+      await repo.create(sale, [resin], payment);
+      await repo.create({ ...sale, account: 0 }, [resin], null);
+
+      expect((fake.queries[0].first('rpc')?.[0] as { p_payment: unknown }).p_payment).toEqual({
+        metodo_pago: 'efectivo',
+        notas: 'Pago inicial de venta',
+      });
+      expect((fake.queries[1].first('rpc')?.[0] as { p_payment: unknown }).p_payment).toBeNull();
+    });
+
+    it('mapea la venta que devuelve la base (paciente_id llega como texto)', async () => {
+      fake.enqueue({ data: row({ id: '77', folio: '997838' }) });
+      const result = await repo.create(sale, [resin], payment);
+
+      expect(result.ok && result.value).toMatchObject({ id: '77', folio: '997838', patientId: '12345678901234567', total: 200, rest: 130 });
+    });
+
+    it('si la base rechaza la venta (p. ej. sin stock), devuelve el error y no hay nada que limpiar', async () => {
+      fake.enqueue({ error: { message: 'El armazón 900001 ya no está disponible o no alcanza el stock.', code: '23514' } });
+      const result = await repo.create(sale, [mount], payment);
 
       expect(fake.queries).toHaveLength(1);
       expect(result).toEqual({
         ok: false,
-        error: { kind: 'unauthorized', message: 'El descuento requiere autorización de un supervisor' },
+        error: { kind: 'server', message: 'El armazón 900001 ya no está disponible o no alcanza el stock.' },
       });
     });
 
-    it('si fallan las líneas, devuelve el error (la venta ya quedó creada: no hay transacción)', async () => {
-      fake.enqueue({ data: row() }).enqueue({ error: { message: 'boom', code: 'XX000' } });
-      const result = await repo.create(sale, [resin]);
+    it('si falta la autorización del descuento, devuelve unauthorized', async () => {
+      fake.enqueue({ error: { message: 'El descuento requiere autorización de un supervisor', code: '42501' } });
+      const result = await repo.create(sale, [resin], payment);
 
-      expect(result).toEqual({ ok: false, error: { kind: 'server', message: 'boom' } });
+      expect(result).toEqual({
+        ok: false,
+        error: { kind: 'unauthorized', message: 'El descuento requiere autorización de un supervisor' },
+      });
     });
   });
 });

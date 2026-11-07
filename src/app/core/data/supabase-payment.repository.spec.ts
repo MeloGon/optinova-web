@@ -110,7 +110,7 @@ describe('SupabasePaymentRepository', () => {
     });
   });
 
-  describe('create', () => {
+  describe('register', () => {
     const payment = {
       saleId: '99',
       amount: 80,
@@ -120,37 +120,37 @@ describe('SupabasePaymentRepository', () => {
       type: 'abono_saldo' as const,
     };
 
-    it('inserta con los nombres de columna de la base y quién lo registró', async () => {
-      fake.enqueue({ data: row({ monto: 80, metodo_pago: 'yape' }) });
-      const result = await repo.create(payment, 'user-1');
+    it('hace UNA sola llamada a register_payment con los nombres de la base (quién lo registró lo pone el servidor)', async () => {
+      fake.enqueue({ data: {} });
+      const result = await repo.register(payment);
 
-      expect(fake.queries[0].table).toBe('pagos');
-      expect(fake.queries[0].first('insert')?.[0]).toEqual({
-        id_remision: '99',
-        monto: 80,
-        fecha_pago: '2026-11-05',
-        metodo_pago: 'yape',
-        notas: null,
-        tipo_pago: 'abono_saldo',
-        registrado_por: 'user-1',
+      expect(result).toEqual({ ok: true, value: undefined });
+      expect(fake.queries).toHaveLength(1);
+      expect(fake.queries[0].table).toBe('rpc:register_payment');
+      expect(fake.queries[0].first('rpc')?.[0]).toEqual({
+        p_sale_id: '99',
+        p_amount: 80,
+        p_date: '2026-11-05',
+        p_method: 'yape',
+        p_notes: null,
+        p_type: 'abono_saldo',
       });
-      expect(result.ok && result.value.amount).toBe(80);
     });
 
-    it('guarda las notas cuando hay, y null cuando vienen vacías', async () => {
-      fake.enqueue({ data: row() }).enqueue({ data: row() });
-      await repo.create({ ...payment, notes: 'Pago inicial de venta' }, 'user-1');
-      await repo.create({ ...payment, notes: '' }, 'user-1');
+    it('manda las notas cuando hay, y null cuando vienen vacías', async () => {
+      fake.enqueue({ data: {} }).enqueue({ data: {} });
+      await repo.register({ ...payment, notes: 'Pago inicial de venta' });
+      await repo.register({ ...payment, notes: '' });
 
-      expect((fake.queries[0].first('insert')?.[0] as { notas: unknown }).notas).toBe('Pago inicial de venta');
-      expect((fake.queries[1].first('insert')?.[0] as { notas: unknown }).notas).toBeNull();
+      expect((fake.queries[0].first('rpc')?.[0] as { p_notes: unknown }).p_notes).toBe('Pago inicial de venta');
+      expect((fake.queries[1].first('rpc')?.[0] as { p_notes: unknown }).p_notes).toBeNull();
     });
 
-    it('si la base rechaza el insert, devuelve el error', async () => {
-      fake.enqueue({ error: { message: 'violates foreign key', code: '23503' } });
-      const result = await repo.create(payment, 'user-1');
+    it('si la base rechaza el abono (p. ej. mayor al saldo), devuelve el error con su mensaje', async () => {
+      fake.enqueue({ error: { message: 'El abono (500) supera el saldo pendiente (80.00).', code: '22023' } });
+      const result = await repo.register(payment);
 
-      expect(result).toEqual({ ok: false, error: { kind: 'server', message: 'violates foreign key' } });
+      expect(result).toEqual({ ok: false, error: { kind: 'server', message: 'El abono (500) supera el saldo pendiente (80.00).' } });
     });
   });
 });

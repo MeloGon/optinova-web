@@ -258,7 +258,7 @@ export class DashboardPage {
   protected registerPayment(sale: Sale): void {
     const data: RegisterPaymentDialogData = {
       sale,
-      save: (draft) => this.store.registerPayment(sale, draft, this.session.profile()?.id ?? ''),
+      save: (draft) => this.store.registerPayment(draft),
     };
     const ref = this.dialog.open<boolean>(RegisterPaymentDialog, {
       data,

@@ -38,7 +38,7 @@ describe('Rutas y guards', () => {
         { provide: AuthRepository, useValue: repo },
         // Las redirecciones aterrizan en el dashboard, que pide su resumen al crearse.
         { provide: DashboardRepository, useValue: new FakeDashboardRepository() },
-        // El store del dashboard registra abonos con SalePaymentService, que pide estos dos.
+        // El store del dashboard registra abonos con SalePaymentService, que pide el de pagos.
         { provide: PaymentRepository, useValue: new FakePaymentRepository() },
         { provide: SaleRepository, useValue: new FakeSaleRepository() },
         // Ingresos y egresos (E2.8) los pide su propio store al entrar.

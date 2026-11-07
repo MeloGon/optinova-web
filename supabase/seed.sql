@@ -16,6 +16,13 @@
 --   armazones.fecha_registro_legado  texto irregular ("09-sept-24"), solo respaldo; migración #9
 -- =============================================================================
 
+-- ATENCIÓN: borra TODAS las tablas de datos (pacientes, ventas, pagos, revisiones, inventario,
+-- usuarios @optinova.test...). No lo ejecutes en DEV mientras tenga la copia de PROD.
+--
+-- Va en UNA transacción: desde la migración #26 una venta no puede confirmarse sin líneas, y esa
+-- regla se comprueba al confirmar la transacción (así cabecera y líneas entran juntas).
+begin;
+
 select setseed(0.2026);
 
 -- Limpieza (orden por llaves foráneas) ----------------------------------------
@@ -236,3 +243,5 @@ from generate_series(1, 50) g;
 
 drop table if exists pg_temp.seed_pacientes;
 drop table if exists pg_temp.seed_ventas;
+
+commit;

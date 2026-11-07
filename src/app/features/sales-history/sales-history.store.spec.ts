@@ -24,7 +24,7 @@ describe('SalesHistoryStore', () => {
       { ...fakeSale(2, 'JUAN GARCIA'), rest: 0 },
       { ...fakeSale(3, 'ANA GARCIA'), rest: 50 },
     ];
-    paymentRepo = new FakePaymentRepository();
+    paymentRepo = new FakePaymentRepository(saleRepo);
     appConfigRepo = new FakeAppConfigRepository();
     auditLog = new FakeAuditLogRepository();
     TestBed.configureTestingModule({
@@ -120,53 +120,62 @@ describe('SalesHistoryStore', () => {
     expect(result.ok && result.value.map((p) => p.id)).toEqual([1]);
   });
 
-  it('al registrar un abono, lo inserta y actualiza el saldo de la venta', async () => {
+  it('al registrar un abono, lo guarda y la lista refleja el nuevo saldo', async () => {
     await store.load(search());
     const sale = store.items()[0]; // id '1', rest 100
 
-    const result = await store.registerPayment(
-      sale,
-      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
-      'user-id-1',
-    );
+    const result = await store.registerPayment({
+      saleId: sale.id,
+      amount: 40,
+      date: '2026-10-10',
+      paymentMethod: 'efectivo',
+      notes: '',
+      type: 'abono_saldo',
+    });
 
     expect(result.ok).toBe(true);
-    expect(paymentRepo.created[0].registeredById).toBe('user-id-1');
-    expect(saleRepo.appliedPayments[0]).toEqual({
-      saleId: '1',
-      newAccount: 40,
-      newRest: 60,
-      paymentDate: '2026-10-10',
-    });
+    expect(paymentRepo.registered).toHaveLength(1);
+    expect(paymentRepo.registered[0]).toMatchObject({ saleId: '1', amount: 40 });
     expect(store.items().find((s) => s.id === '1')?.rest).toBe(60);
+    expect(store.items().find((s) => s.id === '1')?.account).toBe(40);
   });
 
-  it('si insertar el abono falla, no toca el saldo de la venta', async () => {
+  it('si registrar el abono falla, no cambia el saldo de la venta', async () => {
     await store.load(search());
     const sale = store.items()[0];
-    paymentRepo.createFailWith = appError('server', 'Falló.');
+    paymentRepo.registerFailWith = appError('server', 'Falló.');
 
-    const result = await store.registerPayment(
-      sale,
-      { saleId: sale.id, amount: 40, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
-      'user-id-1',
-    );
+    const result = await store.registerPayment({
+      saleId: sale.id,
+      amount: 40,
+      date: '2026-10-10',
+      paymentMethod: 'efectivo',
+      notes: '',
+      type: 'abono_saldo',
+    });
 
     expect(result.ok).toBe(false);
-    expect(saleRepo.appliedPayments.length).toBe(0);
+    expect(paymentRepo.registered).toHaveLength(0);
+    expect(store.items().find((s) => s.id === '1')?.rest).toBe(100);
   });
 
-  it('el abono no deja el resto en negativo aunque se pase del saldo', async () => {
+  it('un abono mayor al saldo se rechaza (la base lo valida) y no cambia nada', async () => {
     await store.load(search());
-    const sale = store.items()[0]; // totalWithDiscount 100, rest 100
+    const sale = store.items()[0]; // rest 100
 
-    await store.registerPayment(
-      sale,
-      { saleId: sale.id, amount: 150, date: '2026-10-10', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' },
-      'user-id-1',
-    );
+    const result = await store.registerPayment({
+      saleId: sale.id,
+      amount: 150,
+      date: '2026-10-10',
+      paymentMethod: 'efectivo',
+      notes: '',
+      type: 'abono_saldo',
+    });
 
-    expect(saleRepo.appliedPayments[0].newRest).toBe(0);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error.message).toContain('supera el saldo');
+    expect(paymentRepo.registered).toHaveLength(0);
+    expect(store.items().find((s) => s.id === '1')?.rest).toBe(100);
   });
 
   it('carga el flag de "cambiar fecha" desde app_config', async () => {

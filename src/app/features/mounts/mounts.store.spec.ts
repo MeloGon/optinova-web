@@ -90,7 +90,7 @@ describe('MountsStore', () => {
     expect(auditLog.logged[0].entry.action).toBe('update_mount');
   });
 
-  it('al eliminar borra en el repositorio, audita y refresca la lista', async () => {
+  it('al eliminar un armazón que nunca se vendió, lo borra, audita y refresca la lista', async () => {
     await store.load({ query: '', branch: null, stockStatus: 'all', page: 1, pageSize: 10 });
     const mount = store.items().find((m) => m.id === '1')!;
 
@@ -100,5 +100,27 @@ describe('MountsStore', () => {
     expect(store.items().length).toBe(2);
     expect(auditLog.logged[0].entry.action).toBe('delete_mount');
     expect(auditLog.logged[0].entry.entityId).toBe('1');
+  });
+
+  it('si el armazón ya se vendió, lo archiva (no lo borra), lo audita como archivado y sale de la lista', async () => {
+    repo.soldIds.add('1');
+    await store.load({ query: '', branch: null, stockStatus: 'all', page: 1, pageSize: 10 });
+    const mount = store.items().find((m) => m.id === '1')!;
+
+    const result = await store.remove(mount, 'admin@optinova.test');
+
+    expect(result.ok && result.value).toBe('archived');
+    expect(store.items().find((m) => m.id === '1')).toBeUndefined();
+    expect(auditLog.logged[0].entry.action).toBe('archive_mount');
+  });
+
+  it('si la base rechaza la eliminación, devuelve el error y no audita', async () => {
+    repo.removeFailWith = { kind: 'server', message: 'Falló.' };
+    await store.load({ query: '', branch: null, stockStatus: 'all', page: 1, pageSize: 10 });
+
+    const result = await store.remove(store.items()[0], 'admin@optinova.test');
+
+    expect(result.ok).toBe(false);
+    expect(auditLog.logged).toHaveLength(0);
   });
 });

@@ -3,6 +3,7 @@ import { AppError } from '../../core/errors/app-error';
 import { Mount } from '../../core/models/mount';
 import { AuditLogRepository } from '../../core/repositories/audit-log.repository';
 import { MountInventorySearch, MountRepository, MountStockCounts, NewMount } from '../../core/repositories/mount.repository';
+import { RemoveOutcome } from '../../core/models/remove-outcome';
 import { Result } from '../../core/result';
 
 interface MountsState {
@@ -100,10 +101,15 @@ export class MountsStore {
     return result;
   }
 
-  async remove(mount: Mount, actorEmail: string): Promise<Result<void, AppError>> {
-    const result = await this.repo.delete(mount.id);
+  /**
+   * "Eliminar": borra si nunca se vendió; si ya se vendió lo archiva y el historial de ventas
+   * conserva su referencia (la base decide, ver `remove_mount`). La auditoría dice cuál de las dos pasó.
+   */
+  async remove(mount: Mount, actorEmail: string): Promise<Result<RemoveOutcome, AppError>> {
+    const result = await this.repo.remove(mount.id);
     if (result.ok) {
-      void this.auditLog.log({ action: 'delete_mount', entity: 'mount', entityId: String(mount.id), detail: auditDetail(mount) }, actorEmail);
+      const action = result.value === 'archived' ? 'archive_mount' : 'delete_mount';
+      void this.auditLog.log({ action, entity: 'mount', entityId: String(mount.id), detail: auditDetail(mount) }, actorEmail);
       if (this.lastSearch) await this.load(this.lastSearch);
     }
     return result;

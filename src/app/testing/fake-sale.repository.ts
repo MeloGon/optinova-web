@@ -2,7 +2,7 @@ import { AppError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
 import { Sale } from '../core/models/sale';
 import { NewSaleItem, SaleItem } from '../core/models/sale-item';
-import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
+import { NewInitialPayment, NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
 import { Result, err, ok } from '../core/result';
 
 export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`, patientId: string | null = null): Sale => ({
@@ -29,10 +29,7 @@ export class FakeSaleRepository extends SaleRepository {
   failWith: AppError | null = null;
   countsFailWith: AppError | null = null;
 
-  appliedPayments: { saleId: string; newAccount: number; newRest: number; paymentDate: string }[] = [];
-  applyPaymentFailWith: AppError | null = null;
-
-  created: { sale: NewSale; items: NewSaleItem[] }[] = [];
+  created: { sale: NewSale; items: NewSaleItem[]; initialPayment: NewInitialPayment | null }[] = [];
   createFailWith: AppError | null = null;
   private nextId = 9000;
 
@@ -76,18 +73,6 @@ export class FakeSaleRepository extends SaleRepository {
     return ok(this.items[folio] ?? []);
   }
 
-  async applyPayment(
-    saleId: string,
-    newAccount: number,
-    newRest: number,
-    paymentDate: string,
-  ): Promise<Result<void, AppError>> {
-    if (this.applyPaymentFailWith) return err(this.applyPaymentFailWith);
-    this.appliedPayments.push({ saleId, newAccount, newRest, paymentDate });
-    this.sales = this.sales.map((s) => (s.id === saleId ? { ...s, account: newAccount, rest: newRest } : s));
-    return ok(undefined);
-  }
-
   changeDateCalls: { saleId: string; newDate: string }[] = [];
   changeDateFailWith: AppError | null = null;
 
@@ -98,9 +83,10 @@ export class FakeSaleRepository extends SaleRepository {
     return ok(undefined);
   }
 
-  async create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>> {
+  async create(sale: NewSale, items: NewSaleItem[], initialPayment: NewInitialPayment | null): Promise<Result<Sale, AppError>> {
+    // Atómico como `create_sale`: si falla, no queda nada guardado.
     if (this.createFailWith) return err(this.createFailWith);
-    this.created.push({ sale, items });
+    this.created.push({ sale, items, initialPayment });
     const id = this.nextId++;
     const created: Sale = {
       id: String(id),

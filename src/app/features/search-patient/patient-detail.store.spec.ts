@@ -113,15 +113,15 @@ describe('PatientDetailStore', () => {
     expect(payments.ok && payments.value.map((p) => p.id)).toEqual([1]);
   });
 
-  it('registra un abono: inserta el pago y actualiza el saldo de la venta, sin refrescar por su cuenta', async () => {
+  it('registra un abono (abono y saldo en una sola operación), sin refrescar por su cuenta', async () => {
     const sale = fakeSale(1, 'MARIA LOPEZ', '1');
     saleRepo.sales = [sale];
 
-    const result = await store.registerPayment(sale, { saleId: '1', amount: 40, date: '2026-11-02', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' }, 'user-1');
+    const result = await store.registerPayment({ saleId: '1', amount: 40, date: '2026-11-02', paymentMethod: 'efectivo', notes: '', type: 'abono_saldo' });
 
     expect(result.ok).toBe(true);
-    expect(paymentRepo.created.length).toBe(1);
-    expect(saleRepo.appliedPayments).toEqual([{ saleId: '1', newAccount: 40, newRest: 60, paymentDate: '2026-11-02' }]);
+    expect(paymentRepo.registered.length).toBe(1);
+    expect(saleRepo.sales[0]).toMatchObject({ account: 40, rest: 60 });
     // No se llama a loadSales/loadPayments por su cuenta: eso lo decide quien llama.
     expect(store.salesLoaded()).toBe(false);
   });

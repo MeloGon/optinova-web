@@ -68,22 +68,17 @@ export class SupabasePaymentRepository extends PaymentRepository {
     return ok(data.map(toPayment));
   }
 
-  async create(payment: NewPayment, registeredById: string): Promise<Result<Payment, AppError>> {
-    const { data, error } = await this.supabase
-      .from('pagos')
-      .insert({
-        id_remision: payment.saleId,
-        monto: payment.amount,
-        fecha_pago: payment.date,
-        metodo_pago: payment.paymentMethod,
-        notas: payment.notes || null,
-        tipo_pago: payment.type,
-        registrado_por: registeredById,
-      })
-      .select(COLUMNS)
-      .single<PaymentRow>();
-
+  async register(payment: NewPayment): Promise<Result<void, AppError>> {
+    // Una sola llamada: la base inserta el abono y actualiza el saldo con la venta bloqueada.
+    const { error } = await this.supabase.rpc('register_payment', {
+      p_sale_id: payment.saleId,
+      p_amount: payment.amount,
+      p_date: payment.date,
+      p_method: payment.paymentMethod,
+      p_notes: payment.notes || null,
+      p_type: payment.type,
+    });
     if (error) return err(toAppError(error));
-    return ok(toPayment(data));
+    return ok(undefined);
   }
 }

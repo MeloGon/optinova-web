@@ -68,8 +68,8 @@ describe('DashboardPage', () => {
 
   beforeEach(() => {
     repo = new FakeDashboardRepository();
-    payments = new FakePaymentRepository();
     sales = new FakeSaleRepository();
+    payments = new FakePaymentRepository(sales);
   });
 
   afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = '')));
@@ -285,9 +285,8 @@ describe('DashboardPage', () => {
       await settle();
       await settle();
 
-      expect(payments.created).toHaveLength(1);
-      expect(payments.created[0].payment).toMatchObject({ saleId: '30', amount: 900 });
-      expect(sales.appliedPayments[0]).toMatchObject({ saleId: '30', newRest: 0 });
+      expect(payments.registered).toHaveLength(1);
+      expect(payments.registered[0]).toMatchObject({ saleId: '30', amount: 900 });
       expect(repo.summaryCalls.length).toBe(before + 1);
       expect(TestBed.inject(ToastService).toasts().some((t) => t.title === 'Abono registrado')).toBe(true);
     });

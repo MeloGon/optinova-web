@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AppError, appError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
+import { RemoveOutcome } from '../models/remove-outcome';
 import { Resin } from '../models/resin';
 import {
   NewResin,
@@ -70,7 +71,7 @@ export class SupabaseResinRepository extends ResinRepository {
     const text = query.trim();
     const from = (page - 1) * pageSize;
 
-    let request = this.supabase.from('resinas').select(COLUMNS, { count: 'exact' });
+    let request = this.supabase.from('resinas').select(COLUMNS, { count: 'exact' }).is('archivado_en', null);
     if (text) {
       const escaped = escapeLike(text);
       request = request.or(`descripcion.ilike.%${escaped}%,texto.ilike.%${escaped}%`);
@@ -88,7 +89,7 @@ export class SupabaseResinRepository extends ResinRepository {
     const text = query.trim();
     const from = (page - 1) * pageSize;
 
-    let request = this.supabase.from('resinas').select(COLUMNS, { count: 'exact' });
+    let request = this.supabase.from('resinas').select(COLUMNS, { count: 'exact' }).is('archivado_en', null);
     if (text) {
       const escaped = escapeLike(text);
       request = request.or(`descripcion.ilike.%${escaped}%,texto.ilike.%${escaped}%`);
@@ -108,7 +109,7 @@ export class SupabaseResinRepository extends ResinRepository {
   async countByStock({ query }: Pick<ResinInventorySearch, 'query'>): Promise<Result<ResinStockCounts, AppError>> {
     const text = query.trim();
     const base = () => {
-      let request = this.supabase.from('resinas').select('id_oftalmico', { count: 'exact', head: true });
+      let request = this.supabase.from('resinas').select('id_oftalmico', { count: 'exact', head: true }).is('archivado_en', null);
       if (text) {
         const escaped = escapeLike(text);
         request = request.or(`descripcion.ilike.%${escaped}%,texto.ilike.%${escaped}%`);
@@ -140,10 +141,10 @@ export class SupabaseResinRepository extends ResinRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
-    const { data, error } = await this.supabase.from('resinas').delete().eq('id_oftalmico', id).select('id_oftalmico');
+  /** Borra o archiva según si ya se vendió; lo decide la base (`remove_resin`), no el navegador. */
+  async remove(id: number): Promise<Result<RemoveOutcome, AppError>> {
+    const { error, data } = await this.supabase.rpc('remove_resin', { p_id: id });
     if (error) return err(toAppError(error));
-    if (data.length === 0) return err(appError('notFound', 'La resina ya no existe o no tienes permiso para eliminarla.'));
-    return ok(undefined);
+    return ok(data === 'archived' ? 'archived' : 'deleted');
   }
 }

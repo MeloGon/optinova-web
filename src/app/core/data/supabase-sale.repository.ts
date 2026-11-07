@@ -3,7 +3,7 @@ import { AppError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Sale } from '../models/sale';
 import { NewSaleItem, SaleItem } from '../models/sale-item';
-import { NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
+import { NewInitialPayment, NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
 import { Result, err, ok } from '../result';
 import { escapeLike } from '../supabase/escape-like';
 import { SUPABASE } from '../supabase/supabase.client';
@@ -162,71 +162,43 @@ export class SupabaseSaleRepository extends SaleRepository {
     return ok(data.map(toSaleItem));
   }
 
-  async applyPayment(
-    saleId: string,
-    newAccount: number,
-    newRest: number,
-    paymentDate: string,
-  ): Promise<Result<void, AppError>> {
-    const { error } = await this.supabase
-      .from('ventas')
-      .update({ a_cuenta: newAccount, resta: newRest, fecha_actualizada: paymentDate })
-      .eq('id', saleId);
-
-    if (error) return err(toAppError(error));
-    return ok(undefined);
-  }
-
   async changeDate(saleId: string, newDate: string): Promise<Result<void, AppError>> {
     const { error } = await this.supabase.from('ventas').update({ fecha_actualizada: newDate }).eq('id', saleId);
     if (error) return err(toAppError(error));
     return ok(undefined);
   }
 
-  async create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>> {
-    const { data, error } = await this.supabase
-      .from('ventas')
-      .insert({
+  async create(sale: NewSale, items: NewSaleItem[], initialPayment: NewInitialPayment | null): Promise<Result<Sale, AppError>> {
+    // Una sola llamada: la base crea venta, líneas, descuento de stock y pago inicial todo o nada.
+    const { data, error } = await this.supabase.rpc('create_sale', {
+      p_sale: {
         sucursal: sale.branch,
-        fecha_actualizada: sale.date,
-        fecha_venta_iso: sale.date,
-        paciente_nombre: sale.patientName,
+        fecha: sale.date,
         paciente_id: sale.patientId,
+        paciente_nombre: sale.patientName,
         autor_nombre: sale.sellerName,
         total: sale.total,
         descuento: sale.discount,
         motivo_descuento: sale.discountReason,
-        total_con_descuento: sale.totalWithDiscount,
         a_cuenta: sale.account,
-        resta: sale.rest,
-      })
-      .select(COLUMNS)
-      .single<SaleRow>();
+      },
+      p_items: items.map(toItemJson),
+      p_payment: initialPayment ? { metodo_pago: initialPayment.paymentMethod, notas: initialPayment.notes } : null,
+    });
 
     if (error) return err(toAppError(error));
-    const created = toSale(data);
-
-    if (items.length > 0) {
-      const rows = items.map((item) => toNewItemRow(created, sale, item));
-      const { error: itemsError } = await this.supabase.from('venta_items').insert(rows);
-      if (itemsError) return err(toAppError(itemsError));
-    }
-
-    return ok(created);
+    return ok(toSale(data as SaleRow));
   }
 }
 
-function toNewItemRow(sale: Sale, draft: NewSale, item: NewSaleItem) {
-  const base = {
-    venta_id: sale.id,
-    folio_venta: sale.folio,
-    paciente_nombre: draft.patientName,
-    fecha_ventas_actualizada: draft.date,
-  };
-
+/**
+ * Una línea nueva con los nombres de columna de `venta_items`: `create_sale` solo acepta estas
+ * (id, venta, folio, paciente y fecha los pone el servidor). `id_montura` va como texto: es bigint
+ * y un ID grande perdería dígitos como número JSON.
+ */
+function toItemJson(item: NewSaleItem) {
   if (item.kind === 'resin') {
     return {
-      ...base,
       id_oftalmico: item.resinId,
       descripcion: item.description,
       diseno: item.design,
@@ -241,7 +213,6 @@ function toNewItemRow(sale: Sale, draft: NewSale, item: NewSaleItem) {
   }
 
   return {
-    ...base,
     id_montura: item.mountId,
     montura_marca: item.mountBrand,
     montura_modelo: item.mountModel,

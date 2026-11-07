@@ -1,7 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { AppError } from '../../core/errors/app-error';
 import { ActivityEntry, DashboardPeriod, DashboardSummary } from '../../core/models/dashboard';
-import { Sale } from '../../core/models/sale';
 import { DashboardRepository } from '../../core/repositories/dashboard.repository';
 import { NewPayment } from '../../core/repositories/payment.repository';
 import { Result } from '../../core/result';
@@ -94,12 +93,12 @@ export class DashboardStore {
   }
 
   /**
-   * Registra un abono sobre una venta con saldo (los dos pasos viven en `SalePaymentService`) y, si
-   * salió bien, vuelve a pedir el resumen: cambian la cobranza, el saldo por cobrar y los ingresos.
+   * Registra un abono sobre una venta con saldo (abono y saldo en una sola transacción, ver
+   * `SalePaymentService`) y, si salió bien, vuelve a pedir el resumen: cambian la cobranza, el saldo por cobrar y los ingresos.
    * El error lo muestra quien llama (el diálogo de abono).
    */
-  async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
-    const result = await this.salePayments.register(sale, payment, registeredById);
+  async registerPayment(payment: NewPayment): Promise<Result<void, AppError>> {
+    const result = await this.salePayments.register(payment);
     if (result.ok) await this.load();
     return result;
   }

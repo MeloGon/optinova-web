@@ -23,8 +23,8 @@ describe('DashboardStore', () => {
 
   beforeEach(() => {
     repo = new FakeDashboardRepository();
-    payments = new FakePaymentRepository();
     sales = new FakeSaleRepository();
+    payments = new FakePaymentRepository(sales);
     TestBed.configureTestingModule({
       providers: [
         DashboardStore,
@@ -51,19 +51,19 @@ describe('DashboardStore', () => {
       await store.load();
       const before = repo.summaryCalls.length;
 
-      const result = await store.registerPayment(debt(), draft(), 'user-1');
+      const result = await store.registerPayment(draft());
 
       expect(result.ok).toBe(true);
-      expect(sales.appliedPayments[0]).toMatchObject({ saleId: debt().id, newRest: 0 });
+      expect(payments.registered[0]).toMatchObject({ saleId: debt().id, amount: 900 });
       expect(repo.summaryCalls.length).toBe(before + 1);
     });
 
     it('si falla el abono no recarga el resumen y devuelve el error', async () => {
-      payments.createFailWith = appError('server', 'sin permisos');
+      payments.registerFailWith = appError('server', 'sin permisos');
       await store.load();
       const before = repo.summaryCalls.length;
 
-      const result = await store.registerPayment(debt(), draft(), 'user-1');
+      const result = await store.registerPayment(draft());
 
       expect(result.ok).toBe(false);
       expect(repo.summaryCalls.length).toBe(before);

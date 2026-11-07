@@ -1,5 +1,6 @@
 import { AppError, appError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
+import { RemoveOutcome } from '../core/models/remove-outcome';
 import { Resin } from '../core/models/resin';
 import {
   NewResin,
@@ -36,7 +37,9 @@ export class FakeResinRepository extends ResinRepository {
 
   insertFailWith: AppError | null = null;
   updateFailWith: AppError | null = null;
-  deleteFailWith: AppError | null = null;
+  /** Ids que "ya se vendieron": quitarlos los archiva (se ocultan) en vez de borrarlos. */
+  soldIds = new Set<number>();
+  removeFailWith: AppError | null = null;
   private nextId = 1000;
 
   async search({ query, page, pageSize }: ResinSearch): Promise<Result<Page<Resin>, AppError>> {
@@ -90,10 +93,10 @@ export class FakeResinRepository extends ResinRepository {
     return ok(undefined);
   }
 
-  async delete(id: number): Promise<Result<void, AppError>> {
-    if (this.deleteFailWith) return err(this.deleteFailWith);
+  async remove(id: number): Promise<Result<RemoveOutcome, AppError>> {
+    if (this.removeFailWith) return err(this.removeFailWith);
     if (!this.resins.some((r) => r.id === id)) return err(appError('notFound', 'La resina ya no existe.'));
     this.resins = this.resins.filter((r) => r.id !== id);
-    return ok(undefined);
+    return ok(this.soldIds.has(id) ? 'archived' : 'deleted');
   }
 }

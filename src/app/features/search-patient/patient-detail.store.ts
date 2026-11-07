@@ -122,12 +122,12 @@ export class PatientDetailStore {
   }
 
   /**
-   * Delega en `SalePaymentService` (dos pasos, no atómico: criterio ya aceptado en Historial de ventas).
+   * Delega en `SalePaymentService` (abono y saldo en una sola transacción).
    * No refresca Ventas/Pagos por su cuenta: quien llama ya sabe con qué página/paciente hacerlo
    * (ver `PatientDetailPage.registerPayment`).
    */
-  async registerPayment(sale: Sale, payment: NewPayment, registeredById: string): Promise<Result<void, AppError>> {
-    return this.salePayments.register(sale, payment, registeredById);
+  async registerPayment(payment: NewPayment): Promise<Result<void, AppError>> {
+    return this.salePayments.register(payment);
   }
 
   async loadPayments(patientId: string): Promise<void> {

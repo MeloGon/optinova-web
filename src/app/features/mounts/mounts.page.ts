@@ -208,7 +208,7 @@ export class MountsPage {
   protected async askDelete(mount: Mount): Promise<void> {
     const confirmed = await this.confirm.confirm({
       title: '¿Eliminar este armazón?',
-      text: `"${mount.brand} ${mount.model}" no se puede deshacer.`,
+      text: `"${mount.brand} ${mount.model}": si nunca se vendió se elimina; si ya se vendió se archiva y deja de aparecer.`,
       confirmLabel: 'Eliminar armazón',
     });
     if (!confirmed) return;
@@ -218,7 +218,11 @@ export class MountsPage {
     this.loadingDelete.set(null);
 
     if (result.ok) {
-      this.toast.show({ tone: 'success', title: 'Armazón eliminado' });
+      this.toast.show(
+        result.value === 'archived'
+          ? { tone: 'success', title: 'Armazón archivado', text: 'Ya se vendió, así que se oculta en vez de borrarse.' }
+          : { tone: 'success', title: 'Armazón eliminado' },
+      );
     } else {
       this.toast.show({ tone: 'danger', title: 'No se pudo eliminar', text: result.error.message });
     }

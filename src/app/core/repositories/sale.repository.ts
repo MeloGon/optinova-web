@@ -48,6 +48,12 @@ export interface NewSale {
   rest: number;
 }
 
+/** Cómo se pagó el monto a cuenta de una venta nueva (el monto sale de `NewSale.account`). */
+export interface NewInitialPayment {
+  paymentMethod: string;
+  notes: string;
+}
+
 /** Contrato de ventas (= SaleRepository abstracto de Flutter, recortado al alcance de E2.5). */
 export abstract class SaleRepository {
   /** Ventas de la más reciente a la más antigua. */
@@ -62,25 +68,13 @@ export abstract class SaleRepository {
   abstract getItems(folio: string): Promise<Result<SaleItem[], AppError>>;
 
   /**
-   * Aplica un abono al saldo: nuevo total abonado, nuevo resto y la fecha del abono como última
-   * actividad (= updateAccountPayment de Flutter). No inserta el pago; eso lo hace
-   * `PaymentRepository.create` antes de llamar a esto.
+   * Crea la venta, sus líneas, el descuento de stock y el pago inicial en UNA transacción
+   * (función `create_sale`, migración #26): si algo falla no queda nada a medias, ni una venta sin
+   * líneas ni stock descontado de una venta que no existe. Flutter lo hacía en pasos sueltos.
+   * El servidor recalcula el total desde las líneas, valida descuento y monto a cuenta, y rechaza
+   * un armazón sin stock suficiente; el monto del pago inicial es siempre `sale.account`.
    */
-  abstract applyPayment(
-    saleId: string,
-    newAccount: number,
-    newRest: number,
-    paymentDate: string,
-  ): Promise<Result<void, AppError>>;
-
-  /**
-   * Crea la venta y sus líneas (= `_createShortSale` de Flutter, con el orden invertido: primero
-   * el encabezado porque `venta_items.venta_id` tiene FK a `ventas.id` desde el cambio #8 — en
-   * PROD esa FK no existe, así que Flutter podía insertar las líneas antes sin problema).
-   * Dos inserts secuenciales, no atómico (misma tolerancia que `applyPayment`/`registerPayment`):
-   * si el segundo falla, la venta queda creada sin líneas.
-   */
-  abstract create(sale: NewSale, items: NewSaleItem[]): Promise<Result<Sale, AppError>>;
+  abstract create(sale: NewSale, items: NewSaleItem[], initialPayment: NewInitialPayment | null): Promise<Result<Sale, AppError>>;
 
   /**
    * Corrige la fecha mostrada de una venta (= `updateSaleDate` de Flutter, pero sobre

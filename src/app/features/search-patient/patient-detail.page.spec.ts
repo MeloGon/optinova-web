@@ -199,7 +199,7 @@ describe('PatientDetailPage', () => {
       document.body.querySelector('[role=dialog] form')!.dispatchEvent(new Event('submit'));
       await settle();
 
-      expect(paymentRepo.created.length).toBe(1);
+      expect(paymentRepo.registered.length).toBe(1);
       expect(toasts().map((t) => t.title)).toContain('Abono registrado');
     });
   });

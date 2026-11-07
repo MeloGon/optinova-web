@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AppError, appError, toAppError } from '../errors/app-error';
 import { Mount } from '../models/mount';
 import { Page } from '../models/page';
+import { RemoveOutcome } from '../models/remove-outcome';
 import { MountInventorySearch, MountRepository, MountSearch, MountStockCounts, NewMount } from '../repositories/mount.repository';
 import { Result, err, ok } from '../result';
 import { escapeLike } from '../supabase/escape-like';
@@ -58,7 +59,7 @@ export class SupabaseMountRepository extends MountRepository {
     const text = query.trim();
     const from = (page - 1) * pageSize;
 
-    let request = this.supabase.from('armazones').select(COLUMNS, { count: 'exact' }).gt('existencias', 0);
+    let request = this.supabase.from('armazones').select(COLUMNS, { count: 'exact' }).is('archivado_en', null).gt('existencias', 0);
     if (text) {
       const escaped = escapeLike(text);
       request = request.or(`marca.ilike.%${escaped}%,modelo.ilike.%${escaped}%`);
@@ -77,7 +78,7 @@ export class SupabaseMountRepository extends MountRepository {
     const text = query.trim();
     const from = (page - 1) * pageSize;
 
-    let request = this.supabase.from('armazones').select(COLUMNS, { count: 'exact' });
+    let request = this.supabase.from('armazones').select(COLUMNS, { count: 'exact' }).is('archivado_en', null);
     if (text) {
       const escaped = escapeLike(text);
       request = request.or(`marca.ilike.%${escaped}%,modelo.ilike.%${escaped}%`);
@@ -98,7 +99,7 @@ export class SupabaseMountRepository extends MountRepository {
   async countByStock({ query, branch }: Pick<MountInventorySearch, 'query' | 'branch'>): Promise<Result<MountStockCounts, AppError>> {
     const text = query.trim();
     const base = () => {
-      let request = this.supabase.from('armazones').select('id', { count: 'exact', head: true });
+      let request = this.supabase.from('armazones').select('id', { count: 'exact', head: true }).is('archivado_en', null);
       if (text) {
         const escaped = escapeLike(text);
         request = request.or(`marca.ilike.%${escaped}%,modelo.ilike.%${escaped}%`);
@@ -127,24 +128,10 @@ export class SupabaseMountRepository extends MountRepository {
     return ok(undefined);
   }
 
-  async delete(id: string): Promise<Result<void, AppError>> {
-    const { data, error } = await this.supabase.from('armazones').delete().eq('id', id).select('id');
+  /** Borra o archiva según si ya se vendió; lo decide la base (`remove_mount`), no el navegador. */
+  async remove(id: string): Promise<Result<RemoveOutcome, AppError>> {
+    const { data, error } = await this.supabase.rpc('remove_mount', { p_id: id });
     if (error) return err(toAppError(error));
-    if (data.length === 0) return err(appError('notFound', 'El armazón ya no existe o no tienes permiso para eliminarlo.'));
-    return ok(undefined);
-  }
-
-  async decrementStock(id: string, quantity: number): Promise<Result<void, AppError>> {
-    const { data, error: readError } = await this.supabase
-      .from('armazones')
-      .select('existencias')
-      .eq('id', id)
-      .single<{ existencias: number | null }>();
-    if (readError) return err(toAppError(readError));
-
-    const next = Math.max((data.existencias ?? 0) - quantity, 0);
-    const { error } = await this.supabase.from('armazones').update({ existencias: next }).eq('id', id);
-    if (error) return err(toAppError(error));
-    return ok(undefined);
+    return ok(data === 'archived' ? 'archived' : 'deleted');
   }
 }

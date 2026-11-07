@@ -7,7 +7,6 @@ import { BranchSettingsRepository } from '../../core/repositories/branch-setting
 import { DiscountAuthorizationRepository } from '../../core/repositories/discount-authorization.repository';
 import { MountRepository } from '../../core/repositories/mount.repository';
 import { PatientRepository } from '../../core/repositories/patient.repository';
-import { PaymentRepository } from '../../core/repositories/payment.repository';
 import { ResinRepository } from '../../core/repositories/resin.repository';
 import { SaleRepository } from '../../core/repositories/sale.repository';
 import { ReviewRepository } from '../../core/repositories/review.repository';
@@ -17,7 +16,6 @@ import { FakeBranchSettingsRepository } from '../../testing/fake-branch-settings
 import { FakeDiscountAuthorizationRepository } from '../../testing/fake-discount-authorization.repository';
 import { FakeMountRepository, fakeMount } from '../../testing/fake-mount.repository';
 import { FakePatientRepository, fakePatient } from '../../testing/fake-patient.repository';
-import { FakePaymentRepository } from '../../testing/fake-payment.repository';
 import { FakeResinRepository, fakeResin } from '../../testing/fake-resin.repository';
 import { FakeReviewRepository, fakeReview } from '../../testing/fake-review.repository';
 import { FakeSaleRepository } from '../../testing/fake-sale.repository';
@@ -30,7 +28,6 @@ describe('SellStore', () => {
   let resinRepo: FakeResinRepository;
   let sellerRepo: FakeSellerRepository;
   let saleRepo: FakeSaleRepository;
-  let paymentRepo: FakePaymentRepository;
   let reviewRepo: FakeReviewRepository;
   let branchSettingsRepo: FakeBranchSettingsRepository;
   let discountAuthRepo: FakeDiscountAuthorizationRepository;
@@ -45,7 +42,6 @@ describe('SellStore', () => {
     resinRepo = new FakeResinRepository();
     sellerRepo = new FakeSellerRepository();
     saleRepo = new FakeSaleRepository();
-    paymentRepo = new FakePaymentRepository();
     reviewRepo = new FakeReviewRepository();
     branchSettingsRepo = new FakeBranchSettingsRepository();
     discountAuthRepo = new FakeDiscountAuthorizationRepository();
@@ -59,7 +55,6 @@ describe('SellStore', () => {
         { provide: ResinRepository, useValue: resinRepo },
         { provide: SellerRepository, useValue: sellerRepo },
         { provide: SaleRepository, useValue: saleRepo },
-        { provide: PaymentRepository, useValue: paymentRepo },
         { provide: ReviewRepository, useValue: reviewRepo },
         { provide: BranchSettingsRepository, useValue: branchSettingsRepo },
         { provide: DiscountAuthorizationRepository, useValue: discountAuthRepo },
@@ -287,7 +282,7 @@ describe('SellStore', () => {
       expect(result.ok).toBe(false);
     });
 
-    it('crea la venta con el encabezado, las líneas y descuenta el stock de los armazones', async () => {
+    it('crea la venta con el encabezado y todas las líneas en UNA sola llamada', async () => {
       await readyToSell();
       const mount = fakeMount(10, 'RAY-BAN', 5);
       store.addMount(mount);
@@ -297,15 +292,16 @@ describe('SellStore', () => {
       const result = await store.confirmSale();
 
       expect(result.ok).toBe(true);
+      expect(saleRepo.created).toHaveLength(1);
       expect(saleRepo.created[0].sale).toEqual(
         expect.objectContaining({ branch: 'MEDILENT', patientId: '5', sellerName: 'ANA LOPEZ', total: 1000 }),
       );
+      // dos líneas del mismo armazón + una resina; el descuento de stock lo hace la base dentro de `create`.
       expect(saleRepo.created[0].items.length).toBe(3);
-      // dos líneas del mismo armazón → un solo decrementStock con cantidad 2.
-      expect(mountRepo.decrementCalls).toEqual([{ id: '10', quantity: 2 }]);
+      expect(saleRepo.created[0].items.filter((i) => i.kind === 'mount').length).toBe(2);
     });
 
-    it('si hay cuenta inicial, registra el pago con tipo nueva_venta', async () => {
+    it('si hay cuenta inicial, le pasa a create el método de pago (el monto es la cuenta de la venta)', async () => {
       await readyToSell();
       store.addResin({ ...fakeResin(1), price: 100 });
       store.setAccount(60);
@@ -314,29 +310,44 @@ describe('SellStore', () => {
       const result = await store.confirmSale();
 
       expect(result.ok).toBe(true);
-      expect(paymentRepo.created[0].payment).toEqual(
-        expect.objectContaining({ amount: 60, paymentMethod: 'efectivo', type: 'nueva_venta' }),
-      );
+      expect(saleRepo.created[0].sale.account).toBe(60);
+      expect(saleRepo.created[0].initialPayment).toEqual({ paymentMethod: 'efectivo', notes: 'Pago inicial de venta' });
     });
 
-    it('sin cuenta inicial, no registra ningún pago', async () => {
+    it('sin cuenta inicial, no manda ningún pago', async () => {
       await readyToSell();
       store.addResin({ ...fakeResin(1), price: 100 });
 
       await store.confirmSale();
 
-      expect(paymentRepo.created.length).toBe(0);
+      expect(saleRepo.created[0].initialPayment).toBeNull();
     });
 
-    it('si crear la venta falla, no descuenta stock ni crea pagos', async () => {
+    it('rechaza un monto a cuenta mayor al total con descuento, sin llamar a la base', async () => {
       await readyToSell();
-      store.addMount(fakeMount(10));
-      saleRepo.createFailWith = { kind: 'server', message: 'Falló.' };
+      store.addResin({ ...fakeResin(1), price: 100 });
+      store.setDiscount(20, 'promo');
+      store.setAccount(90);
+      store.setPaymentMethod('efectivo');
 
       const result = await store.confirmSale();
 
       expect(result.ok).toBe(false);
-      expect(mountRepo.decrementCalls.length).toBe(0);
+      expect(saleRepo.created).toHaveLength(0);
+    });
+
+    it('si crear la venta falla (p. ej. sin stock), no queda nada guardado y el carrito se conserva para reintentar', async () => {
+      await readyToSell();
+      store.addMount(fakeMount(10));
+      saleRepo.createFailWith = { kind: 'server', message: 'El armazón 10 ya no está disponible.' };
+
+      const result = await store.confirmSale();
+
+      expect(result.ok).toBe(false);
+      expect(saleRepo.created).toHaveLength(0);
+      expect(store.error()).toBe('El armazón 10 ya no está disponible.');
+      expect(store.cart().length).toBe(1);
+      expect(store.saving()).toBe(false);
     });
 
     it('al terminar con éxito, reinicia el carrito y el paciente', async () => {

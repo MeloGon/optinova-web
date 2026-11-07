@@ -3,7 +3,6 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { LucideArrowLeft, LucideDynamicIcon, LucideReceipt, LucideRefreshCw, LucideTriangleAlert } from '@lucide/angular';
-import { SessionStore } from '../../core/auth/session.store';
 import { Sale } from '../../core/models/sale';
 import { PaymentRepository } from '../../core/repositories/payment.repository';
 import { SaleRepository } from '../../core/repositories/sale.repository';
@@ -53,7 +52,6 @@ export class SellerSalesPage {
   readonly size = input<string>();
 
   protected readonly store = inject(SellerSalesStore);
-  private readonly session = inject(SessionStore);
   private readonly saleRepo = inject(SaleRepository);
   private readonly paymentRepo = inject(PaymentRepository);
   private readonly salePayment = inject(SalePaymentService);
@@ -130,7 +128,7 @@ export class SellerSalesPage {
   private registerPayment(sale: Sale): void {
     const data: RegisterPaymentDialogData = {
       sale,
-      save: (draft) => this.salePayment.register(sale, draft, this.session.profile()?.id ?? ''),
+      save: (draft) => this.salePayment.register(draft),
     };
     const ref = this.dialog.open<boolean>(RegisterPaymentDialog, {
       data,

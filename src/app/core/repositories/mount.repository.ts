@@ -1,6 +1,7 @@
 import { AppError } from '../errors/app-error';
 import { Mount } from '../models/mount';
 import { Page } from '../models/page';
+import { RemoveOutcome } from '../models/remove-outcome';
 import { StockStatus } from '../models/stock-status';
 import { Result } from '../result';
 
@@ -50,14 +51,10 @@ export abstract class MountRepository {
 
   abstract update(mount: Mount): Promise<Result<void, AppError>>;
 
-  abstract delete(id: string): Promise<Result<void, AppError>>;
-
   /**
-   * Resta `quantity` del stock (nunca baja de 0): lee el valor actual y escribe el nuevo, igual
-   * de no-atómico que el `decrementStock` de Flutter (dos ventas del mismo armazón en el mismo
-   * instante podrían pisarse; aceptable al tamaño de esta óptica, mismo riesgo que ya existía).
-   * Mejora consciente frente a Flutter: ahí siempre resta exactamente 1, sin mirar cuántas
-   * unidades se vendieron.
+   * "Eliminar": borra el armazón si nunca se vendió; si ya está en alguna venta lo archiva
+   * (función `remove_mount`, migración #26). Los archivados no salen en el catálogo, el inventario
+   * ni el Dashboard. El descuento de stock al vender ya no vive acá: lo hace `SaleRepository.create`.
    */
-  abstract decrementStock(id: string, quantity: number): Promise<Result<void, AppError>>;
+  abstract remove(id: string): Promise<Result<RemoveOutcome, AppError>>;
 }
