@@ -25,9 +25,12 @@ alter table public.ventas
   alter column id set default (nextval('public.ventas_id_seq'))::text;
 
 create sequence public.ventas_folio_seq as bigint owned by public.ventas.folio;
+-- Solo folios de hasta 9 dígitos: en PROD hay 3 ventas de dic-2025 con folio de 17 dígitos (al azar,
+-- hechas por Flutter) que, de contarse, harían que todo folio nuevo saliera de 17 dígitos. Los
+-- folios normales llegan a 6 dígitos (997 833 al 2026-11-06); esos 3 quedan como están.
 select setval(
   'public.ventas_folio_seq',
-  (select coalesce(max(folio::bigint), 0) + 1 from public.ventas where folio ~ '^[0-9]+$'),
+  (select coalesce(max(folio::bigint), 0) + 1 from public.ventas where folio ~ '^[0-9]{1,9}$'),
   false
 );
 alter table public.ventas

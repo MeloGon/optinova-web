@@ -55,6 +55,13 @@ alter table public.pacientes add column fecha_nacimiento date;
 update public.pacientes
 set fecha_nacimiento = pg_temp.parse_fecha_es("FECHA DE NACIMIENTO");
 
+-- Una fecha de nacimiento en el futuro es un error de captura (en PROD, 1 paciente: 03-dic-26).
+-- Decisión del dueño (2026-11-06): se deja el 1 de enero de ese mismo año. Los nacimientos
+-- recientes (clientes que no dieron su fecha y quedaron con la de hoy) se conservan tal cual.
+update public.pacientes
+set fecha_nacimiento = make_date(extract(year from fecha_nacimiento)::int, 1, 1)
+where fecha_nacimiento > current_date;
+
 -- 2) Fecha de registro: la columna "actualizada" ya era limpia; si faltara, se intenta con el texto.
 update public.pacientes
 set fecha_registro_actualizada = pg_temp.parse_fecha_es("FECHA DE REGISTRO")

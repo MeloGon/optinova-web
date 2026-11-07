@@ -92,9 +92,80 @@ alter table public.venta_items rename column "MONTURA CANTIDAD" to montura_canti
 alter table public.venta_items rename column "MONTURA PRECIO" to montura_precio;
 alter table public.venta_items rename column "MONTURA TEXTO" to montura_texto;
 
--- Sin huérfanos en DEV (verificado antes de esta migración): se puede exigir la FK.
+-- Detalle huérfano (líneas cuya venta ya no existe) ------------------------------------------------
+-- En DEV (datos de prueba) no hay ninguno, pero PROD sí: 191 filas / 120 remisiones al 2026-11-06.
+-- Causa: Flutter, al eliminar una venta, borra el detalle por "ID REMISION" pasándole el FOLIO
+-- (`sale_repository_impl.dart` deleteSale), así que la cabecera se va y el detalle queda. También
+-- inserta el detalle antes que la cabecera y sin transacción, y si la cabecera falla queda solo.
+-- Nada se borra: se mueven a venta_items_huerfanos con un motivo, para revisarlas después.
+--   duplicado_probable: hay una venta del mismo paciente y fecha cuyo detalle suma lo mismo
+--                       (venta eliminada y vuelta a crear)
+--   revisar:            hay una venta del mismo paciente y fecha, pero el detalle suma distinto
+--   sin_pista:          ninguna venta candidata
+create table public.venta_items_huerfanos (like public.venta_items);
+alter table public.venta_items_huerfanos
+  add column motivo text not null default 'sin_pista'
+    check (motivo in ('duplicado_probable', 'revisar', 'sin_pista')),
+  add column venta_eliminada_en timestamptz,
+  add column archivado_en timestamptz not null default now();
+alter table public.venta_items_huerfanos enable row level security;
+revoke all on public.venta_items_huerfanos from anon, authenticated;
+
+with huerfanos as (
+  select i.* from public.venta_items i
+  where not exists (select 1 from public.ventas v where v.id = i.venta_id)
+),
+grupos as (
+  select venta_id,
+         upper(trim(max(paciente_nombre))) as pac,
+         min(fecha_ventas_actualizada) as fecha,
+         sum(coalesce(precio, 0) + coalesce(montura_precio, 0)) as total
+  from huerfanos
+  group by venta_id
+),
+candidatas as (
+  select g.venta_id, v.id as candidata_id,
+         (select coalesce(sum(coalesce(x.precio, 0) + coalesce(x.montura_precio, 0)), 0)
+          from public.venta_items x where x.venta_id = v.id) as total_candidata,
+         g.total
+  from grupos g
+  join public.ventas v
+    on g.pac <> '' and upper(trim(v.paciente_nombre)) = g.pac and v.fecha_venta_iso = g.fecha
+),
+motivos as (
+  select g.venta_id,
+         case
+           when exists (select 1 from candidatas c
+                        where c.venta_id = g.venta_id and abs(c.total_candidata - c.total) < 0.01)
+             then 'duplicado_probable'
+           when exists (select 1 from candidatas c where c.venta_id = g.venta_id)
+             then 'revisar'
+           else 'sin_pista'
+         end as motivo
+  from grupos g
+)
+insert into public.venta_items_huerfanos
+select h.*, m.motivo, null::timestamptz, now() from huerfanos h join motivos m on m.venta_id = h.venta_id;
+
+-- Prueba directa de que la venta se eliminó a propósito: el trigger de auditoría guarda un
+-- delete_sale con el folio (desde 2026-06-15; antes no hay registro). En PROD: 31 de 120 remisiones.
+update public.venta_items_huerfanos h
+set venta_eliminada_en = a.eliminada_en
+from (
+  select entity_id as folio, min(created_at) as eliminada_en
+  from public.audit_logs
+  where action = 'delete_sale'
+  group by entity_id
+) a
+where a.folio = h.folio_venta;
+
+delete from public.venta_items i
+where not exists (select 1 from public.ventas v where v.id = i.venta_id);
+
+-- Con la FK exigida y sin huérfanos. ON DELETE CASCADE: al borrar una venta se van sus líneas, así
+-- el bug de arriba no puede repetirse (Angular no elimina ventas hoy; si lo hace, queda atómico).
 alter table public.venta_items add constraint venta_items_venta_id_fkey
-  foreign key (venta_id) references public.ventas(id);
+  foreign key (venta_id) references public.ventas(id) on delete cascade;
 
 -- Funciones de auditoría: el rename de columna no reescribe el texto de las funciones
 -- (plpgsql no se vincula por nombre de columna en tiempo de creación), así que hay que

@@ -30,9 +30,25 @@ explica el porqué y deja las cifras para revisar en el corte (Fase 5).
    una función plpgsql (son solo texto), así que se recrearon con los nombres nuevos. Los triggers
    en sí no se tocaron: Postgres los vincula a la columna por posición, no por nombre, y ese rename
    no cambia la posición.
-6. **FK nueva `venta_items.venta_id → ventas.id`.** Verificado antes de migrar: 0 filas huérfanas
-   en DEV (`select count(*) from ventas v where not exists (... venta_items ...)`), así que se
-   puede exigir sin filtrar nada.
+6. **FK nueva `venta_items.venta_id → ventas.id` (`ON DELETE CASCADE`)**, con las líneas
+   huérfanas apartadas antes (punto 7). En DEV había 0 huérfanas, pero PROD tiene 191.
+7. **Detalle huérfano a `venta_items_huerfanos`.** Medido en PROD el 2026-11-06 (solo SELECT):
+   191 filas de 120 remisiones sin venta, de 2015 a 2026 (121 de 2026). Causa en Flutter:
+   `deleteSale` borra la cabecera por folio y el detalle con `"ID REMISION" = <folio>`; el folio
+   (6 dígitos) nunca coincide con la remisión (17 dígitos), así que el detalle queda. Además inserta
+   el detalle antes que la cabecera, sin transacción. Nada se borra: las filas pasan a
+   `venta_items_huerfanos` (mismas columnas + `motivo` + `archivado_en`, RLS activada y sin
+   permisos para `anon`/`authenticated`) y de ahí se revisan a mano. `motivo`:
+   - `duplicado_probable`: misma persona y fecha que una venta cuyo detalle suma igual (venta
+     eliminada y recreada). En PROD, 22 remisiones.
+   - `revisar`: misma persona y fecha, suma distinta. En PROD, unas 12.
+   - `sin_pista`: sin venta candidata (el resto). Coincidir por nombre es una pista, no una prueba.
+   Ninguna se pudo enlazar sola: 0 coinciden con las 257 ventas sin detalle (solo 4 son de 2026).
+   `venta_eliminada_en` se llena con el `delete_sale` de `audit_logs` que tenga el mismo folio
+   (31 remisiones / 47 líneas en PROD; la auditoría de ventas eliminadas solo existe desde 2026-06-15). Decisión del
+   dueño (2026-11-06): archivar siempre, nunca borrar ni enlazar a la fuerza.
+   **Mientras Flutter siga vivo seguirá creando huérfanas**: repetir esta limpieza en la ventana del
+   corte.
 
 ## Qué NO cambia en este entregable
 
@@ -60,3 +76,11 @@ hay ninguna fila con el dato puesto, así que el `update` de esta migración no 
 - Advisor de seguridad de Supabase: mismos 3 avisos de antes (funciones sin `search_path` fijo que
   ya existían: `audit_actor_email`, `handle_new_user`, `jwt_role`) y los avisos esperables de
   `SECURITY DEFINER` en las funciones de auditoría (de diseño, no una regresión de este cambio).
+
+## Verificado en DEV (2026-11-06, bloque de huérfanas)
+
+Prueba en una transacción revertida: se quitó la FK, se insertaron tres remisiones falsas (copia de
+un detalle real, mismo paciente con suma distinta, y paciente inexistente) y se corrió el bloque.
+Resultado: `duplicado_probable`, `revisar` y `sin_pista` (una cada una), 0 líneas sin venta y la FK
+con `ON DELETE CASCADE`. Después se comprobó que DEV quedó igual: sin la tabla nueva, sin filas de
+prueba y con la FK original (sin cascada) hasta que se reaplique la migración en el ensayo.
