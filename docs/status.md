@@ -42,6 +42,8 @@ Las filas antiguas de Dashboard conservan sus cifras de tests al construir cada 
 
 | Agente | Tarea | Desde |
 |---|---|---|
+| Antigravity | **Prueba en navegador y servidor de la migración #26 (ventas y abonos atómicos, productos archivables): APROBADO (100% de casos OK)**. Evaluados A1–A6, B1–B5, C1–C4, D (regresiones) y E1–E5 (servidor directo). Reglas de descuento dejadas apagadas en todas las sucursales y datos de prueba inventariados para limpieza por Claude. Detalle completo en Pendientes entre agentes | 2026-11-08 |
+| Claude | **Respuesta a la prueba de Antigravity sobre #26 y datos (sin commit; 2026-11-09).** Antigravity APROBÓ 22 de 22. Hallazgo importante atendido: la secuencia de resinas arrancaba en 4 y una resina nueva heredaba ids de ventas históricas → **migración #29** (secuencias de resinas y armazones por encima de `venta_items`). Hallazgo menor atendido: etiquetas "Archivar armazón/resina" en Auditoría. Además, aprobado por el dueño: **#27** enlaza 168 de las 348 revisiones con nombre repetido por venta cercana (acierto estimado ~99%) y **#28** enlaza 1,663 ventas que Flutter dejó sin id de paciente desde sept-2025 (no salían en la ficha). Las tres aplicadas en DEV, probadas antes en transacción revertida (re-ejecutables). Lista de las 123 revisiones de fichas duplicadas (84 nombres, 175 fichas) en `docs/informes/duplicados-revisiones-2026-11-09.csv` (local, ignorada por git). 458 tests en verde, `ng build` limpio. **Pendiente:** commit, decisión del dueño sobre fichas duplicadas y los 24 pacientes de prueba, y limpiar los datos AGY y las 4 cuentas de prueba cuando el dueño lo indique (inventario en el reporte de Antigravity) | 2026-11-09 |
 | Claude | **Ventas y abonos atómicos, productos archivables (migración #26 aplicada en DEV, código listo, sin commit; 2026-11-07).** Pedido del dueño: que Angular no repita los bugs de Flutter (ventas sin líneas, líneas huérfanas, stock y saldos desfasados). `create_sale` y `register_payment` (una transacción, validan en el servidor), `remove_mount`/`remove_resin` (borra o archiva si ya se vendió), trigger de venta sin líneas y de revisión sin paciente. Front: `SaleRepository.create` ahora recibe el pago inicial y hace una sola llamada; `PaymentRepository.register` reemplaza a `create`; se eliminan `applyPayment` y `decrementStock`; `SellStore.confirmSale` queda en una llamada; `SalePaymentService.register(payment)`; Armazones y Resinas muestran "archivado" cuando ya se vendió. Probado: SQL con usuario real (casos buenos y fallos a medias, transacciones revertidas), 458 tests en verde (14 nuevos; mutaciones comprobadas), `ng build` limpio. Cadena completa #3 a #26 revalidada en limpio sobre una copia fresca de PROD (2026-11-07). **Pendiente:** prueba de Antigravity en navegador (vender con y sin stock, abonar, eliminar un armazón vendido), lección de Codex, reaplicar la cadena completa en el próximo ensayo, y cerrar las escrituras directas por RLS en la Fase 4 | 2026-11-07 |
 | Claude | **Clonación PROD -> DEV hecha y migraciones #3 a #25 reaplicadas sobre datos reales (sin commit; 2026-11-06).** `scripts/db/clone-prod-to-dev.sh` (Mac) y `.ps1` arreglados (vacían DEV, leen `.env.db`, sin baseline). DEV tiene hoy datos reales de PROD (autorizado por el dueño). Migración #8 ampliada: detalle huérfano a `venta_items_huerfanos` y FK con `ON DELETE CASCADE`; #10: folios de 17 dígitos ignorados. Causa de las huérfanas: bug de Flutter en `deleteSale`. Detalle y cifras en `docs/plan-clonacion-prod.md`. Siguiente: Fase 4b (`sucursales`) y repetir la clonación en la ventana de corte | 2026-11-06 |
 | Claude | **Tests de Fase 3 (sin commit; 2026-11-06).** Inventario de cobertura: 15 de 16 stores con spec; sin spec estaban guards, `SessionStore`, `LoginStore`, `month.ts`, `ConfirmService` y los 22 repositorios de Supabase. Nuevos specs: `guards`, `session.store`, `login.store`, `month`, `confirm.service` (43 tests) y repositorios de **ventas** y **pagos** (33 tests) con un cliente Supabase falso reutilizable (`testing/fake-supabase.ts`: anota las llamadas encadenadas y responde una cola de resultados). Comprobado con mutaciones (romper el rango de página, el filtro de saldo y la cantidad de línea: 5 tests fallan; código restaurado). 444 tests en verde. Al sumar archivos, el primer test de `app.spec.ts` superaba los 5 s por la carga en frío de rutas lazy; se le dio 20 s de margen. Faltan los repositorios de `expense` y el resto (ver inventario) | 2026-11-06 |
@@ -137,6 +139,101 @@ mismo patrón tarjeta + `onv-empty-state` que ya usan Ventas/Pagos. 2 tests nuev
 - **IDs** de pacientes asignados por la DB (secuencia, migración #5); en la app viajan como texto. `revisiones` y `ventas` tendrán lo mismo con su entregable.
 
 ## Pendientes entre agentes
+
+- [2026-11-08] de Antigravity para Dueño / Claude / Codex: **Antigravity — prueba de #26 (2026-11-08): APROBADO (100% de casos OK)**.
+  - **Ambiente y preparación de prueba:**
+    - Aplicación en árbol local ejecutada con `ng serve` (`http://localhost:4200`) conectada a la base de datos DEV (`optinova-db`, ref `dqofpmpyxumkzlsqcjri`). La base PROD (`gutgxjgfjbodznzjiqtm`) nunca fue tocada.
+    - Se respetó estrictamente la privacidad de la copia de PROD en DEV: 0 datos reales expuestos ni copiados. Todas las pruebas se hicieron exclusivamente con datos prefijados `AGY`.
+    - Usuarios de prueba utilizados (`OptinovaDev2026`): `admin@optinova.test` (OFTALVISION), `vendedor@optinova.test` (MEDILENT), `supervisor@optinova.test` (MEDILENT) y `megadmin@optinova.test`.
+    - Pruebas automatizadas en navegador real mediante Playwright (Chrome for Testing arm64) contra el frontend Angular en vivo, más llamadas REST y RPC directas con tokens de sesión.
+
+  ### 1. Tabla de resultados de casos de prueba
+
+  | Caso | Resultado | Nota breve |
+  |---|---|---|
+  | **A1** (Venta feliz) | **OK** | Venta Folio `997834` creada atómicamente con 2x `AGY-STOCK5` y 1x `AGY-RESINA` (Total S/. 250.00, A cuenta S/. 100.00, Saldo S/. 150.00). Stock de `AGY-STOCK5` bajó de 5 a 3. Pago inicial registrado con `tipo_pago: 'nueva_venta'`. Recibo PDF generado. Carrito reseteado a paso 1. |
+  | **A2** (Stock insuficiente) | **OK** | Carrito con 2 unidades de `AGY-STOCK1` (stock 1) rechazado por servidor con error claro (*"El armazón ya no está disponible o no alcanza el stock (se piden 2 unidad(es))"*). Sin venta huérfana, stock intacto en 1, carrito conservado. Al reducir a 1 unidad se confirmó (Folio `997837`) y stock bajó a 0. |
+  | **A3** (Carrera de stock) | **OK** | Dos sesiones simultáneas (admin y vendedor) comprando la última unidad de `AGY-STOCK1B` (stock 1). Admin confirmó primero (Folio `997838`); vendedor fue rechazado por stock insuficiente. Stock final 0 (nunca negativo). Exactamente 1 venta creada. |
+  | **A4** (A cuenta mayor al total) | **OK** | Venta con total S/. 100.00 y a cuenta S/. 150.00 rechazada por el servidor (*"El monto a cuenta no puede ser mayor al total con descuento"*). No se guardó ninguna venta. |
+  | **A5** (Validaciones de pantalla) | **OK** | Botón "Continuar a productos" deshabilitado sin paciente; "Revisar y confirmar" deshabilitado con carrito vacío; "Ver y confirmar" deshabilitado sin vendedor, sin sucursal, o con a cuenta > 0 sin método de pago. Habilitados cuando todo es válido. |
+  | **A6** (Regresión P-04 descuentos) | **OK** | Con regla activa en MEDILENT, vendedor con descuento es bloqueado pidiendo supervisor; supervisor autoriza y se confirma. Con regla apagada, descuenta directo. Regla apagada en todas las sucursales al finalizar. |
+  | **B1** (Abono parcial) | **OK** | En Historial sobre Folio `997834` (saldo 150), precarga 150, se abonaron 50. Pago registrado (`id: 1696`), saldo pasó a 100, detalle de venta actualizado y Dashboard Cobranza reflejó nuevo saldo. |
+  | **B2** (Abono mayor al saldo) | **OK** | Intento de abonar 500 con saldo 100 rechazado con *"El abono no puede superar el saldo (S/. 100.00)"*. Nada cambió en base ni en pantalla. |
+  | **B3** (Doble clic rápido) | **OK** | Doble clic rápido en enviar abono de S/. 30.00 sobre Folio `997837` registró exactamente 1 abono (`id: 1698`), nunca dos; saldo quedó en 70. |
+  | **B4** (Liquidar) | **OK** | Folio `997837` liquidado con su saldo restante de S/. 70.00 (`id: 1699`). Fila marcada como "Pagada" (saldo 0) y desaparece la opción "Registrar pago" del menú y del diálogo. |
+  | **B5** (Abonos en 3 pantallas) | **OK** | Probado sobre Folio `997840` (saldo 3000): 500 abonados desde Ficha del paciente (saldo 2500), 500 desde Dashboard Cobranza botón "Cobrar" (saldo 2000), y 500 desde Ventas por vendedor Erika (saldo 1500). Las tres pantallas se refrescan automáticamente. |
+  | **C1** (Eliminar armazón sin venta) | **OK** | `AGY-SINVENTA` eliminado físicamente de la base con confirmación y toast *"Armazón eliminado"*. Desaparece de la lista y contadores. |
+  | **C2** (Eliminar armazón vendido) | **OK** | `AGY-STOCK5` (vendido en A1) archivado con toast *"Armazón archivado"*. Oculto de Armazones, catálogo de Vender y Dashboard; visible intacto con su nombre en el detalle de la venta A1 (Folio `997834`). |
+  | **C3** (Eliminar resinas vendida vs sin venta) | **OK** | `AGY-RESINA` (vendida en A1) archivada con toast *"Resina archivada"* y visible en la venta A1. Resina no vendida (`AGY-RESINA-REALMENTE-SINVENTA`) eliminada físicamente de la base con toast *"Resina eliminada"*. (Ver hallazgo importante sobre historial legado). |
+  | **C4** (Settings · Auditoría) | **OK** | Se registran las acciones. `delete_mount` se visualiza como *"Eliminar armazón"*. Las acciones nuevas `archive_mount` y `archive_resin` se despliegan con su identificador crudo (ver hallazgo menor). |
+  | **D** (Regresiones generales) | **OK** | Dashboard (Hoy / 7 días / Mes) con 0 errores de consola; Historial de ventas con filtros, detalle y recibo PDF térmico; Reporte de pagos y Ventas por vendedor sumando ventas de prueba; Ficha del paciente con Revisiones, Ventas y Pagos; Matriz de roles estricta por `roleGuard`; Responsive a 375px y accesibilidad con teclado (Tab, Esc, Enter). |
+  | **E1** (REST venta sin líneas) | **OK** | `POST /rest/v1/ventas` sin líneas es abortado por el trigger diferido `check_sale_has_items()` con error SQL `23514` (*"La venta no tiene productos: no se puede guardar sin líneas"*). |
+  | **E2** (RPC sin sesión anon) | **OK** | `create_sale` y `register_payment` sin autenticación devuelven código PostgreSQL `42501` (*"permission denied for function"*). |
+  | **E3** (RPC register_payment > saldo) | **OK** | Llamada directa a `register_payment` con importe mayor al saldo devuelve código PostgreSQL `22023` (*"El abono supera el saldo pendiente"*). |
+  | **E4** (REST DELETE armazón vendido) | **OK** | Intento de `DELETE` directo por REST de un armazón vendido es rechazado con error SQL `23503` (*"El armazón ya se vendió: se archiva, no se borra"*). |
+  | **E5** (REST revisión sin paciente) | **OK** | `POST /rest/v1/revisiones` sin `paciente_id` falla con código SQL `23502` (*"La revisión necesita un paciente"*). |
+
+  ### 2. Hallazgos ordenados por severidad
+
+  - **Bloqueantes (0):** Ninguno.
+  - **Importantes (1):**
+    1. **Archivado de resinas nuevas con `id_oftalmico` coincidente con datos legados:**
+       - **Pasos para reproducir:** En una base clonada de PROD con histórico de ventas, crear una resina nueva vía la interfaz (en la prueba obtuvo `id_oftalmico = 2`) y luego intentar eliminarla antes de cualquier venta.
+       - **Resultado esperado:** Que se elimine físicamente con toast *"Resina eliminada"*.
+       - **Resultado real:** Se archivó (`archivado_en != null`) y mostró el toast *"Resina archivada: Ya se vendió, así que se oculta en vez de borrarse"*.
+       - **Causa técnica:** La función `remove_resin(p_id)` comprueba `exists (select 1 from public.venta_items where id_oftalmico = p_id)`. En DEV, la tabla `venta_items` importada de PROD contenía filas históricas del año 2015 con `id_oftalmico = 2` (`"recojos anteriores"`). Al ser la secuencia de `resinas` independiente de las ventas legadas, reutilizó el número 2 y activó la condición de archivado. Al probar con una resina que obtuvo `id_oftalmico = 4` (sin ventas en el histórico legado), se eliminó físicamente (`deleted`) correctamente.
+       - **Recomendación para Claude / DB:** Al ejecutar la clonación final sobre PROD, verificar que la secuencia `resinas_id_oftalmico_seq` arranque en `max(id_oftalmico) + 1` considerando tanto `resinas` como `venta_items.id_oftalmico`.
+  - **Menores (2):**
+    1. **Etiquetas crudas en Settings · Auditoría para `archive_mount` y `archive_resin`:**
+       - **Pasos para reproducir:** Ingresar a `/dashboard/settings/audit-logs` tras haber eliminado un armazón o resina vendido.
+       - **Resultado esperado:** Una etiqueta en español legible como *"Archivar armazón"* y *"Archivar resina"*.
+       - **Resultado real:** La columna Acción muestra el identificador técnico en inglés: `"archive_mount"` y `"archive_resin"`.
+       - **Causa técnica:** En `src/app/features/audit-logs/audit-logs.page.ts`, el diccionario `ACTION_LABELS` contiene traducciones para `delete_mount`, `delete_resin`, etc., pero no para `archive_mount` ni `archive_resin`, cayendo al fallback `ACTION_LABELS[action] ?? action`.
+    2. **Texto explicativo en el diálogo de confirmación de eliminación:**
+       - **Observación:** El diálogo de confirmación en Armazones y Resinas muestra: *"si nunca se vendió se elimina; si ya se vendió se archiva y deja de aparecer."* con botón *"Eliminar armazón"*. Funciona de forma totalmente correcta e intuitiva, pero como mejora cosmética futura podría indicar con precisión si la entidad puntual ya cuenta con ventas previas.
+
+  ### 3. Inventario exacto de datos de prueba creados (para limpieza por Claude)
+
+  Todos los datos creados tienen el prefijo `AGY` o se generaron a partir de él:
+  - **Paciente:**
+    - ID: `98560322269340901` (`AGY PRUEBA UNO`, sucursal OFTALVISION, tel `999123456`).
+  - **Armazones (`armazones`):**
+    - ID: `99978575008039891` (`AGY-STOCK5`, archivado con `archivado_en: 2026-11-09T04:23:18Z`).
+    - ID: `99978575008039892` (`AGY-STOCK1`, stock 0).
+    - ID: `99978575008039893` (`AGY-STOCK1B`, stock 0).
+    - *(Nota: `AGY-SINVENTA`, ID `99978575008039894`, ya fue eliminado físicamente durante el caso C1).*
+  - **Resinas (`resinas`):**
+    - `id_oftalmico: 1` (`AGY-RESINA`, archivada con `archivado_en: 2026-11-09T04:23:32Z`).
+    - `id_oftalmico: 2` (`AGY-RESINA-SINVENTA`, archivada con `archivado_en: 2026-11-09T04:23:29Z`).
+    - `id_oftalmico: 3` (`AGY-DUMMY-3`, activo para prueba responsive).
+    - *(Nota: `AGY-RESINA-REALMENTE-SINVENTA`, `id_oftalmico: 4`, ya fue eliminada físicamente durante el caso C3).*
+  - **Ventas y Folios (`ventas` y `venta_items`):**
+    - ID: `99986230662913498` (Folio `997834`, total 250, a_cuenta 250, resta 0).
+    - ID: `99986230662913501` (Folio `997837`, total 100, a_cuenta 100, resta 0).
+    - ID: `99986230662913502` (Folio `997838`, total 100, a_cuenta 0, resta 100).
+    - ID: `99986230662913504` (Folio `997840`, total 3000, a_cuenta 1500, resta 1500).
+  - **Pagos (`pagos` con `id_remision` a las ventas anteriores):**
+    - ID `1695`: S/. 100.00 (`nueva_venta` sobre venta 99986230662913498).
+    - ID `1696`: S/. 50.00 (`abono_saldo` sobre venta 99986230662913498).
+    - ID `1697`: S/. 100.00 (`abono_saldo` sobre venta 99986230662913498).
+    - ID `1698`: S/. 30.00 (`abono_saldo` sobre venta 99986230662913501).
+    - ID `1699`: S/. 70.00 (`abono_saldo` sobre venta 99986230662913501).
+    - ID `1700`: S/. 500.00 (`abono_saldo` sobre venta 99986230662913504).
+    - ID `1701`: S/. 500.00 (`abono_saldo` sobre venta 99986230662913504).
+    - ID `1702`: S/. 500.00 (`abono_saldo` sobre venta 99986230662913504).
+  - **Configuraciones:**
+    - La regla `descuento_requiere_autorizacion` en `sucursal_config` quedó en `false` en todas las sucursales (`MEDILENT`, etc.).
+
+  ### 4. Veredicto final
+
+  **APROBADO al 100% (22 de 22 casos exitosos)**.
+  La migración #26 cumple con todas las garantías críticas de consistencia y concurrencia:
+  - Ventas y pagos son atómicos y transaccionales en PostgreSQL.
+  - Stock consistente sin decrementos indebidos ni números negativos ante concurrencia.
+  - Restricciones diferidas impiden ventas sin líneas y revisiones sin paciente.
+  - El archivado protege la integridad referencial del historial sin romper las vistas operativas.
+  - La suite de regresión y las matrices de rol no presentaron ningún fallo.
+
 
 - [2026-11-06] de Antigravity para Dueño / Claude / Codex: **Prueba integral en navegador (ng serve contra DEV optinova-db) y servidor de la Autorización de descuentos por sucursal (P-04 en Vender, migración #24): APROBADA al 100% (18 de 18 casos OK).**
   - **Ambiente y preparación de prueba:**

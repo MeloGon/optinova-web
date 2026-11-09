@@ -94,3 +94,35 @@ Resultado: las 24 migraciones (#3 a #25) corren sobre una copia de PROD con dato
 Tras ajustar las migraciones #3 (fecha de nacimiento futura), #8 (huérfanas, `venta_eliminada_en`) y #10 (folios de 17 dígitos) y agregar la #26, se repitió el proceso entero: vaciar DEV, clonar PROD con datos (`clone-prod-to-dev.sh --with-data`, mismos conteos en las 15 tablas) y aplicar #3 a #26 una por una. Todas corrieron sin errores y la huella (ventas 24 853 / 6 979 043.17, líneas 28 652, pagos 1 621 / 433 155.50, pacientes 15 288, revisiones 17 364, armazones 2 955) no se movió en ninguna.
 
 Estado final verificado: 191 líneas huérfanas apartadas (22 / 12 / 86 remisiones por motivo, 31 con borrado probado), 0 nacimientos en el futuro, 16 912 revisiones enlazadas, siguiente folio 997 834, FK con `ON DELETE CASCADE`, las 8 funciones y 4 triggers de la #26, un solo trabajo de cron. La batería de pruebas de la #26 (venta completa, stock insuficiente sin dejar nada a medias, validaciones, abonos, sobrepago, archivar/borrar productos, revisión y venta sin líneas) se repitió con el mismo resultado, y los advisors no muestran hallazgos nuevos. Las migraciones están listas para el ensayo final del corte.
+
+## Actualización de datos de PROD (2026-11-08)
+
+Se repitió la clonación (`clone-prod-to-dev.sh --with-data`, mismos conteos en las 15 tablas) para traer lo registrado en PROD desde el 2026-11-06 (Flutter sigue vivo) y se aplicaron #3 a #26 otra vez sin errores. Es la nueva huella base de DEV:
+
+| Dato | Valor |
+|---|---|
+| ventas | 24 866 (`total` 6 983 463.17) |
+| líneas (`venta_items`) + apartadas | 28 675 + 191 = 28 866 |
+| `pagos` | 1 638, monto 437 220.50 |
+| pacientes / revisiones / armazones | 15 298 / 17 374 / 2 956 |
+| egresos / audit_logs | 655 / 2 929 |
+
+Cambios frente a la base del 2026-11-06: +13 ventas, +23 líneas, +17 pagos, +10 pacientes, +10 revisiones, +1 armazón, +8 egresos. Las migraciones se comportaron igual: 191 huérfanas (22 / 12 / 86 remisiones; ninguna nueva, ninguna venta eliminada nueva), 257 ventas sin líneas (las mismas), 452 revisiones sin enlazar, folio siguiente 997 834, 0 nacimientos en el futuro. La huella no se movió entre la #8 y la #26. DEV no tiene usuarios de prueba (el vaciado borra `auth.users`): para pruebas en navegador hay que crearlos de nuevo.
+
+## Limpieza antes del corte (cuentas y datos de prueba en DEV)
+
+Decisión del dueño (2026-11-08): todo lo de prueba se borra cuando todo esté listo. Nada de esto debe llegar al corte. El corte parte de una copia fresca de PROD, así que lo ideal es que esta limpieza no haga falta; si se hacen pruebas en DEV con datos reales encima, se borra lo siguiente:
+
+- **Cuentas de prueba** creadas el 2026-11-08 (contraseña de prueba, solo DEV): `megadmin@`, `admin@`, `supervisor@`, `vendedor@optinova.test`. Se borran de `auth.users` (cascada a perfiles e identidades).
+- **Datos de las pruebas de Antigravity**: pacientes `AGY…`, armazones y resinas `AGY-…`, y las ventas, pagos y revisiones asociados. Antigravity deja la lista exacta en `docs/status.md`.
+- **Datos que cree Claude en pruebas**: se hacen en transacciones revertidas; si alguna vez queda algo, se anota aquí.
+- Dejar apagada la regla de autorización de descuentos por sucursal.
+
+## Pendientes de datos detectados el 2026-11-08
+
+1. **Migración #27** (revisiones por venta cercana, +168 enlaces): aplicada en DEV el 2026-11-09. **#28** (1,663 ventas sin id de paciente enlazadas por nombre único) y **#29** (secuencias de resinas y armazones por encima de las líneas de venta, hallazgo de Antigravity): aplicadas el mismo día.
+2. **Ventas sin `paciente_id` desde septiembre de 2025** (Flutter dejó de guardarlo): resuelto con la #28 para 1,663; quedan 116 con nombre repetido y 28 sin ficha.
+3. **Fichas duplicadas** (la misma persona registrada 2+ veces): causan 123 revisiones ambiguas (84 nombres, 175 fichas) y se siguen creando en 2026. Lista para revisar en `docs/informes/duplicados-revisiones-2026-11-09.csv` (local, con nombres reales). Unirlas es decisión del dueño.
+4. **24 pacientes de prueba** en PROD (nombres "CLIENTE DE PRUEBA", "prueba", "SISTEMAS OPTOX…"): 16 ventas por S/. 1 872 y 7 revisiones. Propuesta: archivarlos en el corte, sin borrar. Pendiente de decisión.
+5. **"Cliente de paso"**: 37 fichas con 305 ventas (cliente genérico). A futuro conviene un solo cliente genérico.
+
