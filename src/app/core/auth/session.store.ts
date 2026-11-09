@@ -4,6 +4,7 @@ import { AppError } from '../errors/app-error';
 import { Profile } from '../models/profile';
 import { Role, hasRole } from '../models/role';
 import { AuthRepository } from '../repositories/auth.repository';
+import { CompanyBranchesService } from '../config/company-branches.service';
 import { Result } from '../result';
 
 /**
@@ -16,6 +17,7 @@ import { Result } from '../result';
 export class SessionStore {
   private readonly repo = inject(AuthRepository);
   private readonly router = inject(Router);
+  private readonly companyBranches = inject(CompanyBranchesService);
 
   private readonly state = signal<Profile | null>(null);
 
@@ -33,12 +35,17 @@ export class SessionStore {
 
   /** Se llama una vez al arrancar la app. */
   async restore(): Promise<void> {
-    this.state.set(await this.repo.restoreSession());
+    const profile = await this.repo.restoreSession();
+    this.state.set(profile);
+    if (profile) await this.companyBranches.load(profile.companyId);
   }
 
   async login(email: string, password: string): Promise<Result<Profile, AppError>> {
     const result = await this.repo.signIn(email, password);
-    if (result.ok) this.state.set(result.value);
+    if (result.ok) {
+      this.state.set(result.value);
+      await this.companyBranches.load(result.value.companyId);
+    }
     return result;
   }
 

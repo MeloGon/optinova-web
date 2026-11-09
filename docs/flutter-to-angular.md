@@ -435,3 +435,15 @@ Ver [Dashboard](lessons/18-dashboard.md), [recibo](lessons/19-recibo-pdf.md) y [
 | Flag global de Features | Flag global más permisos de vendedores por sucursal; RPC verifica quién administra los permisos. |
 
 Ver [F04](lessons/fundamentos/F04-css-tailwind.md), [F05](lessons/fundamentos/F05-componentes-signals.md), [F06](lessons/fundamentos/F06-servicios-inyeccion.md) y [L21](lessons/21-features.md).
+
+
+## Multi-empresa (L22)
+
+| Flutter / Riverpod | Angular / Supabase |
+|---|---|
+| `enum BranchEnum` | Tabla `sucursales` por empresa; `ConfigService` la carga al iniciar sesión |
+| `where companyId == x` en cada consulta | Política RLS "por organización": la base filtra, el cliente no puede omitirlo |
+| `Stepper` con un solo `create()` al final | Asistente "Nueva empresa" de tres pasos con un único envío |
+| Servicio de backend con llave privilegiada | Edge Function que revisa la empresa en su código, porque salta la RLS |
+
+Ver [L22](lessons/22-multiempresa.md).

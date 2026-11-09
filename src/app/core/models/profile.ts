@@ -10,4 +10,6 @@ export interface Profile {
   email: string;
   /** `perfiles.puede_cambiar_fecha`: solo aplica a un vendedor; otro rol lo ignora (siempre puede). */
   canChangeDate: boolean;
+  /** `perfiles.organizacion_id`: la empresa del usuario (sus sucursales salen de aquí). */
+  companyId: string;
 }

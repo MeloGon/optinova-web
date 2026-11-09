@@ -14,6 +14,7 @@ import {
   LucideTriangleAlert,
 } from '@lucide/angular';
 import { SessionStore } from '../../core/auth/session.store';
+import { CompanyBranchesService } from '../../core/config/company-branches.service';
 import { ManagedBranch } from '../../core/models/managed-branch';
 import { Badge } from '../../shared/ui/badge/badge';
 import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
@@ -39,6 +40,7 @@ import { BranchesStore, CompanyGroup } from './branches.store';
 export class BranchesPage {
   protected readonly store = inject(BranchesStore);
   private readonly session = inject(SessionStore);
+  private readonly companyBranches = inject(CompanyBranchesService);
   private readonly dialog = inject(Dialog);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
@@ -71,7 +73,7 @@ export class BranchesPage {
     const data: BranchFormDialogData = {
       branch: null,
       companyName: group.companyName,
-      save: (name) => this.store.create(name, group.companyId),
+      save: async (name) => this.refreshed(await this.store.create(name, group.companyId)),
     };
     this.dialog
       .open<number | null>(BranchFormDialog, this.dialogConfig(data, BRANCH_FORM_TITLE_ID))
@@ -84,7 +86,7 @@ export class BranchesPage {
     const data: BranchFormDialogData = {
       branch,
       companyName: branch.companyName,
-      save: (name) => this.store.update(branch.id, { name }),
+      save: async (name) => this.refreshed(await this.store.update(branch.id, { name })),
     };
     this.dialog
       .open<number | null>(BranchFormDialog, this.dialogConfig(data, BRANCH_FORM_TITLE_ID))
@@ -119,7 +121,7 @@ export class BranchesPage {
     }
 
     this.busyBranchId.set(branch.id);
-    const result = await this.store.update(branch.id, { active: reopening });
+    const result = this.refreshed(await this.store.update(branch.id, { active: reopening }));
     this.busyBranchId.set(null);
 
     if (result.ok) {
@@ -127,6 +129,12 @@ export class BranchesPage {
     } else {
       this.toast.show({ tone: 'danger', title: 'No se pudo completar', text: result.error.message });
     }
+  }
+
+  /** Tras un cambio, los selectores del resto de la app deben ver las sucursales nuevas. */
+  private refreshed<T extends { ok: boolean }>(result: T): T {
+    if (result.ok) void this.companyBranches.reload();
+    return result;
   }
 
   private dialogConfig(data: unknown, titleId: string) {

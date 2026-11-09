@@ -42,7 +42,8 @@ export interface CompanyConfig {
 
 // Valores actuales de la óptica (BranchEnum y PaymentMethodEnum de Flutter, más
 // OFTALMIC CENTER, cerrada pero con historial en pacientes, revisiones y ventas).
-// En la Fase 4b saldrán de la tabla `sucursales` de cada empresa.
+// Las sucursales se reemplazan al iniciar sesión con las de la empresa del usuario
+// (`CompanyBranchesService`); estas quedan como valor inicial y para tests.
 const DEFAULT_CONFIG: CompanyConfig = {
   currency: { code: 'PEN', symbol: 'S/.', locale: 'en-US', decimals: 2 },
   branches: [
@@ -70,5 +71,10 @@ export class ConfigService {
   private readonly state = signal<CompanyConfig>(DEFAULT_CONFIG);
   readonly config = this.state.asReadonly();
   /** Sucursales para registros nuevos (selects de venta, paciente, egreso, usuario). */
+  /** Reemplaza las sucursales por las de la empresa del usuario (tabla `sucursales`). */
+  setBranches(branches: Branch[]): void {
+    this.state.update((config) => ({ ...config, branches }));
+  }
+
   readonly activeBranches = computed(() => this.state().branches.filter((b) => b.active));
 }

@@ -26,6 +26,7 @@ Una lección por entregable. Cada una explica qué se hizo, para qué sirve y su
 | 19 | [Recibo PDF térmico](19-recibo-pdf.md) | E2.6, `c5d5950` |
 | 20 | [Gestión de usuarios](20-usuarios.md) | E2.8, `53e72de` |
 | 21 | [Funcionalidades y permisos](21-features.md) | E2.8, `98d9439` |
+| 22 | [Multi-empresa y sucursales](22-multiempresa.md) | Fase 4b, migraciones #32 a #36 |
 
 ## Fundamentos desde Flutter y Dart
 

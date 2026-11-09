@@ -11,6 +11,7 @@ export const fakeProfile = (role: Role, canChangeDate = false): Profile => ({
   role,
   email: `${role}@optinova.test`,
   canChangeDate,
+  companyId: 'org-1',
 });
 
 /** AuthRepository en memoria para tests (= un mock de mocktail). */

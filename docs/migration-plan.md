@@ -175,11 +175,12 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 
 ### Fase 4b: Multi-empresa / SaaS (mapeado, NO se implementa todavía)
 Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y configura su moneda.
-- [x] **Paso 1 (2026-11-09, migración #32):** `organizaciones` ("Inversiones Oftalvision") y `sucursales`, `organizacion_id` en 10 tablas y `sucursal_id` en 6, texto conservado. Falta el paso 2: RPC, RLS por organización y pantalla de sucursales para el admin (`megadmin` ve todas las empresas; `admin`, solo la suya)
-- [ ] Tabla `organizaciones` (empresa) y `sucursales` con campo `activa` (hoy las sucursales son texto fijo en `ConfigService`: OFTALVISION y MEDILENT activas; OFTALMIC CENTER cerrada, con historial en pacientes, revisiones y ventas cortas). Al migrar, cada texto `SUCURSAL` pasa a `sucursal_id`; ojo con valores `null` y `''` en `revisiones` y `egresos`
-- [ ] `organizacion_id` en todas las tablas + RLS por organización (cada empresa solo ve lo suyo)
+- [x] **Paso 1 (2026-11-09, migración #32):** `organizaciones` ("Inversiones Oftalvision") y `sucursales`, `organizacion_id` en 10 tablas y `sucursal_id` en 6, texto conservado. 
+- [x] **Paso 2 (2026-11-09, migraciones #33 a #36):** RLS por organización, funciones y Edge Functions que respetan la empresa, `crear_sucursal`/`editar_sucursal`/`crear_organizacion`, pantalla Settings · Sucursales con alta de empresa en tres pasos y `ConfigService` cargando las sucursales de la empresa del usuario (`megadmin` ve todas; `admin`, solo la suya). Falta: prueba en navegador con cuentas reales (Antigravity)
+- [x] Tabla `organizaciones` (empresa) y `sucursales` con campo `activa` (hoy las sucursales son texto fijo en `ConfigService`: OFTALVISION y MEDILENT activas; OFTALMIC CENTER cerrada, con historial en pacientes, revisiones y ventas cortas). Al migrar, cada texto `SUCURSAL` pasa a `sucursal_id`; ojo con valores `null` y `''` en `revisiones` y `egresos`
+- [x] `organizacion_id` en todas las tablas + RLS por organización (cada empresa solo ve lo suyo)
 - [ ] Configuración por empresa: moneda (código ISO + símbolo + formato), métodos de pago, zona horaria, logo, color primario
-- [ ] Registro de empresas nuevas y primer usuario admin; invitación de usuarios
+- [x] Registro de empresas nuevas y primer usuario admin (megadmin, pantalla Sucursales); invitación de usuarios queda pendiente
 - [ ] Al corte (Fase 5), los datos actuales se asignan a la organización "Optinova"
 - Momento recomendado: junto con el rediseño de DB (Fase 4), antes del corte, para migrar los datos una sola vez.
 
