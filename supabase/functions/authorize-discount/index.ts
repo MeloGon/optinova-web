@@ -7,7 +7,8 @@
 // insertar la venta; sin esa fila, el servidor rechaza la venta aunque el navegador mienta.
 //
 // Reglas del que autoriza: supervisor de la MISMA sucursal que el vendedor, o admin/megadmin
-// de cualquiera. Todo queda en `audit_logs`.
+// de SU empresa (un megadmin sirve en cualquiera). Nunca de otra empresa. Todo queda en `audit_logs`
+// con la organización del vendedor.
 //
 // Mismo molde que `patients-lifecycle`. Deploy: supabase functions deploy authorize-discount
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile } = await adminClient
       .from("perfiles")
-      .select("rol, sucursal")
+      .select("rol, sucursal, organizacion_id")
       .eq("id", callerId)
       .single();
     if (!callerProfile) {
@@ -91,13 +92,19 @@ Deno.serve(async (req) => {
 
     const { data: supervisorProfile } = await adminClient
       .from("perfiles")
-      .select("rol, sucursal")
+      .select("rol, sucursal, organizacion_id")
       .eq("id", signIn.user.id)
       .single();
     if (
       !supervisorProfile || !hasRole(supervisorProfile.rol, "supervisor")
     ) {
       return json({ error: "Esa cuenta no tiene permiso de supervisor." }, 403);
+    }
+    if (
+      supervisorProfile.rol !== "megadmin" &&
+      supervisorProfile.organizacion_id !== callerProfile.organizacion_id
+    ) {
+      return json({ error: "Ese supervisor es de otra empresa." }, 403);
     }
     if (
       !hasRole(supervisorProfile.rol, "admin") &&
@@ -127,6 +134,7 @@ Deno.serve(async (req) => {
       entity: "ventas",
       entity_id: callerId,
       user_email: callerEmail,
+      organizacion_id: callerProfile.organizacion_id,
       detail: {
         amount,
         authorizedBy: signIn.user.email ?? signIn.user.id,

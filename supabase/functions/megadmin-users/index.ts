@@ -9,6 +9,11 @@
 //   - resetear la contraseña de cualquier usuario sin depender de email
 //     ({ action: "reset_password", userId, newPassword })
 //
+// Multi-empresa: cada perfil pertenece a una organización. Al crear, `organizacionId` (opcional;
+// por defecto la del megadmin que llama) viaja en `user_metadata` para que `handle_new_user` cree
+// el perfil en esa empresa, y `sucursal` debe existir en ella. Las filas de auditoría llevan la
+// organización del usuario afectado.
+//
 // "Desactivar" nunca borra: usa el ban de Supabase Auth (reversible), porque el usuario puede
 // tener ventas, egresos o auditoría encadenados a su id (mismo criterio que archivar paciente).
 //
@@ -70,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile, error: profileError } = await adminClient
       .from("perfiles")
-      .select("rol")
+      .select("rol, organizacion_id")
       .eq("id", callerId)
       .single();
 
@@ -85,14 +90,41 @@ Deno.serve(async (req) => {
       action: string,
       entityId: string,
       detail: Record<string, unknown>,
+      organizacionId: string | null,
     ) {
       await adminClient.from("audit_logs").insert({
         action,
         entity: "perfiles",
         entity_id: entityId,
         user_email: callerEmail,
+        organizacion_id: organizacionId,
         detail,
       });
+    }
+
+    /** Organización de un perfil (para auditar y para validar la sucursal). */
+    async function orgOf(userId: string): Promise<string | null> {
+      const { data } = await adminClient
+        .from("perfiles")
+        .select("organizacion_id")
+        .eq("id", userId)
+        .single();
+      return (data?.organizacion_id as string | undefined) ?? null;
+    }
+
+    /** `null` si la sucursal es válida en esa organización (o no se pidió ninguna). */
+    async function sucursalError(
+      sucursal: string | null,
+      orgId: string,
+    ): Promise<string | null> {
+      if (!sucursal) return null;
+      const { data } = await adminClient
+        .from("sucursales")
+        .select("id")
+        .eq("organizacion_id", orgId)
+        .eq("nombre", sucursal)
+        .maybeSingle();
+      return data ? null : "Esa sucursal no existe en la empresa del usuario.";
     }
 
     /** Megadmins activos, sin contar `excludingUserId` (para "¿quedaría alguno si hago esto?"). */
@@ -120,7 +152,7 @@ Deno.serve(async (req) => {
     if (action === "list") {
       const { data, error } = await adminClient
         .from("perfiles")
-        .select("id, nombre, sucursal, rol")
+        .select("id, nombre, sucursal, rol, organizacion_id")
         .order("nombre", { ascending: true });
 
       if (error) return json({ error: error.message }, 500);
@@ -146,7 +178,7 @@ Deno.serve(async (req) => {
 
     if (action === "create") {
       const nombre = body?.nombre;
-      const sucursal = body?.sucursal ?? null;
+      const sucursal = body?.sucursal || null;
       const rol = body?.rol;
       const email = body?.email;
       const password = body?.password;
@@ -167,8 +199,25 @@ Deno.serve(async (req) => {
         );
       }
 
+      const organizacionId: string = body?.organizacionId ??
+        callerProfile.organizacion_id;
+      const { data: org } = await adminClient
+        .from("organizaciones")
+        .select("id")
+        .eq("id", organizacionId)
+        .maybeSingle();
+      if (!org) return json({ error: "La empresa no existe." }, 400);
+      const sucError = await sucursalError(sucursal, organizacionId);
+      if (sucError) return json({ error: sucError }, 400);
+
+      // `organizacion_id` en user_metadata: `handle_new_user` lo usa para crear el perfil.
       const { data: created, error: createError } = await adminClient.auth
-        .admin.createUser({ email, password, email_confirm: true });
+        .admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { organizacion_id: organizacionId },
+        });
       if (createError) return json({ error: createError.message }, 500);
 
       const newUserId = created.user.id;
@@ -178,16 +227,30 @@ Deno.serve(async (req) => {
         .update({ nombre: nombre.trim(), sucursal, rol }).eq("id", newUserId);
       if (updateError) return json({ error: updateError.message }, 500);
 
-      await logAction("create_user", newUserId, { nombre, sucursal, rol, email });
+      await logAction(
+        "create_user",
+        newUserId,
+        { nombre, sucursal, rol, email },
+        organizacionId,
+      );
       return json({
-        user: { id: newUserId, nombre, sucursal, rol, email, last_sign_in_at: null, active: true },
+        user: {
+          id: newUserId,
+          nombre,
+          sucursal,
+          rol,
+          organizacion_id: organizacionId,
+          email,
+          last_sign_in_at: null,
+          active: true,
+        },
       });
     }
 
     if (action === "update") {
       const userId = body?.userId;
       const nombre = body?.nombre;
-      const sucursal = body?.sucursal ?? null;
+      const sucursal = body?.sucursal || null;
       const rol = body?.rol;
 
       if (typeof userId !== "string") {
@@ -202,10 +265,16 @@ Deno.serve(async (req) => {
 
       const { data: target } = await adminClient
         .from("perfiles")
-        .select("rol")
+        .select("rol, organizacion_id")
         .eq("id", userId)
         .single();
       if (!target) return json({ error: "Usuario no encontrado." }, 404);
+
+      const sucError = await sucursalError(
+        sucursal,
+        target.organizacion_id as string,
+      );
+      if (sucError) return json({ error: sucError }, 400);
 
       if (userId === callerId && rol !== "megadmin") {
         return json({ error: "No puedes cambiar tu propio rol de megadmin." }, 400);
@@ -221,7 +290,12 @@ Deno.serve(async (req) => {
         .update({ nombre: nombre.trim(), sucursal, rol }).eq("id", userId);
       if (updateError) return json({ error: updateError.message }, 500);
 
-      await logAction("update_user", userId, { nombre, sucursal, rol, old_rol: target.rol });
+      await logAction(
+        "update_user",
+        userId,
+        { nombre, sucursal, rol, old_rol: target.rol },
+        target.organizacion_id as string,
+      );
       return json({ ok: true });
     }
 
@@ -254,7 +328,12 @@ Deno.serve(async (req) => {
         .updateUserById(userId, { ban_duration: active ? "none" : BAN_FOREVER });
       if (updateError) return json({ error: updateError.message }, 500);
 
-      await logAction(active ? "activate_user" : "deactivate_user", userId, {});
+      await logAction(
+        active ? "activate_user" : "deactivate_user",
+        userId,
+        {},
+        await orgOf(userId),
+      );
       return json({ ok: true });
     }
 
@@ -276,7 +355,12 @@ Deno.serve(async (req) => {
         .updateUserById(userId, { password: newPassword });
       if (updateError) return json({ error: updateError.message }, 500);
 
-      await logAction("reset_password", userId, { via: "megadmin-users" });
+      await logAction(
+        "reset_password",
+        userId,
+        { via: "megadmin-users" },
+        await orgOf(userId),
+      );
       return json({ ok: true });
     }
 

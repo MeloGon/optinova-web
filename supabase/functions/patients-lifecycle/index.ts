@@ -8,6 +8,9 @@
 //   - con ventas (o pagos, que cuelgan de una venta): no se borra, se archiva (`archivado_en`/
 //     `archivado_por`); solo admin+. Se puede restaurar.
 //
+// Multi-empresa: el paciente debe ser de la misma empresa que quien llama (un megadmin puede con
+// cualquiera) y el supervisor que autoriza también; si no, responde "no existe" para no revelar nada.
+//
 // El nivel SIEMPRE se recalcula aquí (nunca se confía en lo que mande el cliente). Toda acción
 // quede en `audit_logs`. Mismo molde que `megadmin-users`: cliente "caller" (valida el token de
 // quien llama) + cliente `service_role` (bypassa RLS, el único que puede borrar/archivar).
@@ -70,7 +73,7 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile, error: profileError } = await adminClient
       .from("perfiles")
-      .select("rol")
+      .select("rol, organizacion_id")
       .eq("id", callerId)
       .single();
     if (profileError || !callerProfile) {
@@ -83,6 +86,21 @@ Deno.serve(async (req) => {
     const patientId = body?.patientId;
     if (typeof patientId !== "string" || !patientId) {
       return json({ error: "patientId es requerido." }, 400);
+    }
+
+    // Empresa del paciente; si es de otra empresa se trata como inexistente.
+    const { data: patientOrg } = await adminClient
+      .from("pacientes")
+      .select("organizacion_id")
+      .eq("id", patientId)
+      .maybeSingle();
+    const orgId = (patientOrg?.organizacion_id as string | undefined) ?? null;
+    if (
+      patientOrg &&
+      callerRole !== "megadmin" &&
+      orgId !== callerProfile.organizacion_id
+    ) {
+      return json({ error: "El paciente ya no existe." }, 404);
     }
 
     async function resolveTier(): Promise<Tier> {
@@ -112,6 +130,7 @@ Deno.serve(async (req) => {
         entity: "pacientes",
         entity_id: patientId,
         user_email: callerEmail,
+        organizacion_id: orgId,
         detail,
       });
     }
@@ -162,7 +181,7 @@ Deno.serve(async (req) => {
 
           const { data: supervisorProfile } = await adminClient
             .from("perfiles")
-            .select("rol")
+            .select("rol, organizacion_id")
             .eq("id", signIn.user.id)
             .single();
           if (
@@ -172,6 +191,12 @@ Deno.serve(async (req) => {
               { error: "Esa cuenta no tiene permiso de supervisor." },
               403,
             );
+          }
+          if (
+            supervisorProfile.rol !== "megadmin" &&
+            supervisorProfile.organizacion_id !== orgId
+          ) {
+            return json({ error: "Ese supervisor es de otra empresa." }, 403);
           }
           authorizedBy = signIn.user.email ?? signIn.user.id;
           authorizedRole = supervisorProfile.rol;
