@@ -26,7 +26,10 @@ sobre esas tablas: conviene renombrar fuera de horas de venta. El nombre anterio
 
 ## No hace
 
-Crear el usuario admin de la empresa nueva: eso lo hace la Edge Function `megadmin-users` (acción `create_organization`, siguiente paso).
+Crear el usuario admin de la empresa nueva: eso lo hace la Edge Function `megadmin-users`, acción `create_organization`
+(`nombre`, `sucursal`, `adminNombre`, `adminEmail`, `adminPassword`; v5 desplegada en `optinova-db` el 2026-11-09). Llama a
+`crear_organizacion` con la sesión del megadmin, crea al admin con la empresa en su metadata y, si el correo ya existe o algo falla,
+deshace la empresa para no dejarla sin dueño. Verificada con `deno check`; sin prueba end-to-end (requiere sesión de megadmin).
 Moneda y métodos de pago por empresa siguen fijos.
 
 ## Prueba (transacción revertida, DEV 2026-11-09)

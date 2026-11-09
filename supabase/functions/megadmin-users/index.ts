@@ -8,6 +8,8 @@
 //   - activar/desactivar el acceso, sin borrar nada ({ action: "set_active", userId, active })
 //   - resetear la contraseña de cualquier usuario sin depender de email
 //     ({ action: "reset_password", userId, newPassword })
+//   - dar de alta una empresa nueva con su primera sucursal y su usuario admin
+//     ({ action: "create_organization", nombre, sucursal, adminNombre, adminEmail, adminPassword })
 //
 // Multi-empresa: cada perfil pertenece a una organización. Al crear, `organizacionId` (opcional;
 // por defecto la del megadmin que llama) viaja en `user_metadata` para que `handle_new_user` cree
@@ -297,6 +299,85 @@ Deno.serve(async (req) => {
         target.organizacion_id as string,
       );
       return json({ ok: true });
+    }
+
+    if (action === "create_organization") {
+      const nombre = body?.nombre;
+      const sucursal = body?.sucursal;
+      const adminNombre = body?.adminNombre;
+      const adminEmail = body?.adminEmail;
+      const adminPassword = body?.adminPassword;
+
+      if (typeof nombre !== "string" || !nombre.trim()) {
+        return json({ error: "El nombre de la empresa es requerido." }, 400);
+      }
+      if (typeof sucursal !== "string" || !sucursal.trim()) {
+        return json({ error: "La primera sucursal es requerida." }, 400);
+      }
+      if (typeof adminNombre !== "string" || !adminNombre.trim()) {
+        return json({ error: "El nombre del administrador es requerido." }, 400);
+      }
+      if (typeof adminEmail !== "string" || !adminEmail.includes("@")) {
+        return json({ error: "Correo inválido." }, 400);
+      }
+      if (typeof adminPassword !== "string" || adminPassword.length < 6) {
+        return json(
+          { error: "La contraseña debe tener al menos 6 caracteres." },
+          400,
+        );
+      }
+
+      // La empresa se crea con la sesión de quien llama: la función SQL exige megadmin y deja la
+      // auditoría a su nombre.
+      const { data: orgId, error: orgError } = await callerClient.rpc(
+        "crear_organizacion",
+        { p_nombre: nombre, p_sucursal: sucursal },
+      );
+      if (orgError || !orgId) {
+        return json({ error: orgError?.message ?? "No se pudo crear la empresa." }, 400);
+      }
+
+      // Si el administrador no se puede crear (p. ej. el correo ya existe), se deshace la empresa
+      // para no dejar una empresa sin dueño.
+      async function undoOrganization() {
+        await adminClient.from("audit_logs").delete().eq("organizacion_id", orgId);
+        await adminClient.from("app_config").delete().eq("organizacion_id", orgId);
+        await adminClient.from("sucursales").delete().eq("organizacion_id", orgId);
+        await adminClient.from("organizaciones").delete().eq("id", orgId);
+      }
+
+      const { data: created, error: createError } = await adminClient.auth.admin
+        .createUser({
+          email: adminEmail,
+          password: adminPassword,
+          email_confirm: true,
+          user_metadata: { organizacion_id: orgId },
+        });
+      if (createError || !created?.user) {
+        await undoOrganization();
+        return json({ error: createError?.message ?? "No se pudo crear el administrador." }, 400);
+      }
+
+      const sucursalNombre = sucursal.trim().replace(/\s+/g, " ").toUpperCase();
+      const { error: updateError } = await adminClient.from("perfiles")
+        .update({ nombre: adminNombre.trim(), sucursal: sucursalNombre, rol: "admin" })
+        .eq("id", created.user.id);
+      if (updateError) {
+        await adminClient.auth.admin.deleteUser(created.user.id);
+        await undoOrganization();
+        return json({ error: updateError.message }, 500);
+      }
+
+      await logAction(
+        "create_user",
+        created.user.id,
+        { nombre: adminNombre, sucursal: sucursalNombre, rol: "admin", email: adminEmail },
+        orgId as string,
+      );
+      return json({
+        organization: { id: orgId, nombre: nombre.trim(), sucursal: sucursalNombre },
+        admin: { id: created.user.id, email: adminEmail },
+      });
     }
 
     if (action === "set_active") {
