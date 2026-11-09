@@ -109,6 +109,23 @@ Se repitió la clonación (`clone-prod-to-dev.sh --with-data`, mismos conteos en
 
 Cambios frente a la base del 2026-11-06: +13 ventas, +23 líneas, +17 pagos, +10 pacientes, +10 revisiones, +1 armazón, +8 egresos. Las migraciones se comportaron igual: 191 huérfanas (22 / 12 / 86 remisiones; ninguna nueva, ninguna venta eliminada nueva), 257 ventas sin líneas (las mismas), 452 revisiones sin enlazar, folio siguiente 997 834, 0 nacimientos en el futuro. La huella no se movió entre la #8 y la #26. DEV no tiene usuarios de prueba (el vaciado borra `auth.users`): para pruebas en navegador hay que crearlos de nuevo.
 
+## Ensayo con la cadena completa #3 a #31 (2026-11-09)
+
+Se repitió la clonación (`clone-prod-to-dev.sh --with-data`) y se aplicaron las 29 migraciones (#3 a #31, de `20261014230000` a `20261110130000`) una por una con `psql --single-transaction`, todas sin errores. PROD solo se leyó. Esto vació DEV: ya no existen las cuentas `@optinova.test` ni los datos AGY (hay que recrear cuentas para pruebas en navegador).
+
+| Dato | Valor |
+|---|---|
+| ventas / total | 24 866 / 6 983 463.17 (igual que la huella del 2026-11-08) |
+| líneas, huérfanas, ventas sin líneas | 28 675, 191, 257 (iguales) |
+| pagos / pacientes / revisiones | 1 638 / 15 299 (+1) / 17 374 |
+| pacientes archivados | 173 = 34 por unión (#30) + 139 sin nombre (#31) |
+| revisiones sin enlazar | 284 (452 - 168 de la #27) |
+| ventas sin `paciente_id` | 189 (144 sin id + 45 con id de paciente borrado) |
+| folio siguiente / nacimientos en el futuro | 997 834 / 0 |
+| regla de descuentos encendida | 0 sucursales |
+
+El conteo final del script marcó 4 diferencias (+1 venta, +1 pago, +2 auditorías en PROD): Flutter sigue vivo y escribió entre el volcado y el conteo. No es un error de la copia. Los 24 pacientes de prueba de PROD siguen sin archivar: se archivan en el corte.
+
 ## Limpieza antes del corte (cuentas y datos de prueba en DEV)
 
 Decisión del dueño (2026-11-08): todo lo de prueba se borra cuando todo esté listo. Nada de esto debe llegar al corte. El corte parte de una copia fresca de PROD, así que lo ideal es que esta limpieza no haga falta; si se hacen pruebas en DEV con datos reales encima, se borra lo siguiente:
