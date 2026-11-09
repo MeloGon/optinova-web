@@ -175,6 +175,7 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
 
 ### Fase 4b: Multi-empresa / SaaS (mapeado, NO se implementa todavía)
 Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y configura su moneda.
+- [x] **Paso 1 (2026-11-09, migración #32):** `organizaciones` ("Inversiones Oftalvision") y `sucursales`, `organizacion_id` en 10 tablas y `sucursal_id` en 6, texto conservado. Falta el paso 2: RPC, RLS por organización y pantalla de sucursales para el admin (`megadmin` ve todas las empresas; `admin`, solo la suya)
 - [ ] Tabla `organizaciones` (empresa) y `sucursales` con campo `activa` (hoy las sucursales son texto fijo en `ConfigService`: OFTALVISION y MEDILENT activas; OFTALMIC CENTER cerrada, con historial en pacientes, revisiones y ventas cortas). Al migrar, cada texto `SUCURSAL` pasa a `sucursal_id`; ojo con valores `null` y `''` en `revisiones` y `egresos`
 - [ ] `organizacion_id` en todas las tablas + RLS por organización (cada empresa solo ve lo suyo)
 - [ ] Configuración por empresa: moneda (código ISO + símbolo + formato), métodos de pago, zona horaria, logo, color primario
