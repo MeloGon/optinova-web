@@ -13,6 +13,7 @@ import { SaleRepository } from './core/repositories/sale.repository';
 import { BranchSettingsRepository } from './core/repositories/branch-settings.repository';
 import { DiscountAuthorizationRepository } from './core/repositories/discount-authorization.repository';
 import { TeamPermissionsRepository } from './core/repositories/team-permissions.repository';
+import { BranchAdminRepository } from './core/repositories/branch-admin.repository';
 import { UserAdminRepository } from './core/repositories/user-admin.repository';
 import { FakeAppConfigRepository } from './testing/fake-app-config.repository';
 import { FakeBranchSettingsRepository } from './testing/fake-branch-settings.repository';
@@ -23,6 +24,7 @@ import { FakeDashboardRepository } from './testing/fake-dashboard.repository';
 import { FakePaymentRepository } from './testing/fake-payment.repository';
 import { FakePaymentsReportRepository } from './testing/fake-payments-report.repository';
 import { FakeSaleRepository } from './testing/fake-sale.repository';
+import { FakeBranchAdminRepository } from './testing/fake-branch-admin.repository';
 import { FakeUserAdminRepository } from './testing/fake-user-admin.repository';
 
 describe('Rutas y guards', () => {
@@ -45,6 +47,8 @@ describe('Rutas y guards', () => {
         { provide: PaymentsReportRepository, useValue: new FakePaymentsReportRepository() },
         // Usuarios (E2.8) lo pide su propio store al entrar.
         { provide: UserAdminRepository, useValue: new FakeUserAdminRepository() },
+        // Sucursales (Fase 4b) lo pide su propio store al entrar.
+        { provide: BranchAdminRepository, useValue: new FakeBranchAdminRepository() },
         // Features (E2.8) y "cambiar fecha" de Historial de ventas leen app_config.
         { provide: AppConfigRepository, useValue: new FakeAppConfigRepository() },
         // Features (E2.8) también lista/administra el permiso por vendedor.

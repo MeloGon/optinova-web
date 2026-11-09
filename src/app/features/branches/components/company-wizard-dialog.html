@@ -1,0 +1,84 @@
+<form [formGroup]="form" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="border-b border-border px-6 py-4">
+    <h2 [id]="titleId" class="text-heading">Nueva empresa</h2>
+    <p class="mt-0.5 text-caption text-muted-foreground">Paso {{ step() + 1 }} de {{ stepTitles.length }} · {{ stepTitles[step()] }}</p>
+  </div>
+
+  <div class="flex flex-col gap-4 p-6">
+    @switch (step()) {
+      @case (0) {
+        <onv-field
+          label="Nombre de la empresa"
+          inputId="company-name"
+          [required]="true"
+          [errors]="{ required: 'Ingresa el nombre de la empresa.', maxlength: 'Máximo 100 caracteres.' }"
+        >
+          <input id="company-name" onvInput formControlName="name" placeholder="Ej. Óptica Central S.A.C." />
+        </onv-field>
+      }
+      @case (1) {
+        <onv-field
+          label="Nombre de la primera sucursal"
+          inputId="company-branch"
+          [required]="true"
+          hint="Toda empresa nace con una sucursal. Después podrás crear más. Se guarda en mayúsculas."
+          [errors]="{ required: 'Ingresa el nombre de la sucursal.', maxlength: 'Máximo 60 caracteres.' }"
+        >
+          <input id="company-branch" onvInput formControlName="branch" placeholder="Ej. PRINCIPAL" />
+        </onv-field>
+      }
+      @case (2) {
+        <onv-field label="Nombre" inputId="admin-name" [required]="true" [errors]="{ required: 'Ingresa el nombre.' }">
+          <input id="admin-name" onvInput formControlName="adminName" placeholder="Ej. Ana Pérez" />
+        </onv-field>
+        <onv-field
+          label="Correo"
+          inputId="admin-email"
+          [required]="true"
+          [errors]="{ required: 'Ingresa el correo.', email: 'Correo inválido.' }"
+        >
+          <input id="admin-email" type="email" onvInput formControlName="adminEmail" />
+        </onv-field>
+        <onv-field
+          label="Contraseña"
+          inputId="admin-password"
+          [required]="true"
+          hint="Es el administrador de la empresa: podrá crear y cerrar sus sucursales."
+          [errors]="{ required: 'Ingresa una contraseña.', minlength: 'Debe tener al menos 6 caracteres.' }"
+        >
+          <input id="admin-password" type="password" onvInput formControlName="adminPassword" placeholder="••••••••" />
+        </onv-field>
+      }
+    }
+
+    @if (error(); as message) {
+      <div role="alert" class="flex items-start gap-2 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground">
+        <svg [lucideIcon]="alertIcon" [size]="16" class="mt-0.5 shrink-0"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-between gap-2 rounded-b-xl border-t border-border bg-background px-6 py-3">
+    <button
+      type="button"
+      (click)="step() === 0 ? cancel() : back()"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center rounded-md px-4 text-[14px] font-medium hover:bg-muted disabled:opacity-50"
+    >
+      {{ step() === 0 ? 'Cancelar' : 'Atrás' }}
+    </button>
+    <button
+      type="submit"
+      [disabled]="saving()"
+      class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active disabled:cursor-wait disabled:opacity-70"
+    >
+      @if (saving()) {
+        <span class="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+        Creando…
+      } @else {
+        {{ isLast() ? 'Crear empresa' : 'Siguiente' }}
+      }
+    </button>
+  </div>
+</form>

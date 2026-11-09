@@ -160,6 +160,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/app-features/app-features.page').then((m) => m.AppFeaturesPage),
       },
       {
+        path: 'settings/branches',
+        title: 'Sucursales · Optinova',
+        data: {
+          title: 'Sucursales',
+          description: 'Crea, renombra y cierra las sucursales de tu empresa.',
+          minRole: 'admin',
+        } satisfies PageData,
+        canActivate: [roleGuard('admin')],
+        loadComponent: () => import('./features/branches/branches.page').then((m) => m.BranchesPage),
+      },
+      {
         path: 'settings/users-management',
         title: 'Usuarios · Optinova',
         data: {

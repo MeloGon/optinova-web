@@ -10,6 +10,7 @@ import {
   LucideShieldCheck,
   LucideShoppingCart,
   LucideSlidersHorizontal,
+  LucideStore,
   LucideUsers,
   LucideWallet,
 } from '@lucide/angular';
@@ -74,6 +75,7 @@ export const DASHBOARD_NAV: DashboardNavSection[] = [
         path: '/dashboard/settings/features',
         minRole: 'supervisor',
       },
+      { label: 'Sucursales', icon: LucideStore, path: '/dashboard/settings/branches', minRole: 'admin' },
       { label: 'Auditoría', icon: LucideShieldCheck, path: '/dashboard/settings/audit-logs', minRole: 'admin' },
     ],
   },

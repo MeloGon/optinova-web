@@ -1,0 +1,137 @@
+<div class="mx-auto flex max-w-(--size-content-max) flex-col gap-4 p-4 md:p-6">
+  @if (isMegadmin) {
+    <div class="flex flex-wrap items-end justify-end gap-2">
+      <button
+        type="button"
+        (click)="openNewCompany()"
+        class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md border border-input px-4 text-[14px] font-medium hover:bg-muted"
+      >
+        <svg [lucideIcon]="icons.company" [size]="16"></svg>
+        Nueva empresa
+      </button>
+    </div>
+  }
+
+  @if (store.error(); as message) {
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-3 rounded-md bg-danger-subtle px-3 py-2.5 text-body text-danger-subtle-foreground"
+    >
+      <svg [lucideIcon]="icons.alert" [size]="16" class="shrink-0"></svg>
+      <span class="flex-1">{{ message }}</span>
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex h-8 items-center gap-2 rounded-md border border-current px-3 text-[13px] font-medium hover:bg-card/60"
+      >
+        <svg [lucideIcon]="icons.retry" [size]="14"></svg>
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (!store.loaded()) {
+    <onv-table-card>
+      <table onvTable>
+        <thead>
+          <tr>
+            <th scope="col">Sucursal</th>
+            <th scope="col">Estado</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of skeletonRows; track row) {
+            <tr aria-hidden="true">
+              <td><onv-skeleton class="h-3 w-40" /></td>
+              <td><onv-skeleton class="h-5 w-20 rounded-full" /></td>
+              <td></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </onv-table-card>
+  } @else if (store.groups().length === 0 && !store.error()) {
+    <div class="rounded-lg border border-border bg-card elev-sm">
+      <onv-empty-state [icon]="icons.store" title="Sin sucursales" text="Todavía no hay sucursales registradas." />
+    </div>
+  } @else {
+    @for (group of store.groups(); track group.companyId) {
+      <section class="flex flex-col gap-2" [attr.aria-label]="'Sucursales de ' + group.companyName">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-heading">{{ group.companyName }}</h2>
+          <button
+            type="button"
+            (click)="openNew(group)"
+            class="inline-flex h-(--onv-control-h) items-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
+          >
+            <svg [lucideIcon]="icons.plus" [size]="16"></svg>
+            Nueva sucursal
+          </button>
+        </div>
+
+        <onv-table-card [busy]="store.loading()">
+          <table onvTable>
+            <thead>
+              <tr>
+                <th scope="col">Sucursal</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (branch of group.branches; track branch.id) {
+                <tr [class.opacity-60]="!branch.active">
+                  <td class="font-medium">{{ branch.name }}</td>
+                  <td>
+                    <onv-badge [tone]="branch.active ? 'success' : 'neutral'">{{ branch.active ? 'Abierta' : 'Cerrada' }}</onv-badge>
+                  </td>
+                  <td class="w-10 text-right">
+                    <button
+                      type="button"
+                      [cdkMenuTriggerFor]="rowMenu"
+                      [cdkMenuTriggerData]="{ $implicit: branch }"
+                      [attr.aria-label]="'Más acciones para ' + branch.name"
+                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                    >
+                      <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </onv-table-card>
+      </section>
+    }
+  }
+</div>
+
+<!-- Menú de acciones por fila (C-15). -->
+<ng-template #rowMenu let-branch>
+  <div
+    cdkMenu
+    class="z-(--z-popover) mt-1 min-w-56 rounded-lg border border-border bg-popover p-1 text-popover-foreground elev-lg"
+  >
+    <button
+      cdkMenuItem
+      type="button"
+      (cdkMenuItemTriggered)="openRename(branch)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted"
+    >
+      <svg [lucideIcon]="icons.edit" [size]="16"></svg>
+      Renombrar
+    </button>
+    <button
+      cdkMenuItem
+      type="button"
+      [cdkMenuItemDisabled]="busyBranchId() === branch.id || store.isLastOpen(branch)"
+      [attr.title]="store.isLastOpen(branch) ? 'Es la última sucursal abierta de la empresa.' : null"
+      (cdkMenuItemTriggered)="toggleActive(branch)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] outline-none hover:bg-muted focus:bg-muted disabled:opacity-60"
+    >
+      <svg [lucideIcon]="branch.active ? icons.close : icons.reopen" [size]="16"></svg>
+      {{ branch.active ? 'Cerrar' : 'Reabrir' }}
+    </button>
+  </div>
+</ng-template>
