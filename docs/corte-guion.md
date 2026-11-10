@@ -6,7 +6,7 @@ Cuándo ejecutar: ver "Antes de fijar la fecha".
 ## Idea en una frase
 
 `optinova-db` (`dqofpmpyxumkzlsqcjri`) pasa a ser la base de producción. Se vacía, se copia PROD viejo
-(`gutgxjgfjbodznzjiqtm`) fresco, se aplican las migraciones #3 a #36 y se apunta la app Angular a ella.
+(`gutgxjgfjbodznzjiqtm`) fresco, se aplican las migraciones #3 a #37 y se apunta la app Angular a ella.
 El corte es una **reimportación completa**, no un delta (las tablas no tienen `updated_at`).
 PROD viejo solo se lee, siempre.
 
@@ -29,7 +29,7 @@ Flutter, limpiar datos de prueba y verificar antes de abrir.
 2. Edge Functions desplegadas y con sus secretos en `optinova-db`: `megadmin-users`, `patients-lifecycle`,
    `authorize-discount`. El clon **no** las toca (solo vacía `public` y `auth.users`). Comprobar que existen y responden.
 3. `.env.local` / `environment` de producción de Angular apuntando a `optinova-db` (publishable key). Sin keys en el repo.
-4. Última prueba general: repetir el ensayo completo (clonar + #3 a #36) uno o dos días antes y compararlo con la huella.
+4. Última prueba general: repetir el ensayo completo (clonar + #3 a #37) uno o dos días antes y compararlo con la huella.
 5. Copia de seguridad del ensayo: guardar los conteos finales del ensayo para comparar.
 
 ## Ventana de corte (en orden)
@@ -42,11 +42,11 @@ Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el en
    Se guardan para comparar al final.
 3. **Clonar con datos:** `./scripts/db/clone-prod-to-dev.sh --with-data` (pide escribir `SI`; vacía `optinova-db`).
    Debe terminar en "OK: PROD y DEV tienen los mismos conteos". Como Flutter está congelado, ya no debe haber diferencias.
-4. **Migraciones #3 a #36**, una por una:
+4. **Migraciones #3 a #37**, una por una:
    ```bash
    export PATH=/opt/homebrew/opt/libpq/bin:$PATH
    DEV=$(grep -E '^DEV_DB_URL=' .env.db | cut -d= -f2- | tr -d "\"'")
-   for f in $(ls supabase/migrations/*.sql | sed -n '3,36p'); do
+   for f in $(ls supabase/migrations/*.sql | sed -n '3,37p'); do
      echo "$f"; psql "$DEV" --single-transaction -v ON_ERROR_STOP=1 -q -f "$f" || break
    done
    ```
@@ -55,13 +55,11 @@ Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el en
    - ventas y `total` iguales a PROD viejo; `pagos` y `monto` iguales;
    - 191+ líneas en `venta_items_huerfanos` (crece si Flutter creó más), ventas sin líneas igual que PROD;
    - 0 nacimientos en el futuro; folio siguiente 997 834 o más;
-   - pacientes archivados = unidos (#30) + vacíos (#31) del día;
-   - 0 ventas colgadas de pacientes archivados;
+   - pacientes archivados = unidos (#30) + vacíos (#31) + 24 de prueba (#37) del día;
+   - 0 ventas colgadas de pacientes archivados por #30 y #31 (las 16 ventas de las fichas de prueba de #37 sí quedan colgadas, a propósito);
    - 0 sucursales con `descuento_requiere_autorizacion` encendido;
    - 0 cuentas `@optinova.test` y 0 pacientes `AGY%`.
-6. **Archivar los 24 pacientes de prueba de PROD** ("CLIENTE DE PRUEBA", "prueba", "SISTEMAS OPTOX…"; 16 ventas S/. 1 872, 7 revisiones).
-   Archivar, no borrar. Mostrar la lista al dueño antes y repetir el conteo después. Hacerlo como migración #37 re-ejecutable
-   (con transform y entrada en `db-changes.md`) para que quede reproducible.
+6. **Pacientes de prueba:** la migración #37 (ya dentro de la cadena) archiva los 24 de PROD. Comprobar que los pacientes activos bajaron en 24 respecto a #31 y que las ventas siguen iguales.
 7. **Advisors de Supabase** sobre `optinova-db`: sin hallazgos nuevos (solo el INFO esperado de `venta_items_huerfanos`).
 8. **Prueba de humo en navegador** con cuentas reales (cada rol): entrar, buscar un paciente, ver una ficha con su historial,
    dashboard, historial y reportes. No vender de prueba: la venta quedaría en la base real. Los usuarios tendrán que
@@ -103,7 +101,7 @@ Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el en
 | Paso | Quién |
 |---|---|
 | Avisar al personal, congelar y abrir | Dueño |
-| Clonar, migraciones, huella, advisors, #37 | Claude (con el "sí" del dueño antes de vaciar `optinova-db`) |
+| Clonar, migraciones, huella y advisors | Claude (con el "sí" del dueño antes de vaciar `optinova-db`) |
 | Prueba en navegador | Antigravity y dueño |
 | Protección de contraseñas filtradas, dominio y despliegue | Dueño |
 | Plan, status y registro | Codex |
