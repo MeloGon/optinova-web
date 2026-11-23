@@ -42,13 +42,17 @@ function today(): string {
 export class ExpenseFormDialog {
   private readonly data = inject<ExpenseFormDialogData>(DIALOG_DATA);
   private readonly ref = inject<DialogRef<boolean>>(DialogRef);
-  private readonly config = inject(ConfigService).config;
+  private readonly configService = inject(ConfigService);
+  private readonly config = this.configService.config;
 
   protected readonly titleId = EXPENSE_FORM_TITLE_ID;
   protected readonly alertIcon = LucideTriangleAlert;
   protected readonly isEditing = this.data.expense !== null;
   protected readonly categories = this.data.categories;
-  protected readonly branches = this.config().branches;
+  // Solo sucursales abiertas; al editar se conserva la del egreso aunque ya esté cerrada.
+  protected readonly branches = this.configService
+    .config()
+    .branches.filter((b) => b.active || b.value === this.data.expense?.branch);
   protected readonly paymentMethods = this.config().paymentMethods;
 
   protected readonly form = new FormGroup({
