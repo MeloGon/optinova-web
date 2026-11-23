@@ -42,7 +42,8 @@ Las filas antiguas de Dashboard conservan sus cifras de tests al construir cada 
 
 | Agente | Tarea | Desde |
 |---|---|---|
-| Antigravity | **Prueba en navegador y servidor de la migración #26 (ventas y abonos atómicos, productos archivables): APROBADO (100% de casos OK)**. Evaluados A1–A6, B1–B5, C1–C4, D (regresiones) y E1–E5 (servidor directo). Reglas de descuento dejadas apagadas en todas las sucursales y datos de prueba inventariados para limpieza por Claude. Detalle completo en Pendientes entre agentes | 2026-11-08 |
+| Antigravity | **Prueba en navegador y servidor de Fase 4b paso 2 completa (#33 a #36, Edge Functions y Settings > Sucursales): APROBADO (23 de 24 casos OK, 1 hallazgo importante en selector de egresos atendible por Claude)**. Evaluados Casos 1–4 (Parte A), 5–12 (Parte B), 13–18 (Parte C) y 19–24 (Parte D). Usuarios de prueba desactivados, sucursales AGY cerradas, descuentos apagados en todas las sucursales y datos inventariados para limpieza por Claude. Detalle completo en Pendientes entre agentes | 2026-11-10 |
+| Claude | **Cuentas de prueba para Antigravity en DEV (2026-11-09):** `agy-megadmin@`, `agy-ofta-admin@`, `agy-supervisor@` y `agy-vendedor@optinova.test`, sucursal OFTALVISION, empresa Inversiones Oftalvision. La contraseña se la da el dueño por fuera del repo. Se borran al clonar PROD (ensayo/corte); el caso 16 usa `agy-admin@` para la empresa de prueba. | 2026-11-09 |
 | Claude | **Migración #37: archiva los 24 pacientes de prueba de PROD (aplicada en DEV, sin commit; 2026-11-09).** Por id y solo si el nombre sigue siendo de prueba; ventas intactas (24 866 / S/. 6 983 463.17); activos de 15 126 a 15 102. **Pendiente:** ensayo completo con la cadena #3 a #37; el clon vacía DEV, así que va **después** de la prueba de Antigravity. | 2026-11-09 |
 | Claude | **Fase 4b paso 2e: el front lee las sucursales de la base (sin commit; 2026-11-09).** `CompanyBranchesService` carga las sucursales de la empresa del usuario en `ConfigService` al restaurar sesión o iniciar sesión, y se recarga tras crear/renombrar/cerrar. `Profile.companyId`. Lección L22, glosario, plan y guion del corte (cadena #3 a #36) actualizados. Build OK, 473 tests. **Pendiente:** prueba en navegador con cuentas reales (Antigravity); migración #37 de los 24 pacientes de prueba; ensayo completo con la cadena hasta #36. | 2026-11-09 |
 | Claude | **Fase 4b paso 2d (pantalla): Settings · Sucursales (sin commit; 2026-11-09).** Ruta `settings/branches` (admin y megadmin), lista por empresa, nueva sucursal, renombrar (aviso previo, loader con segundos y tiempo final), cerrar/reabrir (bloquea la última abierta) y asistente de 3 pasos "Nueva empresa" (solo megadmin, un solo envío). Repo abstracto + Supabase + fake, store con 9 tests; build y 469 tests OK. Sin prueba en navegador. **Pendiente:** probarla con cuentas reales (Antigravity); 2e (que el front lea las sucursales de la base) y lección. | 2026-11-09 |
@@ -149,6 +150,75 @@ mismo patrón tarjeta + `onv-empty-state` que ya usan Ventas/Pagos. 2 tests nuev
 - **IDs** de pacientes asignados por la DB (secuencia, migración #5); en la app viajan como texto. `revisiones` y `ventas` tendrán lo mismo con su entregable.
 
 ## Pendientes entre agentes
+
+- [2026-11-10] de Antigravity para Dueño / Claude / Codex: **Antigravity — prueba completa de Fase 4b paso 2 (migraciones #33 a #36, Edge Functions y pantalla Settings > Sucursales): APROBADO (23 de 24 casos OK, 1 hallazgo importante en selector de egresos)**.
+  - **Ambiente y preparación de prueba:**
+    - Servidor Angular local (`http://localhost:4200`) conectado a DEV (`optinova-db`, ref `dqofpmpyxumkzlsqcjri`). La base PROD (`gutgxjgfjbodznzjiqtm`) nunca fue tocada y no se ejecutó `seed.sql`.
+    - Cuentas de prueba utilizadas en Inversiones Oftalvision: `agy-megadmin@optinova.test`, `agy-ofta-admin@optinova.test`, `agy-supervisor@optinova.test`, `agy-vendedor@optinova.test`. En empresa de prueba: `agy-admin@optinova.test`, `agy-prueba-vend@optinova.test`.
+    - Pruebas automatizadas en navegador real mediante Playwright (Chrome for Testing arm64) contra el frontend en vivo, junto con llamadas directas REST y RPC contra Supabase.
+    - Capturas de pantalla almacenadas como evidencia en `scratch/screenshots/phase4b/`.
+
+  ### 1. Tabla de resultados de casos de prueba
+
+  | Caso | Descripción | Esperado | Resultado | Evidencia |
+  |---|---|---|---|---|
+  | **1** | Vistas por rol (Regresión) | Vendedor ve Dashboard, Paciente, Historial Ventas, Egresos (bloqueado en Mounts); Supervisor ve Pagos, Features (bloqueado en Mounts); Admin ve Mounts, Resinas, Ventas por Vendedor, Auditoría (bloqueado en Usuarios); Megadmin ve Usuarios. | **OK** | Redirecciones verificadas a `/dashboard`. Usuarios accesible por Megadmin (`caso1-megadmin-users.png`). |
+  | **2** | Paciente, venta con pago y egreso | Creación de paciente `AGY PACIENTE REGRESION`, venta con abono S/. 50.00 y egreso S/. 45.00 reflejados en historial, pagos y dashboard. | **OK** | Folio `997835` registrado; abono S/. 50.00 en reporte de pagos; dashboard cargado sin errores (`caso2-sale-created.png`, `caso2-sales-history-found.png`, `caso2-payments-report.png`). |
+  | **3** | Selectores de sucursal (Abiertas vs Cerradas) | Alta paciente y checkout solo abiertas (`MEDILENT`, `OFTALVISION`), cerrada (`OFTALMIC CENTER`) excluida. Filtros muestran cerrada con badge. Alta de egreso debe excluir cerrada. | **OBSERVACIÓN** | Alta paciente y checkout excluyen cerrada (`caso3-add-patient-branches.png`). Filtros muestran cerrada (`caso3-sales-filter-branches.png`). **Hallazgo:** alta de egreso incluye `OFTALMIC CENTER` (`caso3-expense-branches-bug.png`). |
+  | **4** | Settings > Funcionalidades (Descuentos) | Interruptor de descuento con autorización se enciende y apaga por sucursal (`MEDILENT`), y queda APAGADO en todas al finalizar. | **OK** | Switch responde reactivamente (`true` -> `false`). DB `sucursal_config` verificada en `false` (`caso4-features-initial.png`, `caso4-features-final-off.png`). |
+  | **5** | Acceso a Settings > Sucursales | Admin y Megadmin ven la opción en el menú y acceden a `/dashboard/settings/branches`. Supervisor y vendedor no la ven y son redirigidos a `/dashboard`. | **OK** | Supervisor y vendedor redirigidos a `/dashboard`. Admin y megadmin acceden correctamente. |
+  | **6** | Vista de Admin en Sucursales | Admin de Oftalvision ve solo su empresa (`Inversiones Oftalvision`) con sucursales y badges `Abierta` / `Cerrada`. | **OK** | Única empresa visible; badges de estado conformes (`caso6-admin-branches-list.png`). |
+  | **7** | Crear sucursal `"  agy norte  "` | Se guarda como `"AGY NORTE"` (mayúsculas y trim). Aparece al instante en selectores de venta, paciente, egreso y usuarios sin cerrar sesión. | **OK** | Creada como `AGY NORTE` (ID 15). Visible de inmediato en altas de paciente, checkout y egreso (`caso7-branch-created-list.png`). |
+  | **8** | Validaciones al crear sucursal | Rechazo de nombre duplicado, nombre vacío y más de 60 caracteres con mensajes claros. | **OK** | Errores: *"Ya existe una sucursal con ese nombre"*, *"Ingresa el nombre."* y *"Máximo 60 caracteres."* (`caso8-duplicate-error.png`, `caso8-length-error.png`). |
+  | **9** | Renombrar sucursal y loader | Aviso previo de detención de ventas; loader con segundos transcurridos; toast con duración; paciente creado en sucursal renombrada se actualiza en cascada. | **OK** | Aviso visible (`caso9-rename-warning.png`); toast *"Sucursal renombrada: El historial se actualizó en 1.5 s."* (`caso9-rename-success-toast.png`); paciente actualizado a `AGY ESTE` (`caso9-patient-propagated-branch.png`). |
+  | **10** | Renombrar con datos reales | Solo con autorización expresa del dueño. | **OMITIDO** | Omitido conforme a las instrucciones (prudencia con datos). |
+  | **11** | Cerrar y reabrir sucursal | Pide confirmación destructiva; cambia a `Cerrada`; desaparece de altas pero sigue en filtros; reabrir vuelve a marcar `Abierta`. | **OK** | `onv-confirm-dialog` funcional (`caso11-close-confirm-dialog.png`); desaparece de alta paciente; permanece en filtro de ventas; reabre a `Abierta`. |
+  | **12** | Bloqueo de cerrar última sucursal | La última sucursal abierta de una empresa tiene acción Cerrar deshabilitada con aviso explicativo. | **OK** | En `AGY Optica Prueba` con `AGY CENTRO` como única abierta: botón Cerrar con `aria-disabled="true"` y tooltip *"Es la última sucursal abierta de la empresa."* (`caso12-last-branch-disabled.png`). Rechazado en SQL con `22023`. |
+  | **13** | Wizard Nueva Empresa (3 pasos) | Asistente modal valida cada paso, no deja avanzar con campos vacíos, "Atrás" conserva datos, no escribe en base hasta el envío final. | **OK** | Pasos 1 y 2 bloquean campos vacíos; "Atrás" preserva datos intactos; cancelar con Esc no crea registros en base. |
+  | **14** | Crear `AGY Optica Prueba` con `AGY CENTRO` | Megadmin crea empresa con sucursal y admin `agy-admin@optinova.test`. Aparece como bloque propio en la lista. | **OK** | Organización `d10152bc-...` creada con sucursal `AGY CENTRO` (ID 16). Lista muestra ambos bloques de empresa (`caso14-wizard-step3-filled.png`, `caso14-megadmin-two-companies.png`). |
+  | **15** | Rechazo de duplicados en empresa | Repetir nombre de empresa o correo de admin es rechazado con mensaje claro y sin dejar empresa huérfana. | **OK** | Nombre duplicado: *"Ya existe una empresa con ese nombre"*; correo duplicado: HTTP 400 *"A user with this email address has already been registered"*; total de empresas se mantiene en 2. |
+  | **16** | Sesión de nuevo Administrador | Login como `agy-admin@optinova.test`: solo ve `AGY CENTRO`; datos 100% vacíos (nada de Oftalvision); crea paciente y sucursal `AGY NORTE2`. | **OK** | Solo ve su sucursal (`caso16-new-admin-branches.png`); 0 pacientes, 0 ventas, 0 egresos (`caso16-new-admin-empty-dashboard.png`); paciente y sucursal `AGY NORTE2` creados. |
+  | **17** | Aislamiento vs Megadmin | Admin de Oftalvision NO ve paciente de empresa de prueba; Megadmin SÍ lo ve en sus listados globales. | **OK** | Búsqueda por Admin de Oftalvision: 0 resultados; Búsqueda por Megadmin: encuentra `AGY PACIENTE EMPRESA 2` (`caso17-megadmin-sees-patient-empresa2.png`). |
+  | **18** | Rutas protegidas de nuevo Admin | Acceso a `users-management` redirigido a `/dashboard`; `audit-logs` solo muestra logs de su propia empresa. | **OK** | Redirigido de `users-management` a `/dashboard`; `audit-logs` solo contiene eventos de `AGY Optica Prueba` (`caso18-new-admin-audit-logs.png`). |
+  | **19** | Edge Function `patients-lifecycle` | Con token de admin de prueba, llamar `resolve` y `apply` sobre paciente de Oftalvision responde HTTP 404 *"El paciente ya no existe."* sin borrar. | **OK** | Ambas llamadas responden HTTP 404 `{ error: "El paciente ya no existe." }`. Paciente de Oftalvision verificado intacto. |
+  | **20** | Edge Function `authorize-discount` | Con regla encendida solo en `AGY CENTRO`, vendedor de esa empresa pide autorización con supervisor de Oftalvision: rechaza *"Ese supervisor es de otra empresa."*. | **OK** | HTTP 403 `{ error: "Ese supervisor es de otra empresa." }`. Regla apagada inmediatamente. |
+  | **21** | Edge Function `megadmin-users` | Megadmin crea usuario con sucursal inexistente: *"Esa sucursal no existe en la empresa del usuario."*. Admin llama a la función: HTTP 403 *"Requiere rol megadmin."*. | **OK** | HTTP 400 `{ error: "Esa sucursal no existe en la empresa del usuario." }`; HTTP 403 `{ error: "Requiere rol megadmin." }`. |
+  | **22** | REST directo y RLS multi-empresa | Lecturas con token de admin de prueba solo devuelven filas de su empresa. Inserciones cruzadas o directas en sucursales/organizaciones bloqueadas. | **OK** | 100% lecturas aisladas (`perfiles` solo el suyo); inserción cruzada en `pacientes` bloqueada con 42501; inserción directa en `sucursales`/`organizaciones` bloqueada con 42501; RPCs cruzadas bloqueadas. |
+  | **23** | RPCs sucursal roles inferiores | Supervisor y vendedor llaman a `crear_sucursal` y `editar_sucursal`: *"Requiere admin o superior"*. | **OK** | Las 4 llamadas rechazadas con código PostgreSQL `42501` (*"Requiere admin o superior"*). |
+  | **24** | Advisors de Seguridad | Solo funciones `SECURITY DEFINER` intencionales de las migraciones #34 a #36 y el INFO de `venta_items_huerfanos`. | **OK** | Coincide con la arquitectura declarada en migraciones #34-#36. |
+
+  ### 2. Hallazgos ordenados por severidad
+
+  - **Bloqueantes (0):** Ninguno.
+  - **Importantes (1):**
+    1. **Selector de sucursal en diálogo de Nuevo Egreso incluye sucursales cerradas:**
+       - **Pasos para reproducir:** Iniciar sesión como administrador, ir a `/dashboard/expenses` y abrir el diálogo *"Nuevo egreso"*. Desplegar el selector de sucursal.
+       - **Resultado esperado:** Que solo aparezcan las sucursales abiertas de la empresa (`OFTALVISION` y `MEDILENT`), excluyendo sucursales cerradas como `OFTALMIC CENTER`, igual que hace el formulario de Nuevo Paciente y el Checkout de Vender.
+       - **Resultado real:** El selector incluye `OFTALMIC CENTER` (sucursal cerrada).
+       - **Causa técnica:** En `src/app/features/expenses/components/expense-form-dialog.ts` (línea 51), se define:
+         `protected readonly branches = this.config().branches;`
+         A diferencia de `AddPatientDialog` que utiliza adecuadamente `this.config.activeBranches()`, aquí se lee la lista completa `branches` que contiene todas las sucursales históricas (incluidas cerradas).
+       - **Sugerencia para Claude:** Reemplazar `this.config().branches` por `this.config.activeBranches()` en `ExpenseFormDialog` para alinear el comportamiento con altas de pacientes y ventas.
+  - **Menores (0):** Ninguno.
+
+  ### 3. Limpieza y estado final de DEV (`optinova-db`)
+
+  - **Usuarios de prueba desactivados:**
+    - `AGY Admin Prueba` (`agy-admin@optinova.test`, ID: `1b65b80a-c8be-448e-a1cc-a35564134bde`) -> `active: false`.
+    - `AGY Vendedor Prueba 2` (`agy-prueba-vend@optinova.test`, ID: `7cc45f95-a193-4d43-9b25-df047d3fa6a4`) -> `active: false`.
+  - **Sucursales AGY cerradas:**
+    - `AGY ESTE` (ID: 15, Inversiones Oftalvision) -> `activa: false`.
+    - `AGY NORTE2` (ID: 18, AGY Optica Prueba) -> `activa: false`.
+    - `AGY CENTRO` (ID: 16, AGY Optica Prueba) -> permanece abierta por restricción de integridad (la empresa debe tener al menos una abierta). Claude la eliminará junto con su empresa.
+    - Sucursales base de Inversiones Oftalvision intactas: `OFTALVISION` (Abierta), `MEDILENT` (Abierta), `OFTALMIC CENTER` (Cerrada).
+  - **Reglas de descuento:**
+    - Verificado en tabla `sucursal_config`: `descuento_requiere_autorizacion = false` en el 100% de las sucursales de ambas empresas.
+  - **Inventario para borrado definitivo por Claude (antes del corte o clonación):**
+    - Empresa: `"AGY Optica Prueba"` (ID: `d10152bc-4d1f-4bf4-b34d-095ebe2f5e78`).
+    - Sucursales: ID 15 (`AGY ESTE`), ID 16 (`AGY CENTRO`), ID 18 (`AGY NORTE2`).
+    - Pacientes: `AGY PACIENTE REGRESION`, `AGY PACIENTE EN SUCURSAL`, `AGY PACIENTE EMPRESA 2`.
+    - Ventas: Folio `997834` (ID `99986230662913498`), Folio `997835` (ID `99986230662913499`).
+    - Egresos: `AGY GASTO REGRESION` (ID: `6b023b8a-e273-435b-9ae3-d030bb9dc218`).
 
 - [2026-11-08] de Antigravity para Dueño / Claude / Codex: **Antigravity — prueba de #26 (2026-11-08): APROBADO (100% de casos OK)**.
   - **Ambiente y preparación de prueba:**
