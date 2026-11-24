@@ -15,11 +15,12 @@ Flutter, limpiar datos de prueba y verificar antes de abrir.
 
 ## Antes de fijar la fecha (lista de salida)
 
-- [ ] Todo lo que se quiera probar en navegador ya está probado por Antigravity sobre una copia reciente.
-- [ ] Commits de #30, #31 y el ensayo subidos (`git push` con el "sí" del dueño) y `main` al día con lo estable.
-- [ ] Decidido dónde se aloja la app Angular y su dominio (**por definir**: el repo no lo dice).
+- [x] Antigravity probó Fase 4b paso 2: 23 de 24 casos aprobados; el hallazgo del selector de egresos se corrigió en `4593958`. La reprueba específica del arreglo no está registrada.
+- [x] Commits de #30, #31, Fase 4b, corrección y registro del ensayo publicados en `development` (último registro `95ddb02`).
+- [ ] Actualizar `main` con lo estable cuando corresponda.
+- [ ] Configurar hosting: el dueño eligió Cloudflare Pages, sin dominio propio por ahora.
 - [ ] Decidido qué pasa con Flutter después del corte (ver "Después del corte").
-- [ ] Fase 4b hecha (#32 a #36, pantalla de sucursales). Falta probarla en navegador con cuentas reales.
+- [x] Fase 4b paso 2 hecha y probada (#32 a #36 y pantalla de sucursales); corrección del hallazgo publicada en `4593958`.
 - [ ] "Leaked password protection" activado en el dashboard de Supabase de `optinova-db` (lo hace el dueño).
 - [ ] Mejor hora: fuera de horario de la óptica (poca venta). Avisar al personal con anticipación.
 
@@ -34,7 +35,7 @@ Flutter, limpiar datos de prueba y verificar antes de abrir.
 
 ## Ventana de corte (en orden)
 
-Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el ensayo. Reservar 1 hora completa.
+Duración estimada: el clon y la cadena del ensayo tardaron pocos minutos. Reservar 1 hora completa. El ensayo del 2026-11-23 figura en `95ddb02`; confirmar la lista exacta antes del corte (ver pendiente técnico en `docs/status.md`).
 
 1. **Congelar Flutter.** Avisar al personal: nadie vende ni registra desde este momento. Mientras Flutter
    siga escribiendo, la copia queda desactualizada. Anotar la hora.
@@ -42,7 +43,7 @@ Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el en
    Se guardan para comparar al final.
 3. **Clonar con datos:** `./scripts/db/clone-prod-to-dev.sh --with-data` (pide escribir `SI`; vacía `optinova-db`).
    Debe terminar en "OK: PROD y DEV tienen los mismos conteos". Como Flutter está congelado, ya no debe haber diferencias.
-4. **Migraciones #3 a #37**, una por una:
+4. **Migraciones #3 a #37**, una por una: **no ejecutar el bucle siguiente hasta que Claude confirme el listado**; #20 no tiene archivo SQL y la selección por posiciones puede incluir #2.
    ```bash
    export PATH=/opt/homebrew/opt/libpq/bin:$PATH
    DEV=$(grep -E '^DEV_DB_URL=' .env.db | cut -d= -f2- | tr -d "\"'")
@@ -86,6 +87,7 @@ Duración estimada: el clon y las 29 migraciones tardaron pocos minutos en el en
 3. Crear un proyecto DEV nuevo con datos falsos (`supabase/seed.sql`) para seguir desarrollando. `optinova-db` deja de ser el DEV.
 4. Primeros días: vigilar Auditoría, Dashboard y los reportes; revisar con el personal que las fichas muestren su historial.
 5. Marcar las casillas de la Fase 5 en `docs/migration-plan.md` y anotar el cierre en `docs/status.md`.
+6. Consultar [mejoras frente a Flutter](mejoras-vs-flutter.md) y la [guía de adaptación de Flutter](guia-flutter-sobre-optinova-db.md) para evaluar la decisión pendiente sobre la app anterior.
 
 ## Pendientes conocidos que no bloquean el corte
 

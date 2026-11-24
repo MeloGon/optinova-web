@@ -1,7 +1,7 @@
 # Plan de migración: Oftal Web (Flutter) → Optinova Web (Angular)
 
 > Documento vivo. Se actualiza al cerrar cada entregable (checkbox + fecha + lección).
-> Última actualización: 2026-11-05
+> Última actualización: 2026-11-23
 
 ## 1. Contexto
 
@@ -162,26 +162,26 @@ Cada feature es un entregable con modelo, repo, store, vistas y lección.
   | Usuarios `/dashboard/settings/users-management` | settings: usuarios | Mejora: crear, editar y activar/desactivar además de listar y restablecer contraseña. |
   | Features `/dashboard/settings/features` | settings: flag global | Mejora: flag global y permisos por vendedor/sucursal; `98d9439`, aprobado por Antigravity. |
 
-  Los veredictos resumen el alcance, no garantizan igualdad campo por campo. Persisten pruebas de paridad, límites de API, alcance servidor y pendientes del plan.
+  Los veredictos resumen el alcance, no garantizan igualdad campo por campo. Esta matriz conserva el corte de E2.8; P-04, ventas atómicas y multi-empresa evolucionaron después. Ver [mejoras frente a Flutter](mejoras-vs-flutter.md).
 
-- [ ] Deploy beta (hosting por decidir) apuntando a `optinova-db`
+- [ ] Deploy beta (Cloudflare Pages elegido; configuración pendiente) apuntando a `optinova-db`
 - [ ] Pruebas con usuarios reales en beta
 
 ### Fase 4: Rediseño de DB (opcional, cuando haya paridad)
-- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Revisiones incorporó columnas limpias, fecha, secuencia y FK en E2.3b (#7, dev). E2.5 aplicó la migración #8 en dev: `"ventas cortas"` pasó a `ventas` y el detalle antes llamado `ventas` a `venta_items`, con columnas limpias y FK de paciente; las fechas textuales se conservan como respaldo. E2.6 aplicó #9 (catálogo con columnas limpias) y #10 (secuencias de ID/folio de venta y de detalle) en dev. Las FK se incorporan con cada feature; no se posponen a esta fase. Lecciones L07 para #3–#6, L08 para #7, L11 para #8 y L09 para #9/#10; enlaces históricos ambiguos y ensayo de corte siguen pendientes.
+- Pacientes ya recibió mejoras en sus entregables: fechas (#3), género (#4), IDs automáticos (#5) y columnas/teléfonos (#6). Revisiones incorporó columnas limpias, fecha, secuencia y FK en E2.3b (#7, dev). E2.5 aplicó la migración #8 en dev: `"ventas cortas"` pasó a `ventas` y el detalle antes llamado `ventas` a `venta_items`, con columnas limpias y FK de paciente; las fechas textuales se conservan como respaldo. E2.6 aplicó #9 (catálogo con columnas limpias) y #10 (secuencias de ID/folio de venta y de detalle) en dev. Las FK se incorporan con cada feature; no se posponen a esta fase. Lecciones L07 para #3–#6, L08 para #7, L11 para #8 y L09 para #9/#10; enlaces históricos ambiguos siguen pendientes; el ensayo de la cadena #3–#37 se reportó el 2026-11-23 (`95ddb02`).
 - Cambios posteriores ya documentados en dev: #11 archivo de pacientes, #12–#16 Dashboard, #17 retención de auditoría y #18 secuencia de armazones. #17/#18 están versionadas en `eb1530a`/`9793658`; aplicación en dev según `docs/db-changes.md`. Esta tarea no ejecuta SQL ni modifica prod.
 - [ ] Proponer mejoras adicionales: nombres, `created_at/updated_at`, índices, RLS
 - [ ] Cada cambio = migración + transform + entrada en `db-changes.md` (regla 3)
 
-### Fase 4b: Multi-empresa / SaaS (mapeado, NO se implementa todavía)
+### Fase 4b: Multi-empresa / SaaS (paso 2 implementado y probado)
 Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y configura su moneda.
 - [x] **Paso 1 (2026-11-09, migración #32):** `organizaciones` ("Inversiones Oftalvision") y `sucursales`, `organizacion_id` en 10 tablas y `sucursal_id` en 6, texto conservado. 
-- [x] **Paso 2 (2026-11-09, migraciones #33 a #36):** RLS por organización, funciones y Edge Functions que respetan la empresa, `crear_sucursal`/`editar_sucursal`/`crear_organizacion`, pantalla Settings · Sucursales con alta de empresa en tres pasos y `ConfigService` cargando las sucursales de la empresa del usuario (`megadmin` ve todas; `admin`, solo la suya). Falta: prueba en navegador con cuentas reales (Antigravity)
-- [x] Tabla `organizaciones` (empresa) y `sucursales` con campo `activa` (hoy las sucursales son texto fijo en `ConfigService`: OFTALVISION y MEDILENT activas; OFTALMIC CENTER cerrada, con historial en pacientes, revisiones y ventas cortas). Al migrar, cada texto `SUCURSAL` pasa a `sucursal_id`; ojo con valores `null` y `''` en `revisiones` y `egresos`
+- [x] **Paso 2 (2026-11-09, migraciones #33 a #36):** RLS por organización, funciones y Edge Functions que respetan la empresa, `crear_sucursal`/`editar_sucursal`/`crear_organizacion`, pantalla Settings · Sucursales con alta de empresa en tres pasos y `ConfigService` cargando las sucursales de la empresa del usuario (`megadmin` ve todas; `admin`, solo la suya). Antigravity reportó 23 de 24 casos aprobados; el hallazgo del selector de egresos se corrigió en `4593958`. No se registra una reverificación posterior de ese caso.
+- [x] Tabla `organizaciones` (empresa) y `sucursales` con campo `activa` (OFTALVISION y MEDILENT activas; OFTALMIC CENTER cerrada, con historial; `ConfigService` recibe sucursales desde la base). Al migrar, cada texto `SUCURSAL` pasa a `sucursal_id`; ojo con valores `null` y `''` en `revisiones` y `egresos`
 - [x] `organizacion_id` en todas las tablas + RLS por organización (cada empresa solo ve lo suyo)
 - [ ] Configuración por empresa: moneda (código ISO + símbolo + formato), métodos de pago, zona horaria, logo, color primario
 - [x] Registro de empresas nuevas y primer usuario admin (megadmin, pantalla Sucursales); invitación de usuarios queda pendiente
-- [ ] Al corte (Fase 5), los datos actuales se asignan a la organización "Optinova"
+- [ ] Al corte (Fase 5), repetir y verificar la asignación de los datos a "Inversiones Oftalvision"
 - Momento recomendado: junto con el rediseño de DB (Fase 4), antes del corte, para migrar los datos una sola vez.
 
 **Reglas desde ya** (para no tener que rehacer después):
@@ -190,7 +190,7 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 3. Todo texto de sucursal viene de datos, no de un `enum`.
 
 ### Fase 5: Corte a producción
-- [ ] Ensayo completo en `optinova-db`: vaciar, reimportar PROD fresco y aplicar los transforms en orden
+- [x] Ensayo completo del 2026-11-23 en `optinova-db`: clon fresco de PROD y cadena #3–#37, sin errores reportados; huella contrastada y registro en `95ddb02`. #20 es cambio de cliente sin SQL; confirmar el listado ejecutable antes del corte. El ensayo final cercano a la ventana sigue pendiente.
 - [ ] Ventana de corte: congelar la app Flutter (modo solo lectura o aviso), reimportación final, verificación de conteos
 - [ ] Apuntar la app Angular de producción a `optinova-db` y retirar Flutter
 - [ ] Mantener el proyecto viejo pausado unas semanas como respaldo; luego borrarlo y crear un nuevo proyecto DEV
@@ -205,7 +205,7 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | Riesgo | Mitigación |
 |---|---|
 | Escribir por error en PROD | Regla 1; scripts reciben URLs explícitas; MCP: usar siempre el ref de DEV para escribir |
-| Fuga de datos de pacientes desde DEV | DEV solo tiene datos falsos; secretos fuera de git |
+| Fuga de datos de pacientes desde DEV | El ensayo dejó una copia de PROD en DEV; proteger acceso y secretos, sin subir datos ni claves a git |
 | RLS abiertas: 9 tablas (`pacientes`, `revisiones`, `ventas`, ...) tienen política `true` para el rol `public`, así que **anon** (sin login) puede leer y modificar todo | **Corregido** 2026-10-13 en DEV y PROD (cambio #1 en `db-changes.md`). Pendiente a futuro: restringir por rol (hoy cualquier usuario con sesión puede borrar) |
 | Escalada de rol: la política "own profile update" dejaba que cualquier usuario se pusiera `rol = 'megadmin'` en `perfiles` | **Corregido** 2026-10-14 en DEV y PROD (cambio #2 en `db-changes.md`) |
 | Corte final no reproducible | Migraciones + transforms obligatorios; ensayo de corte antes |
@@ -213,6 +213,9 @@ Objetivo: vender el sistema a otras ópticas. Cada empresa crea sus sucursales y
 | Tutoriales viejos de Angular (NgModules, `*ngIf`) confunden | Usar solo docs oficiales actuales (angular.dev, tailwindcss.com) |
 
 ## 8. Registro
+
+- **2026-11-23 — Fase 4b paso 2:** Antigravity informó 23/24 casos aprobados; el selector de egresos se corrigió en `4593958` (sin constancia de reprueba posterior). #33–#36 y pantalla/configuración están publicados en `30db63c`, `87be420`, `edef5e1`, `af1349e`, `cd0d199`, `36f2f52` y `7e12509`.
+- **2026-11-23 — limpieza y ensayo:** Claude informó limpieza AGY y, después, clon fresco y cadena #3–#37 sin errores; huella de ventas y pagos coincidente con PROD. Registro publicado en `95ddb02`; detalle y límites en `docs/status.md`. No se repitieron operaciones de DB en esta consolidación.
 
 | Fecha | Entregable | Lección | Commit |
 |---|---|---|---|

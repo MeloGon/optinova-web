@@ -60,3 +60,10 @@ Una lección: `npm run pdf -- docs/lessons/05-buscar-paciente.md`.
 Entrega actual (2026-11-01): [guía de archivos para Drive](../entregas/2026-11-01-drive.md) e [informe de avance](../avance/2026-11-01-informe-de-avance.md). Carpeta `docs/informes/drive-2026-11-01/` y ZIP `docs/informes/optinova-drive-2026-11-01.zip`: 17 lecciones, 3 informes e índice, 21 PDF/110 páginas. Incluye todas las clases 00–11 y F00–F03/F07. Los PDF y el ZIP están ignorados por git; hay que transferirlos o regenerarlos en otra computadora. En Windows puede usarse `npm.cmd` si PowerShell bloquea `npm.ps1`.
 
 Entrega histórica: `node scripts/docs/build-delivery.mjs` descubre las lecciones e invoca el comando npm de PDF, pero conserva la fecha y el informe del 2026-10-26 y limpia archivos generados. La biblioteca actual se preparó por separado para conservar también el informe histórico del 14 de octubre. El ZIP actual contiene solo los PDF organizados bajo `Optinova-2026-11-01/`, sin repositorios de referencia ni temporales de revisión.
+
+
+## Referencias para el corte
+
+- [Mejoras y cambios de Angular frente a Flutter](../mejoras-vs-flutter.md): comparación de pantallas, seguridad y datos.
+- [Guía para adaptar Flutter a optinova-db](../guia-flutter-sobre-optinova-db.md): cambios y decisiones a evaluar si se mantiene Flutter.
+- [Guion del corte](../corte-guion.md): preparación, lista de salida y verificaciones.
