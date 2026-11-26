@@ -87,6 +87,8 @@ Reglas:
 
 Referencia del proyecto original: la app Flutter está en https://github.com/MeloGon/oftal_web (solo lectura). El dueño trabaja en dos computadoras, así que no dependas de rutas locales: usa el repo (`gh repo clone MeloGon/oftal_web` en una carpeta temporal fuera de este proyecto, o `gh api`). Antes de implementar o documentar una feature, léela ahí para igualar el comportamiento.
 
+**Excepción vigente (dueño, 2026-11-23): paridad Flutter ↔ Angular.** Mientras el deploy de Angular está en pausa, el dueño pidió llevar las mejoras de Angular a Flutter para que los usuarios las vean antes. En la rama `feature/paridad-angular` de `oftal_web` (creada desde `development`) Flutter **sí se edita**, apunta a **dev (optinova-db)** con `--dart-define-from-file=env/dev.json` y nunca a prod. Cada ajuste que pida el dueño se hace **en las dos apps** (Angular primero, luego Flutter igual) y en dev si toca la base. Para trabajar así, clonar `oftal_web` al lado de este repo y abrir el agente en `optinova-web` con acceso a las dos carpetas. Guía, estado y pendientes: `oftal_web/docs/paridad-angular/02-diseno-y-pantallas.md` y la fila de Claude en `docs/status.md`. Flutter usa siempre `fvm` (versión fijada en `.fvmrc`).
+
 ## Convenciones
 
 - Ramas: se trabaja en `development`; `main` solo recibe lo estable.
