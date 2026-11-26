@@ -211,4 +211,68 @@ describe('SalesHistoryStore', () => {
     expect(result.ok).toBe(false);
     expect(auditLog.logged.length).toBe(0);
   });
+
+  describe('vendedor', () => {
+    it('loadSellers deja las opciones del filtro', async () => {
+      saleRepo.sales = [{ ...fakeSale(1), sellerName: 'Mitzi' }, { ...fakeSale(2), sellerName: 'Erika' }, { ...fakeSale(3), sellerName: 'Mitzi' }];
+      await store.loadSellers();
+
+      expect(store.sellers()).toEqual([
+        { name: 'Erika', salesCount: 1 },
+        { name: 'Mitzi', salesCount: 2 },
+      ]);
+    });
+
+    it('si loadSellers falla, el filtro queda sin opciones y la lista no muestra error', async () => {
+      saleRepo.sellersFailWith = appError('server', 'boom');
+      await store.loadSellers();
+
+      expect(store.sellers()).toEqual([]);
+      expect(store.error()).toBeNull();
+    });
+
+    it('filtra lista y contadores por vendedor', async () => {
+      saleRepo.sales = [
+        { ...fakeSale(1), sellerName: 'Mitzi', rest: 0 },
+        { ...fakeSale(2), sellerName: 'Erika', rest: 10 },
+        { ...fakeSale(3), sellerName: 'MITZI', rest: 10 },
+      ];
+      await store.load(search({ seller: 'Mitzi' }));
+
+      expect(store.items().map((s) => s.id)).toEqual(['1', '3']);
+      expect(store.counts()).toEqual({ all: 2, balance: 1, paid: 1 });
+    });
+  });
+
+  describe('deleteSale', () => {
+    it('elimina y vuelve a pedir la lista', async () => {
+      await store.load(search());
+      const result = await store.deleteSale(store.items()[0]);
+
+      expect(result.ok).toBe(true);
+      expect(saleRepo.deleteCalls).toEqual([{ saleId: '1', supervisor: undefined }]);
+      expect(store.items().map((s) => s.id)).toEqual(['2', '3']);
+      expect(store.counts().all).toBe(2);
+    });
+
+    it('pasa las credenciales del supervisor cuando las hay', async () => {
+      saleRepo.deleteNeedsSupervisor = true;
+      await store.load(search());
+      const result = await store.deleteSale(store.items()[0], { email: 'sup@x.pe', password: 'x' });
+
+      expect(result.ok).toBe(true);
+      expect(saleRepo.deleteCalls[0].supervisor).toEqual({ email: 'sup@x.pe', password: 'x' });
+    });
+
+    it('si falla no recarga y devuelve el error', async () => {
+      await store.load(search());
+      const callsBefore = saleRepo.calls.length;
+      saleRepo.deleteFailWith = appError('unauthorized', 'Esa cuenta no tiene permiso de supervisor.');
+      const result = await store.deleteSale(store.items()[0]);
+
+      expect(result.ok).toBe(false);
+      expect(saleRepo.calls.length).toBe(callsBefore);
+      expect(store.items()).toHaveLength(3);
+    });
+  });
 });

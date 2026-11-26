@@ -3,10 +3,23 @@ import { AppError, toAppError } from '../errors/app-error';
 import { Page } from '../models/page';
 import { Sale } from '../models/sale';
 import { NewSaleItem, SaleItem } from '../models/sale-item';
-import { NewInitialPayment, NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../repositories/sale.repository';
+import {
+  NewInitialPayment,
+  NewSale,
+  SaleDeleteAuthorization,
+  SaleRepository,
+  SaleSearch,
+  SaleSeller,
+  SaleStatusCounts,
+} from '../repositories/sale.repository';
 import { Result, err, ok } from '../result';
 import { escapeLike } from '../supabase/escape-like';
 import { SUPABASE } from '../supabase/supabase.client';
+
+/** Lo que devuelve el Edge Function cuando algo sale mal: `{ error: "mensaje para el usuario" }`. */
+interface FunctionErrorBody {
+  error?: string;
+}
 
 /** Fila de `ventas` tal como viene de la DB. */
 interface SaleRow {
@@ -95,11 +108,19 @@ function toSaleItem(row: SaleItemRow): SaleItem {
   };
 }
 
+/**
+ * Escape para `.ilike(columna, patrón)` directo: la barra va doble porque PostgREST quita una
+ * (mismo caso que `supabase-patient.repository.ts`). El `escapeLike` compartido es para `.or()`.
+ */
+function escapeLikeDirect(text: string): string {
+  return text.replace(/[\\%_]/g, '\\\\$&');
+}
+
 @Injectable()
 export class SupabaseSaleRepository extends SaleRepository {
   private readonly supabase = inject(SUPABASE);
 
-  async search({ query, branch, date, status, page, pageSize, patientId }: SaleSearch): Promise<Result<Page<Sale>, AppError>> {
+  async search({ query, branch, date, status, page, pageSize, patientId, seller }: SaleSearch): Promise<Result<Page<Sale>, AppError>> {
     const from = (page - 1) * pageSize;
     const text = query.trim();
 
@@ -111,6 +132,8 @@ export class SupabaseSaleRepository extends SaleRepository {
     }
     if (branch) request = request.eq('sucursal', branch);
     if (date) request = request.eq('fecha_actualizada', date);
+    // ilike sin comodines = igual sin distinguir mayúsculas ("MITZI" = "Mitzi").
+    if (seller) request = request.ilike('autor_nombre', escapeLikeDirect(seller));
     if (status === 'balance') request = request.gt('resta', 0);
     if (status === 'paid') request = request.eq('resta', 0);
 
@@ -129,7 +152,8 @@ export class SupabaseSaleRepository extends SaleRepository {
     query,
     branch,
     date,
-  }: Pick<SaleSearch, 'query' | 'branch' | 'date'>): Promise<Result<SaleStatusCounts, AppError>> {
+    seller,
+  }: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'seller'>): Promise<Result<SaleStatusCounts, AppError>> {
     const text = query.trim();
     const base = () => {
       let request = this.supabase.from('ventas').select('id', { count: 'exact', head: true });
@@ -139,6 +163,7 @@ export class SupabaseSaleRepository extends SaleRepository {
       }
       if (branch) request = request.eq('sucursal', branch);
       if (date) request = request.eq('fecha_actualizada', date);
+      if (seller) request = request.ilike('autor_nombre', escapeLikeDirect(seller));
       return request;
     };
 
@@ -149,6 +174,32 @@ export class SupabaseSaleRepository extends SaleRepository {
     if (paid.error) return err(toAppError(paid.error));
 
     return ok({ all: all.count ?? 0, balance: balance.count ?? 0, paid: paid.count ?? 0 });
+  }
+
+  async listSellers(): Promise<Result<SaleSeller[], AppError>> {
+    const { data, error } = await this.supabase.rpc('sale_sellers');
+    if (error) return err(toAppError(error));
+    const rows = (data ?? []) as { name: string; sales_count: number }[];
+    return ok(rows.map((row) => ({ name: row.name, salesCount: Number(row.sales_count) })));
+  }
+
+  /**
+   * `functions.invoke` no lee el cuerpo `{ error }` del Edge Function: solo trae el `Response`
+   * crudo en `error.context`, así que se lee a mano (mismo truco que patients-lifecycle).
+   */
+  async delete(saleId: string, supervisor?: SaleDeleteAuthorization): Promise<Result<void, AppError>> {
+    const { error } = await this.supabase.functions.invoke('delete-sale', {
+      body: { saleId, supervisorEmail: supervisor?.email, supervisorPassword: supervisor?.password },
+    });
+    if (!error) return ok(undefined);
+
+    const context = (error as { context?: Response }).context;
+    let message = error.message;
+    if (context) {
+      const parsed = (await context.json().catch(() => null)) as FunctionErrorBody | null;
+      if (parsed?.error) message = parsed.error;
+    }
+    return err(toAppError({ status: context?.status, message }));
   }
 
   async getItems(folio: string): Promise<Result<SaleItem[], AppError>> {

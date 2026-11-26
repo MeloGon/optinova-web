@@ -2,7 +2,16 @@ import { AppError } from '../core/errors/app-error';
 import { Page } from '../core/models/page';
 import { Sale } from '../core/models/sale';
 import { NewSaleItem, SaleItem } from '../core/models/sale-item';
-import { NewInitialPayment, NewSale, SaleRepository, SaleSearch, SaleStatusCounts } from '../core/repositories/sale.repository';
+import {
+  NewInitialPayment,
+  NewSale,
+  SaleDeleteAuthorization,
+  SaleRepository,
+  SaleSearch,
+  SaleSeller,
+  SaleStatusCounts,
+} from '../core/repositories/sale.repository';
+import { appError } from '../core/errors/app-error';
 import { Result, err, ok } from '../core/result';
 
 export const fakeSale = (id: number | string, patientName = `PACIENTE ${id}`, patientId: string | null = null): Sale => ({
@@ -33,13 +42,14 @@ export class FakeSaleRepository extends SaleRepository {
   createFailWith: AppError | null = null;
   private nextId = 9000;
 
-  private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'patientId'>): Sale[] {
+  private matches(params: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'patientId' | 'seller'>): Sale[] {
     const text = params.query.trim().toLowerCase();
     return this.sales.filter((s) => {
       if (params.patientId && s.patientId !== params.patientId) return false;
       if (text && !s.patientName.toLowerCase().includes(text) && !s.folio.toLowerCase().includes(text)) return false;
       if (params.branch && s.branch !== params.branch) return false;
       if (params.date && s.date !== params.date) return false;
+      if (params.seller && s.sellerName.toLowerCase() !== params.seller.toLowerCase()) return false;
       return true;
     });
   }
@@ -58,7 +68,7 @@ export class FakeSaleRepository extends SaleRepository {
   }
 
   async countByStatus(
-    params: Pick<SaleSearch, 'query' | 'branch' | 'date'>,
+    params: Pick<SaleSearch, 'query' | 'branch' | 'date' | 'seller'>,
   ): Promise<Result<SaleStatusCounts, AppError>> {
     if (this.countsFailWith) return err(this.countsFailWith);
     const matches = this.matches(params);
@@ -67,6 +77,28 @@ export class FakeSaleRepository extends SaleRepository {
       balance: matches.filter((s) => s.rest > 0).length,
       paid: matches.filter((s) => s.rest === 0).length,
     });
+  }
+
+  sellersFailWith: AppError | null = null;
+
+  async listSellers(): Promise<Result<SaleSeller[], AppError>> {
+    if (this.sellersFailWith) return err(this.sellersFailWith);
+    const counts = new Map<string, number>();
+    for (const s of this.sales) counts.set(s.sellerName, (counts.get(s.sellerName) ?? 0) + 1);
+    return ok([...counts].map(([name, salesCount]) => ({ name, salesCount })).sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  deleteCalls: { saleId: string; supervisor?: SaleDeleteAuthorization }[] = [];
+  deleteFailWith: AppError | null = null;
+  /** Simula al vendedor: sin credenciales de supervisor, el servidor responde `needs_supervisor`. */
+  deleteNeedsSupervisor = false;
+
+  async delete(saleId: string, supervisor?: SaleDeleteAuthorization): Promise<Result<void, AppError>> {
+    if (this.deleteFailWith) return err(this.deleteFailWith);
+    if (this.deleteNeedsSupervisor && !supervisor) return err(appError('server', 'needs_supervisor'));
+    this.deleteCalls.push({ saleId, supervisor });
+    this.sales = this.sales.filter((s) => s.id !== saleId);
+    return ok(undefined);
   }
 
   async getItems(folio: string): Promise<Result<SaleItem[], AppError>> {

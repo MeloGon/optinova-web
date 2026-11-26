@@ -1,21 +1,28 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {
+  LucideCalendar,
   LucideCalendarClock,
   LucideDynamicIcon,
   LucideEllipsis,
   LucideEye,
   LucideHandCoins,
+  LucideHash,
+  LucideMapPin,
+  LucidePlus,
   LucidePrinter,
   LucideReceipt,
   LucideRefreshCw,
   LucideSearch,
+  LucideTag,
+  LucideTrash2,
   LucideTriangleAlert,
+  LucideUser,
   LucideX,
 } from '@lucide/angular';
 import { SessionStore } from '../../core/auth/session.store';
@@ -28,10 +35,16 @@ import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { Paginator } from '../../shared/ui/paginator/paginator';
 import { Segmented, SegmentedOption } from '../../shared/ui/segmented/segmented';
 import { Skeleton } from '../../shared/ui/skeleton/skeleton';
-import { OnvTable, TableCard } from '../../shared/ui/table/table';
+import { TableCard } from '../../shared/ui/table/table';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { ConfirmService } from '../../shared/ui/dialog/confirm.service';
+import {
+  SUPERVISOR_AUTH_TITLE_ID,
+  SupervisorAuthDialog,
+  SupervisorAuthDialogData,
+} from '../../shared/ui/supervisor-auth-dialog/supervisor-auth-dialog';
 import { ReceiptPdfService, saleItemToReceiptLine } from '../../shared/services/receipt-pdf.service';
-import { Badge } from '../../shared/ui/badge/badge';
+import { Badge, BadgeTone } from '../../shared/ui/badge/badge';
 import { ChangeDateDialog, ChangeDateDialogData, CHANGE_DATE_TITLE_ID } from './components/change-date-dialog';
 import { RegisterPaymentDialog, RegisterPaymentDialogData, REGISTER_PAYMENT_TITLE_ID } from './components/register-payment-dialog';
 import {
@@ -62,13 +75,14 @@ function toStatus(value: string | undefined): SaleStatus {
 
 /**
  * Historial de ventas (= S-05 Historial de ventas). La URL guarda el filtro
- * (?q=&branch=&date=&status=&page=&size=), igual criterio que Buscar paciente y Egresos.
+ * (?q=&branch=&seller=&date=&status=&page=&size=), igual criterio que Buscar paciente y Egresos.
  */
 @Component({
   selector: 'app-sales-history-page',
   imports: [
     ReactiveFormsModule,
     DatePipe,
+    NgTemplateOutlet,
     MoneyPipe,
     LucideDynamicIcon,
     CdkMenu,
@@ -80,7 +94,6 @@ function toStatus(value: string | undefined): SaleStatus {
     Paginator,
     Segmented,
     Skeleton,
-    OnvTable,
     TableCard,
   ],
   providers: [SalesHistoryStore],
@@ -89,6 +102,7 @@ function toStatus(value: string | undefined): SaleStatus {
 export class SalesHistoryPage {
   readonly q = input<string>();
   readonly branch = input<string>();
+  readonly seller = input<string>();
   readonly date = input<string>();
   readonly status = input<string>();
   readonly page = input<string>();
@@ -101,6 +115,7 @@ export class SalesHistoryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(Dialog);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   private readonly receiptPdf = inject(ReceiptPdfService);
   protected readonly printingReceiptFor = signal<string | null>(null);
 
@@ -122,6 +137,7 @@ export class SalesHistoryPage {
   protected readonly search = computed<SaleSearch>(() => ({
     query: (this.q() ?? '').trim(),
     branch: this.branch() || null,
+    seller: this.seller() || null,
     date: this.date() || null,
     status: toStatus(this.status()),
     page: toPage(this.page()),
@@ -156,10 +172,41 @@ export class SalesHistoryPage {
     pay: LucideHandCoins,
     print: LucidePrinter,
     changeDate: LucideCalendarClock,
+    calendar: LucideCalendar,
+    user: LucideUser,
+    tag: LucideTag,
+    hash: LucideHash,
+    pin: LucideMapPin,
+    plus: LucidePlus,
+    trash: LucideTrash2,
   };
+
+  /** Fondo y color del ícono de estado de cada fila (mismos tonos que el badge). */
+  protected readonly statusIconClass: Partial<Record<BadgeTone, string>> = {
+    success: 'bg-success-subtle text-success-subtle-foreground',
+    warning: 'bg-warning-subtle text-warning-subtle-foreground',
+    info: 'bg-info-subtle text-info-subtle-foreground',
+  };
+
+  /** Porcentaje abonado (0–100); sin total se toma como pagada. */
+  protected paidPercent(sale: Sale): number {
+    if (sale.totalWithDiscount <= 0) return 100;
+    return Math.round(Math.min(Math.max(sale.account / sale.totalWithDiscount, 0), 1) * 100);
+  }
+
+  /** Clic en el folio: lo copia al portapapeles (como en el Flutter anterior). */
+  protected async copyFolio(folio: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(folio);
+      this.toast.show({ tone: 'success', title: `Folio ${folio} copiado` });
+    } catch {
+      this.toast.show({ tone: 'danger', title: 'No se pudo copiar el folio' });
+    }
+  }
 
   constructor() {
     void this.store.loadChangeDateFlag();
+    void this.store.loadSellers();
 
     effect(() => {
       const search = this.search();
@@ -220,9 +267,13 @@ export class SalesHistoryPage {
     void this.navigate({ branch: value || null, page: null });
   }
 
+  protected setSeller(value: string): void {
+    void this.navigate({ seller: value || null, page: null });
+  }
+
   protected clearFilters(): void {
     this.text.setValue('');
-    void this.navigate({ q: null, branch: null, date: null, page: null });
+    void this.navigate({ q: null, branch: null, seller: null, date: null, page: null });
   }
 
   protected goToPage(page: number): void {
@@ -313,6 +364,47 @@ export class SalesHistoryPage {
     ref.closed.subscribe((saved) => {
       if (saved) this.toast.show({ tone: 'success', title: 'Fecha actualizada' });
     });
+  }
+
+  /**
+   * Eliminar venta: supervisor+ confirma y listo; un vendedor necesita correo y contraseña de un
+   * supervisor (P-04, mismo diálogo que descuentos y pacientes). Quién puede lo decide el servidor
+   * (`delete-sale`); aquí solo se elige qué diálogo mostrar.
+   */
+  protected async askDelete(sale: Sale): Promise<void> {
+    const label = `${sale.folio || 'sin folio'} · ${sale.patientName || 'sin paciente'}`;
+    const consequences =
+      'Se borran sus productos y abonos, los armazones vuelven al stock y queda registrado en Auditoría. No se puede deshacer.';
+
+    if (!this.session.can('supervisor')) {
+      const data: SupervisorAuthDialogData = {
+        description: `Eliminar la venta ${label}. ${consequences}`,
+        confirmLabel: 'Autorizar y eliminar',
+        authorize: (email, password) => this.store.deleteSale(sale, { email, password }),
+      };
+      const ref = this.dialog.open<boolean>(SupervisorAuthDialog, {
+        data,
+        role: 'dialog',
+        ariaLabelledBy: SUPERVISOR_AUTH_TITLE_ID,
+        disableClose: true,
+        backdropClass: ['bg-overlay'],
+      });
+      ref.closed.subscribe((deleted) => {
+        if (deleted) this.toast.show({ tone: 'success', title: 'Venta eliminada', text: label });
+      });
+      return;
+    }
+
+    const confirmed = await this.confirm.confirm({
+      title: '¿Eliminar esta venta?',
+      text: `${label}. ${consequences}`,
+      confirmLabel: 'Eliminar venta',
+    });
+    if (!confirmed) return;
+
+    const result = await this.store.deleteSale(sale);
+    if (result.ok) this.toast.show({ tone: 'success', title: 'Venta eliminada', text: label });
+    else this.toast.show({ tone: 'danger', title: 'No se pudo eliminar la venta', text: result.error.message });
   }
 
   private navigate(queryParams: Params): Promise<boolean> {

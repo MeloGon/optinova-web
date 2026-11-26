@@ -48,6 +48,21 @@
         </select>
       </div>
 
+      <div class="flex w-56 flex-col gap-1.5">
+        <label for="sales-seller" class="text-label">Vendedor</label>
+        <select
+          id="sales-seller"
+          class="h-(--onv-control-h) w-full rounded-md border border-input bg-input-background px-3 text-body outline-none hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring"
+          (change)="setSeller($any($event.target).value)"
+        >
+          <!-- [selected] por opción y no [value] en el select: las opciones llegan después que la URL. -->
+          <option value="" [selected]="!search().seller">Todos los vendedores</option>
+          @for (s of store.sellers(); track s.name) {
+            <option [value]="s.name" [selected]="s.name === search().seller">{{ s.name }}</option>
+          }
+        </select>
+      </div>
+
       <button
         type="submit"
         class="inline-flex h-(--onv-control-h) items-center justify-center gap-2 rounded-md bg-primary px-4 text-[14px] font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active"
@@ -91,93 +106,127 @@
     </div>
   } @else if (!store.loaded() || store.items().length > 0) {
     <onv-table-card [busy]="store.loading() && store.loaded()">
-      <table onvTable>
-        <thead>
-          <tr>
-            <th scope="col">Folio</th>
-            <th scope="col">Fecha</th>
-            <th scope="col">Paciente</th>
-            <th scope="col">Sucursal</th>
-            <th scope="col">Estado</th>
-            <th scope="col" class="text-right">Total</th>
-            <th scope="col" class="text-right">Saldo</th>
-            <th scope="col"><span class="sr-only">Acciones</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (!store.loaded()) {
-            @for (row of skeletonRows; track row) {
-              <tr aria-hidden="true">
-                <td><onv-skeleton class="h-3 w-20" /></td>
-                <td><onv-skeleton class="h-3 w-20" /></td>
-                <td><onv-skeleton class="h-3 w-40" /></td>
-                <td><onv-skeleton class="h-3 w-24" /></td>
-                <td><onv-skeleton class="h-[22px] w-20 rounded-full" /></td>
-                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
-                <td><onv-skeleton class="ml-auto h-3 w-16" /></td>
-                <td></td>
-              </tr>
-            }
-          } @else {
-            @for (sale of store.items(); track sale.id) {
-              <tr>
-                <td class="font-mono">{{ sale.folio || '—' }}</td>
-                <td class="tabular-nums">{{ sale.date | date: 'dd/MM/yyyy' }}</td>
-                <td class="font-medium">{{ sale.patientName || '—' }}</td>
-                <td>{{ sale.branch || '—' }}</td>
-                <td>
-                  @let st = saleStatus(sale);
-                  <onv-badge [tone]="st.tone" [icon]="st.icon">{{ st.label }}</onv-badge>
-                </td>
-                <td class="text-right tabular-nums">{{ sale.totalWithDiscount | money }}</td>
-                <td
-                  class="text-right tabular-nums"
-                  [class.font-semibold]="sale.rest > 0"
-                  [class.text-warning-subtle-foreground]="sale.rest > 0"
-                  [class.text-muted-foreground]="sale.rest === 0"
-                >
-                  {{ sale.rest | money }}
-                </td>
-                <td class="w-20 text-right">
-                  <div class="flex items-center justify-end gap-0.5">
-                    <button
-                      type="button"
-                      (click)="viewDetails(sale)"
-                      [attr.aria-label]="'Ver ' + (sale.folio || sale.patientName)"
-                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted"
-                    >
-                      <svg [lucideIcon]="icons.view" [size]="16"></svg>
-                    </button>
-                    <button
-                      type="button"
-                      [cdkMenuTriggerFor]="rowMenu"
-                      [cdkMenuTriggerData]="{ $implicit: sale }"
-                      [attr.aria-label]="'Más acciones para ' + (sale.folio || sale.patientName)"
-                      class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
-                    >
-                      <svg [lucideIcon]="icons.more" [size]="16"></svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            }
+      <!--
+        Cada venta es una fila al estilo del Flutter anterior (ícono de estado, folio · sucursal ·
+        estado, paciente, fecha · vendedor · descuento, avance del pago y total) con los badges del
+        diseño nuevo. ≥900 px se ve la barra de avance; más angosto, "Abonó"/"Debe" pasan a badges.
+      -->
+      <ul aria-label="Ventas">
+        @if (!store.loaded()) {
+          @for (row of skeletonRows; track row) {
+            <li aria-hidden="true" class="flex items-center gap-3.5 border-border px-4 py-3 not-first:border-t">
+              <onv-skeleton class="hidden size-[38px] shrink-0 rounded-md sm:block" />
+              <div class="flex flex-1 flex-col gap-1.5">
+                <onv-skeleton class="h-[22px] w-56 rounded-full" />
+                <onv-skeleton class="h-3 w-44" />
+                <onv-skeleton class="h-[22px] w-64 rounded-full" />
+              </div>
+              <onv-skeleton class="h-3.5 w-18" />
+            </li>
           }
-        </tbody>
-        @if (store.loaded() && store.items().length > 0) {
-          <tfoot>
-            <tr>
-              <td colspan="5" class="font-medium">Total · {{ store.items().length }} {{ store.items().length === 1 ? 'venta' : 'ventas' }} de esta página</td>
-              <td class="text-right tabular-nums font-medium">
-                {{ store.pageTotal() | money }}
-              </td>
-              <td class="text-right tabular-nums font-medium text-warning-subtle-foreground">
-                {{ store.pageRest() | money }}
-              </td>
-              <td></td>
-            </tr>
-          </tfoot>
+        } @else {
+          @for (sale of store.items(); track sale.id) {
+            @let st = saleStatus(sale);
+            <li class="flex items-center gap-3.5 border-border px-4 py-3 not-first:border-t hover:bg-subtle">
+              <div
+                class="hidden size-[38px] shrink-0 place-items-center rounded-md sm:grid"
+                [class]="statusIconClass[st.tone]"
+                aria-hidden="true"
+              >
+                <svg [lucideIcon]="st.icon" [size]="18"></svg>
+              </div>
+
+              <div class="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+                <div class="flex flex-wrap gap-1.5">
+                  @if (sale.folio) {
+                    <button
+                      type="button"
+                      (click)="copyFolio(sale.folio)"
+                      title="Clic para copiar el folio"
+                      class="rounded-full outline-none focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      <onv-badge label="Folio" [icon]="icons.hash" class="cursor-pointer">{{ sale.folio }}</onv-badge>
+                    </button>
+                  } @else {
+                    <onv-badge label="Folio" [icon]="icons.hash">—</onv-badge>
+                  }
+                  <onv-badge tone="outline" [icon]="icons.pin">{{ sale.branch || '—' }}</onv-badge>
+                  <onv-badge [tone]="st.tone" [icon]="st.icon">{{ st.label }}</onv-badge>
+                </div>
+                <span class="max-w-full truncate font-semibold">{{ sale.patientName || '—' }}</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <onv-badge label="Fecha" [icon]="icons.calendar" class="tabular-nums">{{ sale.date | date: 'dd/MM/yyyy' }}</onv-badge>
+                  <onv-badge label="Vendedor" [icon]="icons.user">{{ sale.sellerName || '—' }}</onv-badge>
+                  @if (sale.discount > 0) {
+                    <onv-badge label="Descuento" tone="primary" [icon]="icons.tag" class="tabular-nums">-{{ sale.discount | money }}</onv-badge>
+                  }
+                  <onv-badge label="Abonó" tone="success" class="tabular-nums min-[900px]:hidden">{{ sale.account | money }}</onv-badge>
+                  @if (sale.rest > 0) {
+                    <onv-badge label="Debe" tone="warning" class="tabular-nums min-[900px]:hidden">{{ sale.rest | money }}</onv-badge>
+                  }
+                </div>
+                <!-- Celular: total y "Abonar" en su propia línea, así los badges usan todo el ancho. -->
+                <div class="flex w-full items-center justify-between sm:hidden">
+                  <ng-container [ngTemplateOutlet]="totalAndPay" [ngTemplateOutletContext]="{ $implicit: sale }" />
+                </div>
+              </div>
+
+              <!-- Avance del pago -->
+              @let pct = paidPercent(sale);
+              <div class="hidden w-42 shrink-0 flex-col gap-1 text-caption min-[900px]:flex">
+                <div class="flex justify-between text-muted-foreground tabular-nums">
+                  <span>Abonó {{ sale.account | money }}</span>
+                  <span class="font-semibold" [class]="sale.rest > 0 ? 'text-warning-subtle-foreground' : 'text-success-subtle-foreground'">
+                    {{ pct }}%
+                  </span>
+                </div>
+                <div class="h-[5px] rounded-full bg-muted" role="progressbar" [attr.aria-valuenow]="pct" aria-valuemin="0" aria-valuemax="100" aria-label="Avance del pago">
+                  <div class="h-full rounded-full" [class]="sale.rest > 0 ? 'bg-warning' : 'bg-success'" [style.width.%]="pct"></div>
+                </div>
+                <span class="font-semibold tabular-nums" [class]="sale.rest > 0 ? 'text-warning-subtle-foreground' : 'text-success-subtle-foreground'">
+                  {{ sale.rest > 0 ? 'Resta ' + (sale.rest | money) : 'Liquidada' }}
+                </span>
+              </div>
+
+              <div class="hidden shrink-0 flex-col items-end gap-1.5 sm:flex">
+                <ng-container [ngTemplateOutlet]="totalAndPay" [ngTemplateOutletContext]="{ $implicit: sale }" />
+              </div>
+
+              <div class="flex shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  (click)="viewDetails(sale)"
+                  [attr.aria-label]="'Ver ' + (sale.folio || sale.patientName)"
+                  class="hidden size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted sm:grid"
+                >
+                  <svg [lucideIcon]="icons.view" [size]="16"></svg>
+                </button>
+                <button
+                  type="button"
+                  [cdkMenuTriggerFor]="rowMenu"
+                  [cdkMenuTriggerData]="{ $implicit: sale }"
+                  [attr.aria-label]="'Más acciones para ' + (sale.folio || sale.patientName)"
+                  class="grid size-8 place-items-center rounded-sm text-muted-foreground hover:bg-muted aria-expanded:bg-muted"
+                >
+                  <svg [lucideIcon]="icons.more" [size]="16"></svg>
+                </button>
+              </div>
+            </li>
+          }
         }
-      </table>
+      </ul>
+
+      @if (store.loaded() && store.items().length > 0) {
+        <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 border-t border-border bg-muted px-4 py-2.5">
+          <span class="font-medium">
+            Total · {{ store.items().length }} {{ store.items().length === 1 ? 'venta' : 'ventas' }} de esta página
+          </span>
+          <div class="flex flex-wrap gap-1.5">
+            <onv-badge label="Total" tone="outline" class="tabular-nums">{{ store.pageTotal() | money }}</onv-badge>
+            <onv-badge label="Saldo" tone="warning" class="tabular-nums">{{ store.pageRest() | money }}</onv-badge>
+          </div>
+        </div>
+      }
 
       @if (store.loaded()) {
         <onv-paginator
@@ -193,6 +242,21 @@
     </onv-table-card>
   }
 </div>
+
+<!-- Total de la venta y botón "Abonar" (a la derecha en escritorio, abajo en celular). -->
+<ng-template #totalAndPay let-sale>
+  <span class="text-[15px] font-bold tabular-nums">{{ sale.totalWithDiscount | money }}</span>
+  @if (sale.rest > 0) {
+    <button
+      type="button"
+      (click)="registerPayment(sale)"
+      class="inline-flex h-[26px] items-center gap-1 rounded-md border border-border-strong px-2 text-[12px] font-medium hover:bg-muted"
+    >
+      <svg [lucideIcon]="icons.plus" [size]="13"></svg>
+      Abonar
+    </button>
+  }
+</ng-template>
 
 <!-- Menú de acciones por fila (C-15). -->
 <ng-template #rowMenu let-sale>
@@ -241,5 +305,15 @@
         Cambiar fecha
       </button>
     }
+    <div class="my-1 h-px bg-border" role="separator"></div>
+    <button
+      cdkMenuItem
+      type="button"
+      (cdkMenuItemTriggered)="askDelete(sale)"
+      class="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-[14px] text-danger-subtle-foreground outline-none hover:bg-danger-subtle focus:bg-danger-subtle"
+    >
+      <svg [lucideIcon]="icons.trash" [size]="16"></svg>
+      Eliminar venta…
+    </button>
   </div>
 </ng-template>

@@ -18,6 +18,23 @@ export interface SaleSearch {
   pageSize: number;
   /** Si viene, acota a las ventas de ese paciente por `paciente_id` (= la ficha, S-03). */
   patientId?: string;
+  /**
+   * Nombre del vendedor tal como lo devuelve `listSellers` (sin distinguir mayúsculas: "MITZI" =
+   * "Mitzi"). null/ausente = todos.
+   */
+  seller?: string | null;
+}
+
+/** Un vendedor con ventas en la empresa de quien mira (= opción del filtro de Historial). */
+export interface SaleSeller {
+  name: string;
+  salesCount: number;
+}
+
+/** Correo y contraseña de un supervisor+ que autoriza a un vendedor (P-04). */
+export interface SaleDeleteAuthorization {
+  email: string;
+  password: string;
 }
 
 export interface SaleStatusCounts {
@@ -54,7 +71,7 @@ export interface NewInitialPayment {
   notes: string;
 }
 
-/** Contrato de ventas (= SaleRepository abstracto de Flutter, recortado al alcance de E2.5). */
+/** Contrato de ventas (= SaleRepository abstracto de Flutter). */
 export abstract class SaleRepository {
   /** Ventas de la más reciente a la más antigua. */
   abstract search(params: SaleSearch): Promise<Result<Page<Sale>, AppError>>;
@@ -63,6 +80,20 @@ export abstract class SaleRepository {
   abstract countByStatus(
     params: Omit<SaleSearch, 'status' | 'page' | 'pageSize'>,
   ): Promise<Result<SaleStatusCounts, AppError>>;
+
+  /**
+   * Vendedores con al menos una venta, sin repetir y en orden alfabético (función `sale_sellers`).
+   * La venta guarda al vendedor como texto y casi todo el historial es de personas sin usuario,
+   * por eso salen de las ventas y no de los perfiles. RLS deja ver solo los de la propia empresa.
+   */
+  abstract listSellers(): Promise<Result<SaleSeller[], AppError>>;
+
+  /**
+   * Elimina la venta en una sola transacción (Edge Function `delete-sale` + función `delete_sale`):
+   * devuelve el stock de armazones, borra pagos, líneas y venta, y deja auditoría. Supervisor+
+   * elimina directo; un vendedor necesita `supervisor` (si falta, el error es `needs_supervisor`).
+   */
+  abstract delete(saleId: string, supervisor?: SaleDeleteAuthorization): Promise<Result<void, AppError>>;
 
   /** Líneas de una venta por su folio (= getSaleDetails de Flutter, que también filtra por folio). */
   abstract getItems(folio: string): Promise<Result<SaleItem[], AppError>>;

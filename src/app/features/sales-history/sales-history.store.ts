@@ -6,7 +6,13 @@ import { Payment } from '../../core/models/payment';
 import { Sale } from '../../core/models/sale';
 import { SaleItem } from '../../core/models/sale-item';
 import { NewPayment, PaymentRepository } from '../../core/repositories/payment.repository';
-import { SaleRepository, SaleSearch, SaleStatusCounts } from '../../core/repositories/sale.repository';
+import {
+  SaleDeleteAuthorization,
+  SaleRepository,
+  SaleSearch,
+  SaleSeller,
+  SaleStatusCounts,
+} from '../../core/repositories/sale.repository';
 import { Result } from '../../core/result';
 import { SalePaymentService } from '../../core/services/sale-payment.service';
 
@@ -23,11 +29,13 @@ interface SalesHistoryState {
   loaded: boolean;
   /** `app_config.feature_change_date`: apagado de emergencia para TODA la empresa (admin+). `true` hasta que se confirme lo contrario. El permiso individual del vendedor se lee de su propio `Profile.canChangeDate` (ver `SalesHistoryPage.canChangeDate`). */
   changeDateEnabled: boolean;
+  /** Opciones del filtro de vendedor; vacío hasta que llegan (o si fallan: el filtro queda sin opciones). */
+  sellers: SaleSeller[];
 }
 
 /**
- * Estado de Historial de ventas (= SalesHistory Notifier de Flutter, recortado al alcance de E2.5:
- * listado, filtros y abonos; sin crear, editar, finalizar, anular ni eliminar ventas).
+ * Estado de Historial de ventas (= SalesHistory Notifier de Flutter): listado, filtros (incluido
+ * vendedor), abonos, cambio de fecha y eliminar venta. Sin finalizar ni anular.
  * Se provee en la página (providers: [SalesHistoryStore]): nace y muere con ella (= autoDispose).
  */
 @Injectable()
@@ -46,6 +54,7 @@ export class SalesHistoryStore {
     error: null,
     loaded: false,
     changeDateEnabled: true,
+    sellers: [],
   });
 
   readonly items = computed(() => this.state().items);
@@ -55,6 +64,7 @@ export class SalesHistoryStore {
   readonly error = computed(() => this.state().error);
   readonly loaded = computed(() => this.state().loaded);
   readonly changeDateEnabled = computed(() => this.state().changeDateEnabled);
+  readonly sellers = computed(() => this.state().sellers);
   /** Suma de `totalWithDiscount`/`rest` de la página visible (= fila de totales de S-05, no el total general). */
   readonly pageTotal = computed(() => this.state().items.reduce((sum, s) => sum + s.totalWithDiscount, 0));
   readonly pageRest = computed(() => this.state().items.reduce((sum, s) => sum + s.rest, 0));
@@ -96,6 +106,22 @@ export class SalesHistoryStore {
     if (!result.ok) return;
     const flag = result.value.find((f) => f.key === 'feature_change_date');
     if (flag) this.state.update((s) => ({ ...s, changeDateEnabled: flag.value }));
+  }
+
+  /** Vendedores para el filtro; si falla, el filtro se queda solo con "Todos". */
+  async loadSellers(): Promise<void> {
+    const result = await this.saleRepo.listSellers();
+    if (result.ok) this.state.update((s) => ({ ...s, sellers: result.value }));
+  }
+
+  /**
+   * Elimina la venta (transacción en el servidor, ver `SaleRepository.delete`) y vuelve a pedir la
+   * lista. `supervisor` solo hace falta si quien elimina es vendedor.
+   */
+  async deleteSale(sale: Sale, supervisor?: SaleDeleteAuthorization): Promise<Result<void, AppError>> {
+    const result = await this.saleRepo.delete(sale.id, supervisor);
+    if (result.ok && this.lastSearch) await this.load(this.lastSearch);
+    return result;
   }
 
   /** Líneas de una venta por su folio (= getSaleDetails de Flutter). */

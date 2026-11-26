@@ -121,6 +121,13 @@ describe('SupabaseSaleRepository', () => {
       ]);
     });
 
+    it('el vendedor filtra sin distinguir mayúsculas y con los comodines escapados', async () => {
+      fake.enqueue({ data: [], count: 0 });
+      await repo.search(search({ seller: 'Ana_Maria' }));
+
+      expect(fake.queries[0].of('ilike')).toEqual([['autor_nombre', 'Ana\\\\_Maria']]);
+    });
+
     it('"con saldo" filtra resta > 0 y "pagadas" resta = 0', async () => {
       fake.enqueue({ data: [], count: 0 }).enqueue({ data: [], count: 0 });
       await repo.search(search({ status: 'balance' }));
@@ -179,6 +186,29 @@ describe('SupabaseSaleRepository', () => {
       const result = await repo.countByStatus({ query: '', branch: '', date: '' });
 
       expect(result).toEqual({ ok: false, error: { kind: 'unknown', message: 'falló el segundo' } });
+    });
+  });
+
+  describe('listSellers', () => {
+    it('llama a sale_sellers y convierte el conteo a número', async () => {
+      fake.enqueue({ data: [{ name: 'Erika', sales_count: '6182' }, { name: 'Mitzi', sales_count: 3519 }] });
+      const result = await repo.listSellers();
+
+      expect(fake.queries[0].table).toBe('rpc:sale_sellers');
+      expect(result).toEqual({
+        ok: true,
+        value: [
+          { name: 'Erika', salesCount: 6182 },
+          { name: 'Mitzi', salesCount: 3519 },
+        ],
+      });
+    });
+
+    it('un error de la base se devuelve como AppError', async () => {
+      fake.enqueue({ error: { message: 'boom', code: 'XX000' } });
+      const result = await repo.listSellers();
+
+      expect(result.ok).toBe(false);
     });
   });
 
