@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   LucideArchive,
   LucideArchiveRestore,
+  LucideCalendar,
   LucideDynamicIcon,
   LucideEdit,
   LucideEllipsis,
@@ -117,6 +118,7 @@ export class SearchPatientPage {
     search: LucideSearch,
     clear: LucideX,
     pin: LucideMapPin,
+    calendar: LucideCalendar,
     more: LucideEllipsis,
     edit: LucideEdit,
     users: LucideUsers,
